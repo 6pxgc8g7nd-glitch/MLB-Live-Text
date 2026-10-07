@@ -13,7 +13,7 @@ html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0; background: var(--bg); color: var(--text);
   font: 15px/1.5 system-ui, -apple-system, 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
-  padding-bottom: calc(68px + env(safe-area-inset-bottom));
+  padding-bottom: calc(92px + env(safe-area-inset-bottom));
 }
 button { font: inherit; color: inherit; cursor: pointer; }
 a { color: inherit; text-decoration: none; }
@@ -40,16 +40,15 @@ main { max-width: 720px; margin: 0 auto; padding: 12px; }
 
 /* ---------- 底部導覽 ---------- */
 .tabbar {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; background: var(--card);
-  border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom);
+  position: fixed; left: 14px; right: 14px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 20; display: flex; gap: 4px;
+  background: var(--card); border-radius: 24px; padding: 4px; box-shadow: 0 6px 18px rgba(0, 0, 0, .18); max-width: 692px; margin: 0 auto;
 }
 .tabbar a {
-  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 7px;
-  color: var(--sub); font-size: 12px; font-weight: 600; position: relative;
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 0 6px;
+  border-radius: 20px; color: var(--sub); font-size: 12px; font-weight: 600;
 }
 .tabbar svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.tabbar a.on { color: var(--accent); }
-.tabbar a.on::before { content: ''; position: absolute; top: -1px; left: 30%; right: 30%; height: 3px; border-radius: 0 0 3px 3px; background: var(--accent); }
+.tabbar a.on { background: var(--navy); color: #fff; }
 
 /* ---------- 狀態標籤 ---------- */
 .pill {
@@ -177,7 +176,7 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .play.open .en { display: block; }
 .more { display: block; width: 100%; height: 42px; margin: 8px 0; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--sub); font-weight: 600; }
 .fab {
-  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 30;
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(96px + env(safe-area-inset-bottom)); z-index: 30;
   height: 38px; padding: 0 18px; border: 0; border-radius: 19px; background: var(--emph); color: #fff; font-weight: 700;
   box-shadow: 0 6px 16px rgba(0, 0, 0, .3);
 }
