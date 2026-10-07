@@ -16,12 +16,13 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="top">
-    <button id="back" aria-label="返回" hidden>‹</button>
+  <header class="top"><div class="top-in">
+    <button id="back" class="dblk" aria-label="返回" hidden><b>‹</b><span>返回</span></button>
+    <div id="dateBlk" class="dblk"><b id="dB">--</b><span id="dS"></span></div>
     <h1 id="title">MLB 比分</h1>
     <span id="updated" class="upd"></span>
-    <button id="langBtn" aria-label="切換中英文" hidden>中</button>
-  </header>
+    <button id="langBtn" class="lang" aria-label="切換中英文" hidden>中</button>
+  </div></header>
   <div id="banner" class="banner" hidden></div>
   <main id="view"><div class="loading">載入中…</div></main>
   <nav class="tabbar"><div class="tb-in">

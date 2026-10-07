@@ -735,7 +735,12 @@
   function setHeader(title, isGame, tab) {
     $('#title').textContent = title;
     $('#back').hidden = !isGame;
+    $('#dateBlk').hidden = isGame;
     $('#langBtn').hidden = !isGame;
+    const dl = dayLabel(tab === 'scores' ? S.date : twDate());
+    const md = dl.match(/\d+\/\d+/), wk = dl.match(/週./);
+    $('#dB').textContent = md ? md[0] : '';
+    $('#dS').textContent = wk ? wk[0] : '';
     $$('.tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.tab === tab));
     document.title = isGame ? 'MLB 文字轉播' : title;
     $('#updated').textContent = '';

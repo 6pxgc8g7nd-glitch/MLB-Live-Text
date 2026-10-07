@@ -22,17 +22,33 @@ a { color: inherit; text-decoration: none; }
 
 /* ---------- 頂欄 ---------- */
 .top {
-  position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 8px;
-  padding: calc(10px + env(safe-area-inset-top)) 12px 10px; background: var(--navy); color: #fff;
+  position: sticky; top: 0; z-index: 20; padding-top: env(safe-area-inset-top);
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .3));
 }
-.top h1 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: .5px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.top .upd { font-size: 11px; color: rgba(255, 255, 255, .65); font-variant-numeric: tabular-nums; }
-.top button {
-  min-width: 36px; height: 36px; padding: 0 10px; border: 1px solid rgba(255, 255, 255, .25); border-radius: 10px;
-  background: rgba(255, 255, 255, .12); color: #fff;
+.top::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: env(safe-area-inset-top); background: var(--navy); }
+.top-in {
+  display: flex; align-items: stretch; height: 64px; background: var(--navy); color: #fff;
+  -webkit-mask: radial-gradient(circle 8px at 76px 0, #0000 98%, #000) top / 100% 51% no-repeat,
+                radial-gradient(circle 8px at 76px 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
+          mask: radial-gradient(circle 8px at 76px 0, #0000 98%, #000) top / 100% 51% no-repeat,
+                radial-gradient(circle 8px at 76px 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
 }
-.top button:active { background: rgba(255, 255, 255, .24); }
-.banner { position: sticky; top: calc(56px + env(safe-area-inset-top)); z-index: 19; margin: 0; padding: 8px 12px; background: var(--emph); color: #fff; font-size: 13px; text-align: center; }
+.dblk {
+  flex: none; width: 76px; border: 0; border-right: 2px dashed #cfcfcf; border-radius: 0; background: #fff; color: var(--navy);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; padding: 0;
+}
+.dblk[hidden] { display: none; }
+.dblk b { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.dblk span { font-size: 11px; letter-spacing: 2px; color: var(--sub); margin-top: 2px; }
+#back:active { background: var(--accent-soft); }
+.top h1 { margin: 0; align-self: center; padding: 0 8px 0 12px; font-size: 19px; font-weight: 800; letter-spacing: .5px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top .upd { align-self: center; padding-right: 12px; font-size: 11px; color: rgba(255, 255, 255, .7); font-variant-numeric: tabular-nums; }
+.top .lang {
+  align-self: center; margin-right: 12px; min-width: 36px; height: 36px; padding: 0 10px; border: 1px solid rgba(255, 255, 255, .3);
+  border-radius: 10px; background: rgba(255, 255, 255, .14); color: #fff; font-weight: 700;
+}
+.top .lang:active { background: rgba(255, 255, 255, .26); }
+.banner { position: sticky; top: calc(64px + env(safe-area-inset-top)); z-index: 19; margin: 0; padding: 8px 12px; background: var(--emph); color: #fff; font-size: 13px; text-align: center; }
 
 main { max-width: 720px; margin: 0 auto; padding: 12px; }
 .loading, .empty { padding: 32px 0; text-align: center; color: var(--sub); }
