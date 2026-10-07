@@ -711,7 +711,7 @@
     document.documentElement.dataset.theme = S.theme;
     const dark = S.theme === 'dark' || (S.theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
     const m = $('meta[name=theme-color]');
-    if (m) m.content = dark ? '#0b1730' : '#0a2a5e';
+    if (m) m.content = dark ? '#003a73' : '#004B93';
     const b = $('#themeBtn');
     b.textContent = { auto: '◐', light: '☀', dark: '☾' }[S.theme];
     b.title = { auto: '主題：跟隨系統', light: '主題：淺色', dark: '主題：深色' }[S.theme];
