@@ -47,15 +47,24 @@ body.ingame .top-in { -webkit-mask: none; mask: none; border-radius: 0 0 14px 14
 .top .btn:active { background: rgba(255, 255, 255, .26); }
 .top .btn[hidden], .bb[hidden] { display: none; }
 .r2 {
-  margin: 0 6px; height: 48px; border-top: 2px dashed rgba(255, 255, 255, .4); display: grid; grid-template-columns: repeat(3, 1fr);
-  text-align: center; padding: 5px 0 4px;
+  position: relative; margin: 0 6px; height: 48px; border-top: 2px dashed rgba(255, 255, 255, .4);
+  display: grid; grid-template-columns: 1fr 150px 1fr; align-items: stretch; padding: 3px 0;
 }
 body.ingame .r2 { display: none; }
-.r2 > div { display: flex; flex-direction: column; justify-content: center; line-height: 1.2; }
-.r2 > div + div { border-left: 1px solid rgba(255, 255, 255, .25); }
-.r2 span { font-size: 9px; letter-spacing: 2px; color: rgba(255, 255, 255, .7); }
-.r2 b { font-size: 17px; font-variant-numeric: tabular-nums; }
-.r2 .lv.on b { color: #ffd0d6; }
+.r2 button { border: 0; outline: 0; background: transparent; color: #fff; padding: 0; -webkit-appearance: none; appearance: none; }
+.arw { font-size: 30px; font-weight: 700; line-height: 1; border-radius: 10px; }
+.arw:active, .dctr:active { opacity: .55; }
+.dctr {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; border-radius: 0;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation;
+}
+.dctr::before, .dctr::after { content: ''; position: absolute; top: 4px; bottom: 4px; width: 1px; background: rgba(255, 255, 255, .3); }
+.dctr::before { left: 0; }
+.dctr::after { right: 0; }
+.dctr b { font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.dctr span { font-size: 11px; letter-spacing: 1px; color: rgba(255, 255, 255, .75); }
+#datePick { position: absolute; left: 50%; top: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.lvp { background: var(--emph); color: #fff; font-size: 11px; font-weight: 800; padding: 2px 9px; border-radius: 999px; letter-spacing: .5px; white-space: nowrap; }
 .banner { position: sticky; top: calc(var(--th) + env(safe-area-inset-top)); z-index: 19; margin: 0; padding: 8px 12px; background: var(--emph); color: #fff; font-size: 13px; text-align: center; }
 
 main { max-width: 720px; margin: 0 auto; padding: 12px; }
@@ -104,20 +113,6 @@ main { max-width: 720px; margin: 0 auto; padding: 12px; }
 @media (prefers-reduced-motion: reduce) { .pill.live::before { animation: none; } }
 
 /* ---------- 比分頁 ---------- */
-.datebar { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.datebar button {
-  height: 42px; min-width: 42px; border: 1px solid var(--line); border-radius: 12px; background: var(--card);
-  font-size: 22px; box-shadow: var(--shadow);
-}
-.dlabel {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.25; height: 42px;
-  border: 0; background: transparent; padding: 0; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation;
-}
-.dlabel:active strong { color: var(--navy); }
-#datePick { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-.datebar { position: relative; }
-.dlabel strong { font-size: 18px; font-weight: 800; }
-.dlabel span { font-size: 12px; color: var(--sub); }
 
 .grp {
   display: flex; align-items: center; gap: 8px; margin: 18px 2px 8px; font-size: 13px; font-weight: 800;

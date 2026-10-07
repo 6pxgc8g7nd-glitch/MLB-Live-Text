@@ -295,47 +295,13 @@
       .join('');
   }
 
-  /* 日期按鈕：單擊回到今天；長按（約 0.5 秒）開啟日期選擇器 */
-  function bindDateBtn() {
-    const btn = $('#dateBtn'), pick = $('#datePick');
-    if (!btn || !pick) return;
-    let timer = null, longDone = false;
-    const clear = () => { clearTimeout(timer); timer = null; };
-    const openPicker = () => {
-      longDone = true;
-      try { if (pick.showPicker) pick.showPicker(); else pick.click(); } catch (e) { try { pick.click(); } catch (e2) { /* 略過 */ } }
-    };
-    btn.addEventListener('pointerdown', () => { longDone = false; clear(); timer = setTimeout(openPicker, 500); });
-    ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => btn.addEventListener(ev, clear));
-    btn.addEventListener('contextmenu', (e) => e.preventDefault());
-    btn.addEventListener('click', () => {
-      if (longDone) { longDone = false; return; }
-      S.date = twDate();
-      S.follow = true;
-      route();
-    });
-    pick.addEventListener('change', () => {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(pick.value)) return;
-      S.date = pick.value;
-      S.follow = S.date === twDate();
-      route();
-    });
-  }
-
   function showScores() {
     route$ = 'scores';
     setHeader('MLB 比分', false, 'scores');
     const my = token;
     let anyLive = false;
     view.innerHTML = `
-      <div class="datebar">
-        <button id="prevDay" aria-label="前一天">‹</button>
-        <button id="dateBtn" class="dlabel" aria-label="日期：點一下回到今天，長按選擇日期"><strong>${esc(dayLabel(S.date))}</strong><span>${S.date === twDate() ? '今天（台灣時間）' : S.date + '・點一下回今天'}</span></button>
-        <button id="nextDay" aria-label="後一天">›</button>
-        <input id="datePick" type="date" value="${S.date}" tabindex="-1" aria-hidden="true">
-      </div>
       <div id="games"><div class="loading">載入中…</div></div>`;
-    bindDateBtn();
     poller = createPoller(
       async () => {
         const games = await loadSchedule(S.date);
@@ -761,18 +727,42 @@
   }
 
   /* ================= 外框、主題、路由 ================= */
-  function setInfo(cells) {
-    cells.forEach(([l, v], i) => {
-      $('#l' + (i + 1)).textContent = l;
-      $('#v' + (i + 1)).textContent = v;
-    });
-    $('#v3').parentNode.classList.remove('on');
-  }
   function setGames(games) {
     const live = games.filter((g) => gameState(g.status, g.linescore, g.gameDate).k === 'live').length;
-    $('#v2').textContent = games.length;
-    $('#v3').textContent = live;
-    $('#v3').parentNode.classList.toggle('on', live > 0);
+    const p = $('#livePill');
+    p.hidden = !live;
+    p.textContent = `● ${live} LIVE`;
+  }
+
+  /* 日期：左右箭頭切換前後一天；單擊日期回到今天；長按（約 0.5 秒）開啟日期選擇器 */
+  function bindDateNav() {
+    const btn = $('#dateBtn'), pick = $('#datePick');
+    let timer = null, longDone = false;
+    const clear = () => { clearTimeout(timer); timer = null; };
+    const go = (date) => {
+      if (route$ !== 'scores') return;
+      S.date = date;
+      S.follow = date === twDate();
+      route();
+    };
+    $('#prevDay').addEventListener('click', () => go(shiftDate(S.date, -1)));
+    $('#nextDay').addEventListener('click', () => go(shiftDate(S.date, 1)));
+    const openPicker = () => {
+      longDone = true;
+      if (route$ !== 'scores') return;
+      pick.value = S.date;
+      try { if (pick.showPicker) pick.showPicker(); else pick.click(); } catch (e) { try { pick.click(); } catch (e2) { /* 略過 */ } }
+    };
+    btn.addEventListener('pointerdown', () => { longDone = false; clear(); timer = setTimeout(openPicker, 500); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => btn.addEventListener(ev, clear));
+    btn.addEventListener('contextmenu', (e) => e.preventDefault());
+    btn.addEventListener('click', () => {
+      if (longDone) { longDone = false; return; }
+      go(twDate());
+    });
+    pick.addEventListener('change', () => {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(pick.value)) go(pick.value);
+    });
   }
 
   function setHeader(title, isGame, tab) {
@@ -781,10 +771,14 @@
     $('#ballIc').hidden = isGame;
     $('#langBtn').hidden = !isGame;
     document.body.classList.toggle('ingame', isGame);
-    const dl = dayLabel(tab === 'scores' ? S.date : twDate());
-    const md = dl.match(/\d+\/\d+/);
-    if (tab === 'standings') setInfo([['DATE', md ? md[0] : ''], ['SEASON', String(S.date).slice(0, 4)], ['TEAMS', '30']]);
-    else setInfo([['DATE', md ? md[0] : ''], ['GAMES', '–'], ['LIVE', '–']]);
+    const isScores = tab === 'scores';
+    const day = isScores ? S.date : twDate();
+    const dl = dayLabel(day);
+    const md = dl.match(/\d+\/\d+/), wk = dl.match(/週./);
+    $('#dB').textContent = md ? md[0] : '';
+    $('#dS').textContent = (wk ? wk[0] : '') + (day === twDate() ? '・今天' : isScores ? '・點一下回今天' : '');
+    $('#prevDay').style.visibility = $('#nextDay').style.visibility = isScores ? 'visible' : 'hidden';
+    $('#livePill').hidden = true;
     $$('.tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.tab === tab));
     document.title = isGame ? 'MLB 文字轉播' : title;
     $('#updated').textContent = '';
@@ -816,6 +810,7 @@
   function boot() {
     view = $('#view');
     applyLang();
+    bindDateNav();
 
     $('#langBtn').onclick = () => {
       S.lang = S.lang === 'zh' ? 'en' : 'zh';
@@ -838,11 +833,7 @@
       }
       const b = e.target.closest('button');
       if (!b) return;
-      if (b.id === 'prevDay' || b.id === 'nextDay') {
-        S.date = shiftDate(S.date, b.id === 'prevDay' ? -1 : 1);
-        S.follow = S.date === twDate();
-        route();
-      } else if (b.dataset.t) {
+      if (b.dataset.t) {
         S.gtab = b.dataset.t;
         store.set('gtab', S.gtab);
         renderBody();
