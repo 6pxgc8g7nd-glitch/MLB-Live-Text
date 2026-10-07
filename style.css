@@ -82,24 +82,34 @@ main { max-width: 720px; margin: 0 auto; padding: 12px; }
 .grp::before { content: ''; width: 4px; height: 14px; border-radius: 2px; background: var(--accent); }
 .grp small { font-weight: 600; color: var(--sub); letter-spacing: 0; }
 
+/* 票券卡片：白票＋左上角標＋撕線；進行中角標為強調色 */
 .game {
-  display: block; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px;
-  margin-bottom: 10px; box-shadow: var(--shadow);
+  position: relative; display: block; margin-bottom: 12px; padding: 0; color: inherit;
+  background: var(--card); border-radius: 14px; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .16));
+  -webkit-mask: radial-gradient(circle 9px at 0 calc(100% - 44px), #0000 98%, #000) left / 51% 100% no-repeat,
+                radial-gradient(circle 9px at 100% calc(100% - 44px), #0000 98%, #000) right / 51% 100% no-repeat;
+          mask: radial-gradient(circle 9px at 0 calc(100% - 44px), #0000 98%, #000) left / 51% 100% no-repeat,
+                radial-gradient(circle 9px at 100% calc(100% - 44px), #0000 98%, #000) right / 51% 100% no-repeat;
 }
-.game.live { border-left: 4px solid var(--emph); }
-.game:active { background: var(--chip); }
-.g-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: var(--sub); margin-bottom: 8px; }
-.g-row { display: flex; align-items: center; gap: 10px; padding: 3px 0; }
-.tb {
-  flex: none; min-width: 46px; padding: 2px 6px; border-radius: 6px; background: var(--navy); color: #fff;
-  font-size: 12px; font-weight: 800; letter-spacing: .5px; text-align: center;
+.game:active { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .2)) brightness(.97); }
+.gt {
+  position: absolute; top: 0; left: 0; padding: 3px 12px 3px 10px; border-radius: 14px 0 12px 0;
+  background: var(--navy); color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .5px; font-variant-numeric: tabular-nums;
 }
-.t-name { flex: 1; min-width: 0; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.t-name small { margin-left: 8px; color: var(--sub); font-size: 12px; }
-.t-score { font-size: 26px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; min-width: 30px; text-align: right; }
-.game.final .g-row:not(.win) .t-name, .game.final .g-row:not(.win) .t-score { color: var(--sub); font-weight: 500; }
-.g-row.win .t-name { font-weight: 800; color: var(--win); }
-.g-foot { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 12px; color: var(--sub); }
+.game.live .gt { background: var(--emph); }
+.game.final .gt, .game.other .gt { background: #8b95a1; }
+.ser { padding-top: 9px; text-align: center; font-size: 11px; letter-spacing: 2px; color: var(--sub); }
+.g-body { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; gap: 4px; padding: 8px 10px 12px; }
+.g-tm .ab { font-size: 24px; font-weight: 800; line-height: 1.1; color: var(--navy); letter-spacing: .5px; }
+.g-tm .zn { font-size: 12px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.g-tm .rc { font-size: 11px; color: var(--sub); opacity: .8; }
+.g-tm.lose .ab { color: var(--sub); }
+.big { font-size: 36px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.big i { font-style: normal; color: var(--sub); font-size: 18px; margin: 0 6px; font-weight: 500; }
+.big.vs { font-size: 26px; color: var(--sub); }
+.game.live .big { color: var(--emph); }
+.tear { margin: 0 14px; border-top: 2px dashed #cfcfcf; }
+.g-foot { padding: 9px 14px 11px; text-align: center; font-size: 12px; color: var(--sub); }
 
 /* ---------- 單場：主視覺記分板 ---------- */
 .hero {

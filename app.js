@@ -258,16 +258,23 @@
       const hp = h.probablePitcher && h.probablePitcher.fullName;
       if (ap || hp) foot = `<div class="g-foot">預定先發　${esc(ap || '未定')} vs ${esc(hp || '未定')}</div>`;
     }
-    const row = (t, win, side) => `
-      <div class="g-row${win ? ' win' : ''}">
-        <span class="tb">${esc(teamAbbr(t.team))}</span>
-        <span class="t-name">${esc(teamName(t.team))}<small>${esc(rec(t))}</small></span>
-        <span class="t-score">${showScore ? dash(t.score ?? 0) : ''}</span>
+    const side = (t, win) => `
+      <div class="g-tm${win ? ' win' : ''}${st.k === 'final' && !win ? ' lose' : ''}">
+        <div class="ab">${esc(teamAbbr(t.team))}</div>
+        <div class="zn">${esc(teamName(t.team))}</div>
+        <div class="rc">${esc(rec(t))}</div>
       </div>`;
+    const mid = showScore
+      ? `<div class="big">${dash(a.score ?? 0)}<i>:</i>${dash(h.score ?? 0)}</div>`
+      : '<div class="big vs">VS</div>';
+    if (!foot) foot = `<div class="g-foot">${st.k === 'live' ? '進入文字轉播 ›' : st.k === 'final' ? '查看比賽紀錄 ›' : '尚無預定先發資訊'}</div>`;
+    const corner = st.k === 'live' ? `● ${st.txt}` : st.txt;
     return `
       <a class="game ${st.k}" href="#/game/${g.gamePk}">
-        <div class="g-top"><span class="g-label">${esc(label)}</span><span class="pill ${st.k}">${esc(st.txt)}</span></div>
-        ${row(a, aWin, 'away')}${row(h, hWin, 'home')}${foot}
+        <span class="gt">${esc(corner)}</span>
+        <div class="ser">${esc(label || '例行賽')}</div>
+        <div class="g-body">${side(a, aWin)}${mid}${side(h, hWin)}</div>
+        <div class="tear"></div>${foot}
       </a>`;
   }
 
