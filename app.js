@@ -260,12 +260,13 @@
     }
     const row = (t, win, side) => `
       <div class="g-row${win ? ' win' : ''}">
+        <span class="tb">${esc(teamAbbr(t.team))}</span>
         <span class="t-name">${esc(teamName(t.team))}<small>${esc(rec(t))}</small></span>
         <span class="t-score">${showScore ? dash(t.score ?? 0) : ''}</span>
       </div>`;
     return `
       <a class="game ${st.k}" href="#/game/${g.gamePk}">
-        <div class="g-top"><span class="g-label">${esc(label)}</span><span class="g-status ${st.k}">${st.k === 'live' ? '● ' : ''}${esc(st.txt)}</span></div>
+        <div class="g-top"><span class="g-label">${esc(label)}</span><span class="pill ${st.k}">${esc(st.txt)}</span></div>
         ${row(a, aWin, 'away')}${row(h, hWin, 'home')}${foot}
       </a>`;
   }
@@ -366,13 +367,25 @@
       if (ap || hp) extra = `<div class="dec">預定先發　${esc(ap || '未定')} vs ${esc(hp || '未定')}</div>`;
     }
     const venue = gd.venue && gd.venue.name;
+    const aRuns = tot.away && tot.away.runs, hRuns = tot.home && tot.home.runs;
+    const showN = st.k === 'live' || st.k === 'final';
+    const dimA = st.k === 'final' && aRuns < hRuns, dimH = st.k === 'final' && hRuns < aRuns;
+    const num = (v, dim) => `<b class="${dim ? 'dim' : ''}">${showN ? dash(v != null ? v : 0) : '–'}</b>`;
+    const teamBlk = (cls, t, fb) =>
+      `<div class="h-team ${cls}"><div class="ab">${esc(teamAbbr(t) || fb)}</div><div class="zn">${esc(teamName(t))}</div></div>`;
     return `
-      <div class="gtitle"><div><b>${esc(teamName(aT))}</b> <span>@</span> <b>${esc(teamName(hT))}</b></div>
-        <span class="g-status ${st.k}">${st.k === 'live' ? '● ' : ''}${esc(st.txt)}</span></div>
-      <div class="scroll"><table class="line"><thead><tr><th></th>${th}<th>R</th><th>H</th><th>E</th></tr></thead>
-      <tbody>${tr('away', aT)}${tr('home', hT)}</tbody></table></div>
-      ${sit}${extra}
-      <div class="gmeta">${esc(fmtTime(gd.datetime && gd.datetime.dateTime))}（台灣時間）${venue ? ' · ' + esc(venue) : ''}</div>`;
+      <div class="hero">
+        <div class="h-top"><span class="pill ${st.k}">${esc(st.txt)}</span>
+          <span>${esc(fmtTime(gd.datetime && gd.datetime.dateTime))}（台灣時間）${venue ? ' · ' + esc(venue) : ''}</span></div>
+        <div class="h-score">
+          ${teamBlk('away', aT, '客')}
+          <div class="h-nums">${num(aRuns, dimA)}<i>:</i>${num(hRuns, dimH)}</div>
+          ${teamBlk('home', hT, '主')}
+        </div>
+        <div class="scroll"><table class="line"><thead><tr><th></th>${th}<th>R</th><th>H</th><th>E</th></tr></thead>
+        <tbody>${tr('away', aT)}${tr('home', hT)}</tbody></table></div>
+        ${sit}${extra}
+      </div>`;
   }
 
   /* ---- 文字轉播 ---- */
@@ -382,6 +395,22 @@
     const r = p.result || {}, ab = p.about || {};
     return !!ab.isScoringPlay || KEY_EVENTS.includes(r.event) || (p.playEvents || []).some(isSubEvent);
   };
+
+  /* 每個打席依結果分類，決定左側色條與標籤：全壘打 > 得分 > 安打 > 出局 > 上壘 */
+  const OUT_RE = /out|double play|triple play|grounded into|sac /i;
+  const BASE_RE = /walk|hit by pitch|error|interference|fielders choice/i;
+  function playCat(p, done) {
+    const r = p.result || {}, ab = p.about || {};
+    const zh = S.lang === 'zh';
+    const ev = r.event || '';
+    if (!done) return { cls: 'live', label: zh ? '進行中' : 'LIVE' };
+    if (ev === 'Home Run') return { cls: 'hr', label: zh ? '全壘打' : 'HR' };
+    if (ab.isScoringPlay) return { cls: 'score', label: zh ? '得分' : 'RUN' };
+    if (HIT_EVENTS.includes(ev)) return { cls: 'hit', label: zh ? '安打' : 'HIT' };
+    if (OUT_RE.test(ev)) return { cls: 'out', label: zh ? '出局' : 'OUT' };
+    if (BASE_RE.test(ev)) return { cls: 'base', label: zh ? '上壘' : 'ON' };
+    return { cls: '', label: '' };
+  }
 
   function playHTML(p, gd) {
     const r = p.result || {}, ab = p.about || {}, m = p.matchup || {};
@@ -396,8 +425,8 @@
       body = zh ? `打擊中　${esc(bat)}（對 ${esc(pit)}）` : `At bat: ${esc(bat)} vs ${esc(pit)}`;
     } else if (zh) {
       const ev = evZh(r.event);
-      body = `${esc(bat)} ${HIT_EVENTS.includes(r.event) ? '擊出' : ''}${esc(ev)}`;
-      if (r.rbi) body += `　<em>${r.rbi}分打點</em>`;
+      body = `${esc(bat)} ${HIT_EVENTS.includes(r.event) ? '擊出' : ''}<span class="ev">${esc(ev)}</span>`;
+      if (r.rbi) body += `<em>${r.rbi}分打點</em>`;
     } else {
       body = esc(r.description || r.event || '');
     }
@@ -415,18 +444,20 @@
       if (hd.launchSpeed != null) bits.push(`初速 ${hd.launchSpeed} mph`);
       if (hd.launchAngle != null) bits.push(`仰角 ${hd.launchAngle}°`);
       if (hd.totalDistance != null) bits.push(`${hd.totalDistance} ft`);
-      if (bits.length) hit = `<div class="hit">${bits.join(' · ')}</div>`;
+      if (bits.length) hit = `<div class="hd">${bits.join(' · ')}</div>`;
     }
 
     const score = ab.isScoringPlay && r.awayScore != null
       ? `<span class="p-score">${esc(teamAbbr(aT))} ${r.awayScore} – ${r.homeScore} ${esc(teamAbbr(hT))}</span>` : '';
     const outs = p.count && p.count.outs != null && done ? `${p.count.outs} 出局` : '';
-    const meta = zh ? [pit ? `投手 ${esc(pit)}` : '', outs].filter(Boolean).join(' · ') : '';
-    const cls = ['play', !done ? 'live' : '', ab.isScoringPlay ? 'score' : '', r.event === 'Home Run' ? 'hr' : '',
-      G.open.has(ab.atBatIndex) ? 'open' : ''].filter(Boolean).join(' ');
+    const meta = zh && done ? [pit ? `投手 ${esc(pit)}` : '', outs].filter(Boolean).join(' · ') : '';
+    const cat = playCat(p, done);
+    const cls = ['play', cat.cls, G.open.has(ab.atBatIndex) ? 'open' : ''].filter(Boolean).join(' ');
     const en = zh && done && r.description ? `<div class="en">${esc(r.description)}</div>` : '';
+    const top = cat.label || score
+      ? `<div class="p-top">${cat.label ? `<span class="tag">${cat.label}</span>` : '<span></span>'}${score}</div>` : '';
     return `<div class="${cls}" data-k="${ab.atBatIndex}">
-      ${score}<div class="p-body">${body}</div>${subs}${hit}${meta ? `<div class="p-meta">${meta}</div>` : ''}${en}</div>`;
+      ${top}<div class="p-body">${body}</div>${subs}${hit}${meta ? `<div class="p-meta">${meta}</div>` : ''}${en}</div>`;
   }
 
   function textHTML(d) {
@@ -601,13 +632,13 @@
   };
   function standRow(t, rank) {
     const c = t.clinchIndicator && CLINCH[t.clinchIndicator];
-    return `<tr><th><span class="rk">${rank}</span>${esc(teamName(t.team))}${c ? `<i class="cl" title="${c}">${esc(t.clinchIndicator)}</i>` : ''}</th>
-      <td>${dash(t.wins)}</td><td>${dash(t.losses)}</td><td>${dash(t.winningPercentage)}</td><td>${dash(t.gamesBack)}</td>
+    return `<tr class="${t.clinchIndicator ? 'po' : ''}"><th><span class="rk">${rank}</span>${esc(teamName(t.team))}${c ? `<i class="cl" title="${c}">${esc(t.clinchIndicator)}</i>` : ''}</th>
+      <td>${dash(t.wins)}-${dash(t.losses)}</td><td>${dash(t.winningPercentage)}</td><td>${dash(t.gamesBack)}</td>
       <td>${l10(t)}</td><td>${dash(t.streak && t.streak.streakCode)}</td></tr>`;
   }
   const standTable = (title, rows) => `
     <h3 class="inn">${esc(title)}</h3>
-    <div class="scroll"><table class="box stand"><thead><tr><th>球隊</th><th>勝</th><th>敗</th><th>勝率</th><th>勝差</th><th>近10</th><th>連</th></tr></thead>
+    <div class="scroll"><table class="box stand"><thead><tr><th>球隊</th><th>戰績</th><th>勝率</th><th>勝差</th><th>近10</th><th>連</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 
   function standingsHTML(d) {
@@ -680,7 +711,7 @@
     document.documentElement.dataset.theme = S.theme;
     const dark = S.theme === 'dark' || (S.theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
     const m = $('meta[name=theme-color]');
-    if (m) m.content = dark ? '#0e1116' : '#f4f5f7';
+    if (m) m.content = dark ? '#0b1730' : '#0a2a5e';
     const b = $('#themeBtn');
     b.textContent = { auto: '◐', light: '☀', dark: '☾' }[S.theme];
     b.title = { auto: '主題：跟隨系統', light: '主題：淺色', dark: '主題：深色' }[S.theme];

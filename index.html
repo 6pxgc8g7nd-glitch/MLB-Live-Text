@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>MLB 文字轉播</title>
-  <meta name="theme-color" content="#f4f5f7">
+  <meta name="theme-color" content="#0a2a5e">
   <meta name="description" content="MLB 比分、逐打席文字轉播與排名（個人使用）">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png">
@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="MLB 轉播">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="stylesheet" href="style.css">
   <script>
     /* 在畫面繪製前套用主題，避免深色模式閃白 */
@@ -30,8 +30,12 @@
   <div id="banner" class="banner" hidden></div>
   <main id="view"><div class="loading">載入中…</div></main>
   <nav class="tabbar">
-    <a href="#/scores" data-tab="scores">比分</a>
-    <a href="#/standings" data-tab="standings">排名</a>
+    <a href="#/scores" data-tab="scores">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M9 10v9"/></svg>比分
+    </a>
+    <a href="#/standings" data-tab="standings">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>排名
+    </a>
   </nav>
   <noscript><p style="padding:16px">需要啟用 JavaScript 才能使用。</p></noscript>
   <script src="app.js" defer></script>
