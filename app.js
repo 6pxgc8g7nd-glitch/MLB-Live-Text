@@ -295,6 +295,33 @@
       .join('');
   }
 
+  /* 日期按鈕：單擊回到今天；長按（約 0.5 秒）開啟日期選擇器 */
+  function bindDateBtn() {
+    const btn = $('#dateBtn'), pick = $('#datePick');
+    if (!btn || !pick) return;
+    let timer = null, longDone = false;
+    const clear = () => { clearTimeout(timer); timer = null; };
+    const openPicker = () => {
+      longDone = true;
+      try { if (pick.showPicker) pick.showPicker(); else pick.click(); } catch (e) { try { pick.click(); } catch (e2) { /* 略過 */ } }
+    };
+    btn.addEventListener('pointerdown', () => { longDone = false; clear(); timer = setTimeout(openPicker, 500); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => btn.addEventListener(ev, clear));
+    btn.addEventListener('contextmenu', (e) => e.preventDefault());
+    btn.addEventListener('click', () => {
+      if (longDone) { longDone = false; return; }
+      S.date = twDate();
+      S.follow = true;
+      route();
+    });
+    pick.addEventListener('change', () => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(pick.value)) return;
+      S.date = pick.value;
+      S.follow = S.date === twDate();
+      route();
+    });
+  }
+
   function showScores() {
     route$ = 'scores';
     setHeader('MLB 比分', false, 'scores');
@@ -303,11 +330,12 @@
     view.innerHTML = `
       <div class="datebar">
         <button id="prevDay" aria-label="前一天">‹</button>
-        <div class="dlabel"><strong>${esc(dayLabel(S.date))}</strong><span>${S.date === twDate() ? '今天（台灣時間）' : S.date}</span></div>
+        <button id="dateBtn" class="dlabel" aria-label="日期：點一下回到今天，長按選擇日期"><strong>${esc(dayLabel(S.date))}</strong><span>${S.date === twDate() ? '今天（台灣時間）' : S.date + '・點一下回今天'}</span></button>
         <button id="nextDay" aria-label="後一天">›</button>
-        <button id="todayBtn" class="pill"${S.date === twDate() ? ' disabled' : ''}>今天</button>
+        <input id="datePick" type="date" value="${S.date}" tabindex="-1" aria-hidden="true">
       </div>
       <div id="games"><div class="loading">載入中…</div></div>`;
+    bindDateBtn();
     poller = createPoller(
       async () => {
         const games = await loadSchedule(S.date);
@@ -813,10 +841,6 @@
       if (b.id === 'prevDay' || b.id === 'nextDay') {
         S.date = shiftDate(S.date, b.id === 'prevDay' ? -1 : 1);
         S.follow = S.date === twDate();
-        route();
-      } else if (b.id === 'todayBtn') {
-        S.date = twDate();
-        S.follow = true;
         route();
       } else if (b.dataset.t) {
         S.gtab = b.dataset.t;
