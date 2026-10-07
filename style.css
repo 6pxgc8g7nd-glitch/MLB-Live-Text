@@ -21,34 +21,42 @@ a { color: inherit; text-decoration: none; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ---------- 頂欄 ---------- */
+:root { --th: 104px; }
+body.ingame { --th: 56px; }
 .top {
   position: sticky; top: 0; z-index: 20; padding-top: env(safe-area-inset-top);
   filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .3));
 }
 .top::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: env(safe-area-inset-top); background: var(--navy); }
 .top-in {
-  display: flex; align-items: stretch; height: 64px; background: var(--navy); color: #fff;
-  -webkit-mask: radial-gradient(circle 8px at 76px 0, #0000 98%, #000) top / 100% 51% no-repeat,
-                radial-gradient(circle 8px at 76px 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
-          mask: radial-gradient(circle 8px at 76px 0, #0000 98%, #000) top / 100% 51% no-repeat,
-                radial-gradient(circle 8px at 76px 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
+  height: var(--th); background: var(--navy); color: #fff; --c: calc(100% - 48px);
+  -webkit-mask: radial-gradient(circle 8px at 0 var(--c), #0000 98%, #000) left / 51% 100% no-repeat,
+                radial-gradient(circle 8px at 100% var(--c), #0000 98%, #000) right / 51% 100% no-repeat;
+          mask: radial-gradient(circle 8px at 0 var(--c), #0000 98%, #000) left / 51% 100% no-repeat,
+                radial-gradient(circle 8px at 100% var(--c), #0000 98%, #000) right / 51% 100% no-repeat;
 }
-.dblk {
-  flex: none; width: 76px; border: 0; border-right: 2px dashed #cfcfcf; border-radius: 0; background: #fff; color: var(--navy);
-  display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; padding: 0;
+body.ingame .top-in { -webkit-mask: none; mask: none; border-radius: 0 0 14px 14px; }
+.r1 { display: flex; align-items: center; gap: 8px; height: 56px; padding: 0 12px; }
+.r1 h1 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: .5px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bb { width: 22px; height: 22px; flex: none; }
+.upd { font-size: 11px; color: rgba(255, 255, 255, .7); font-variant-numeric: tabular-nums; }
+.top .btn {
+  min-width: 36px; height: 36px; padding: 0 10px; border: 1px solid rgba(255, 255, 255, .3); border-radius: 10px;
+  background: rgba(255, 255, 255, .14); color: #fff; font-size: 18px; font-weight: 700;
 }
-.dblk[hidden] { display: none; }
-.dblk b { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
-.dblk span { font-size: 11px; letter-spacing: 2px; color: var(--sub); margin-top: 2px; }
-#back:active { background: var(--accent-soft); }
-.top h1 { margin: 0; align-self: center; padding: 0 8px 0 12px; font-size: 19px; font-weight: 800; letter-spacing: .5px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.top .upd { align-self: center; padding-right: 12px; font-size: 11px; color: rgba(255, 255, 255, .7); font-variant-numeric: tabular-nums; }
-.top .lang {
-  align-self: center; margin-right: 12px; min-width: 36px; height: 36px; padding: 0 10px; border: 1px solid rgba(255, 255, 255, .3);
-  border-radius: 10px; background: rgba(255, 255, 255, .14); color: #fff; font-weight: 700;
+.top .btn:active { background: rgba(255, 255, 255, .26); }
+.top .btn[hidden], .bb[hidden] { display: none; }
+.r2 {
+  margin: 0 6px; height: 48px; border-top: 2px dashed rgba(255, 255, 255, .4); display: grid; grid-template-columns: repeat(3, 1fr);
+  text-align: center; padding: 5px 0 4px;
 }
-.top .lang:active { background: rgba(255, 255, 255, .26); }
-.banner { position: sticky; top: calc(64px + env(safe-area-inset-top)); z-index: 19; margin: 0; padding: 8px 12px; background: var(--emph); color: #fff; font-size: 13px; text-align: center; }
+body.ingame .r2 { display: none; }
+.r2 > div { display: flex; flex-direction: column; justify-content: center; line-height: 1.2; }
+.r2 > div + div { border-left: 1px solid rgba(255, 255, 255, .25); }
+.r2 span { font-size: 9px; letter-spacing: 2px; color: rgba(255, 255, 255, .7); }
+.r2 b { font-size: 17px; font-variant-numeric: tabular-nums; }
+.r2 .lv.on b { color: #ffd0d6; }
+.banner { position: sticky; top: calc(var(--th) + env(safe-area-inset-top)); z-index: 19; margin: 0; padding: 8px 12px; background: var(--emph); color: #fff; font-size: 13px; text-align: center; }
 
 main { max-width: 720px; margin: 0 auto; padding: 12px; }
 .loading, .empty { padding: 32px 0; text-align: center; color: var(--sub); }

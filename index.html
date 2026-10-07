@@ -16,12 +16,20 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <svg style="display:none" aria-hidden="true"><symbol id="ball" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff"/><path d="M6 5c3 3 3 11 0 14M18 5c-3 3-3 11 0 14" fill="none" stroke="#A6051A" stroke-width="1.6" stroke-linecap="round"/></symbol></svg>
   <header class="top"><div class="top-in">
-    <button id="back" class="dblk" aria-label="返回" hidden><b>‹</b><span>返回</span></button>
-    <div id="dateBlk" class="dblk"><b id="dB">--</b><span id="dS"></span></div>
-    <h1 id="title">MLB 比分</h1>
-    <span id="updated" class="upd"></span>
-    <button id="langBtn" class="lang" aria-label="切換中英文" hidden>中</button>
+    <div class="r1">
+      <button id="back" class="btn" aria-label="返回" hidden>‹</button>
+      <svg id="ballIc" class="bb" aria-hidden="true"><use href="#ball"/></svg>
+      <h1 id="title">MLB 比分</h1>
+      <span id="updated" class="upd"></span>
+      <button id="langBtn" class="btn" aria-label="切換中英文" hidden>中</button>
+    </div>
+    <div class="r2" id="infoRow">
+      <div><span id="l1">DATE</span><b id="v1">--</b></div>
+      <div><span id="l2">GAMES</span><b id="v2">–</b></div>
+      <div class="lv"><span id="l3">LIVE</span><b id="v3">–</b></div>
+    </div>
   </div></header>
   <div id="banner" class="banner" hidden></div>
   <main id="view"><div class="loading">載入中…</div></main>

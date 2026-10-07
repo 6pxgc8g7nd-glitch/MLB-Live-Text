@@ -281,6 +281,7 @@
   function renderGames(games) {
     const box = $('#games');
     if (!box) return;
+    setGames(games);
     if (!games.length) {
       box.innerHTML = '<div class="empty">這一天沒有比賽</div>';
       return;
@@ -732,15 +733,30 @@
   }
 
   /* ================= 外框、主題、路由 ================= */
+  function setInfo(cells) {
+    cells.forEach(([l, v], i) => {
+      $('#l' + (i + 1)).textContent = l;
+      $('#v' + (i + 1)).textContent = v;
+    });
+    $('#v3').parentNode.classList.remove('on');
+  }
+  function setGames(games) {
+    const live = games.filter((g) => gameState(g.status, g.linescore, g.gameDate).k === 'live').length;
+    $('#v2').textContent = games.length;
+    $('#v3').textContent = live;
+    $('#v3').parentNode.classList.toggle('on', live > 0);
+  }
+
   function setHeader(title, isGame, tab) {
     $('#title').textContent = title;
     $('#back').hidden = !isGame;
-    $('#dateBlk').hidden = isGame;
+    $('#ballIc').hidden = isGame;
     $('#langBtn').hidden = !isGame;
+    document.body.classList.toggle('ingame', isGame);
     const dl = dayLabel(tab === 'scores' ? S.date : twDate());
-    const md = dl.match(/\d+\/\d+/), wk = dl.match(/週./);
-    $('#dB').textContent = md ? md[0] : '';
-    $('#dS').textContent = wk ? wk[0] : '';
+    const md = dl.match(/\d+\/\d+/);
+    if (tab === 'standings') setInfo([['DATE', md ? md[0] : ''], ['SEASON', String(S.date).slice(0, 4)], ['TEAMS', '30']]);
+    else setInfo([['DATE', md ? md[0] : ''], ['GAMES', '–'], ['LIVE', '–']]);
     $$('.tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.tab === tab));
     document.title = isGame ? 'MLB 文字轉播' : title;
     $('#updated').textContent = '';
