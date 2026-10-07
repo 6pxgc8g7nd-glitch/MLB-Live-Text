@@ -7,20 +7,6 @@
   --shadow: 0 1px 2px rgba(0, 0, 0, .06), 0 4px 12px rgba(0, 0, 0, .05);
   color-scheme: light;
 }
-:root[data-theme='dark'] {
-  --bg: #0a1626; --card: #102238; --text: #E6E6E6; --sub: #93a3b8; --line: #1e3350;
-  --navy: #003a73; --navy-2: #0a4f94; --accent: #5aa2ee; --accent-soft: #17365f; --on-accent: #04122b;
-  --emph: #d3152f; --emph-text: #ff7a8a; --hl: #2a1620; --chip: #18304d; --win: #ffffff; --shadow: none;
-  color-scheme: dark;
-}
-@media (prefers-color-scheme: dark) {
-  :root[data-theme='auto'] {
-    --bg: #0a1626; --card: #102238; --text: #E6E6E6; --sub: #93a3b8; --line: #1e3350;
-    --navy: #003a73; --navy-2: #0a4f94; --accent: #5aa2ee; --accent-soft: #17365f; --on-accent: #04122b;
-    --emph: #d3152f; --emph-text: #ff7a8a; --hl: #2a1620; --chip: #18304d; --win: #ffffff; --shadow: none;
-    color-scheme: dark;
-  }
-}
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { -webkit-text-size-adjust: 100%; }
@@ -85,8 +71,6 @@ main { max-width: 720px; margin: 0 auto; padding: 12px; }
   font-size: 22px; box-shadow: var(--shadow);
 }
 .datebar .pill { font-size: 14px; padding: 0 14px; border-radius: 12px; background: var(--navy); color: #fff; border: 0; }
-:root[data-theme='dark'] .datebar .pill { background: var(--accent); color: var(--on-accent); }
-@media (prefers-color-scheme: dark) { :root[data-theme='auto'] .datebar .pill { background: var(--accent); color: var(--on-accent); } }
 .datebar .pill:disabled { opacity: .35; }
 .dlabel { flex: 1; display: flex; flex-direction: column; align-items: center; line-height: 1.25; }
 .dlabel strong { font-size: 18px; font-weight: 800; }
@@ -111,8 +95,6 @@ main { max-width: 720px; margin: 0 auto; padding: 12px; }
   flex: none; min-width: 46px; padding: 2px 6px; border-radius: 6px; background: var(--navy); color: #fff;
   font-size: 12px; font-weight: 800; letter-spacing: .5px; text-align: center;
 }
-:root[data-theme='dark'] .tb { background: var(--navy-2); }
-@media (prefers-color-scheme: dark) { :root[data-theme='auto'] .tb { background: var(--navy-2); } }
 .t-name { flex: 1; min-width: 0; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .t-name small { margin-left: 8px; color: var(--sub); font-size: 12px; }
 .t-score { font-size: 26px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; min-width: 30px; text-align: right; }
@@ -152,14 +134,10 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .seg { display: flex; gap: 4px; margin: 12px 0 8px; background: var(--card); border: 1px solid var(--line); padding: 4px; border-radius: 12px; box-shadow: var(--shadow); }
 .seg button { flex: 1; height: 38px; border: 0; border-radius: 9px; background: transparent; color: var(--sub); font-weight: 700; }
 .seg button.on { background: var(--navy); color: #fff; }
-:root[data-theme='dark'] .seg button.on { background: var(--accent); color: var(--on-accent); }
-@media (prefers-color-scheme: dark) { :root[data-theme='auto'] .seg button.on { background: var(--accent); color: var(--on-accent); } }
 
 .chips { display: flex; gap: 8px; margin: 4px 0 8px; flex-wrap: wrap; }
 .chips button { height: 34px; padding: 0 16px; border: 1px solid var(--line); border-radius: 17px; background: var(--card); color: var(--sub); font-weight: 600; }
 .chips button.on { background: var(--navy); border-color: var(--navy); color: #fff; }
-:root[data-theme='dark'] .chips button.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-@media (prefers-color-scheme: dark) { :root[data-theme='auto'] .chips button.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); } }
 
 /* ---------- 文字轉播（強調色只用在得分 / 全壘打 / 進行中）---------- */
 .inn {
@@ -182,15 +160,19 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .play.hit .tag { background: var(--accent-soft); color: var(--accent); }
 .play.score .tag, .play.hr .tag, .play.live .tag { background: var(--emph); color: #fff; }
 .p-score { padding: 1px 8px; border-radius: 6px; background: var(--navy); color: #fff; font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; }
-:root[data-theme='dark'] .p-score { background: var(--accent); color: var(--on-accent); }
-@media (prefers-color-scheme: dark) { :root[data-theme='auto'] .p-score { background: var(--accent); color: var(--on-accent); } }
 .p-body { font-size: 15px; }
 .p-body .ev { font-weight: 800; }
 .play.hr .p-body, .play.score .p-body { font-size: 16px; }
 .play.hr .p-body .ev, .play.score .p-body .ev { color: var(--emph-text); }
 .p-body em { margin-left: 6px; font-style: normal; font-weight: 800; color: var(--emph-text); font-size: 13px; }
-.p-meta, .hd, .sub { font-size: 12px; color: var(--sub); margin-top: 2px; }
-.sub { color: var(--text); opacity: .75; }
+.p-meta, .hd { font-size: 12px; color: var(--sub); margin-top: 2px; }
+.pitch { margin-top: 4px; font-size: 12px; color: var(--text); }
+.pitch b { color: var(--accent); }
+.chg { margin-top: 6px; padding: 5px 8px; border-radius: 6px; background: var(--chip); font-size: 12px; color: var(--text); }
+.chg i { margin-right: 6px; padding: 1px 6px; border-radius: 4px; background: var(--sub); color: #fff; font-style: normal; font-weight: 800; font-size: 11px; }
+.chg.pc { background: var(--accent-soft); border-left: 3px solid var(--accent); font-size: 13px; font-weight: 700; }
+.chg.pc i { background: var(--accent); }
+.play.pcp { border-left-color: var(--accent); }
 .en { display: none; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--line); font-size: 13px; color: var(--sub); }
 .play.open .en { display: block; }
 .more { display: block; width: 100%; height: 42px; margin: 8px 0; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--sub); font-weight: 600; }
@@ -202,7 +184,7 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 
 /* ---------- 表格（數據 / 排名）---------- */
 .box { background: var(--card); border: 1px solid var(--line); border-radius: 10px; font-size: 13px; overflow: hidden; }
-.box th, .box td { padding: 7px 6px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
+.box th, .box td { padding: 7px 5px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
 .box thead th { background: var(--navy); color: rgba(255, 255, 255, .88); font-weight: 600; font-size: 12px; }
 .box thead th:first-child, .box tbody th { text-align: left; position: sticky; left: 0; background: var(--card); font-weight: 700; }
 .box thead th:first-child { background: var(--navy); color: #fff; }
@@ -216,3 +198,11 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .note { font-size: 12px; color: var(--sub); margin: 12px 2px; }
 .stand th, .stand td { padding: 7px 5px; }
 .stand td:nth-child(3) { font-weight: 700; color: var(--text); }
+
+/* 數據表：預設只顯示核心欄位，按「更多欄位」展開 */
+.box { table-layout: auto; }
+.box .x { display: none; }
+.box.all .x { display: table-cell; }
+.box tbody th { max-width: 118px; overflow: hidden; text-overflow: ellipsis; }
+.box td.k { font-weight: 800; color: var(--text); }
+.tgl { display: block; margin: 8px 0 0 auto; height: 32px; padding: 0 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); color: var(--accent); font-size: 12px; font-weight: 700; }

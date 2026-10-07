@@ -179,7 +179,7 @@
 
   /* ================= 狀態 ================= */
   const S = {
-    theme: store.get('theme', 'auto'),
+    boxMore: store.get('boxMore', false),
     lang: store.get('lang', 'zh'),
     date: twDate(),
     follow: true, // true = 跟著「今天」，台灣 0:00 自動換日
@@ -396,6 +396,33 @@
     return !!ab.isScoringPlay || KEY_EVENTS.includes(r.event) || (p.playEvents || []).some(isSubEvent);
   };
 
+
+  const PITCH_ZH = { FF: '四縫線速球', SI: '伸卡球', FT: '二縫線速球', FA: '速球', FC: '切球', SL: '滑球', ST: '橫掃球', SV: '大滑球', CU: '曲球', KC: '指節曲球', CS: '慢曲球', CH: '變速球', FS: '指叉球', FO: '指叉球', KN: '蝴蝶球', SC: '螺旋球', EP: '慢速球' };
+  function pitchLine(p, zh) {
+    const ps = (p.playEvents || []).filter((e) => e && e.isPitch);
+    if (!ps.length) return '';
+    const last = ps[ps.length - 1];
+    const ty = last.details && last.details.type;
+    const name = ty ? (zh ? PITCH_ZH[ty.code] || ty.description : ty.description) : '';
+    const spd = last.pitchData && last.pitchData.startSpeed;
+    const bits = [`${ps.length} ${zh ? '球' : 'pitches'}`];
+    if (name) bits.push(`${zh ? '決勝球' : 'Last'} <b>${esc(name)}</b>${spd ? ' ' + Math.round(spd * 10) / 10 + ' mph' : ''}`);
+    return `<div class="pitch">${bits.join(' · ')}</div>`;
+  }
+  function subHTML(e, zh) {
+    const d = (e.details && (e.details.description || e.details.event)) || '';
+    if (!zh) return `<div class="chg${/pitching change/i.test(d) ? ' pc' : ''}">${esc(d)}</div>`;
+    const m = d.match(/^(Pitching Change|Offensive Substitution|Defensive Substitution|Defensive Switch)\s*:\s*(.*)$/i);
+    if (!m) return `<div class="chg"><i>換人</i>${esc(d)}</div>`;
+    const kind = m[1].toLowerCase(), rest = m[2];
+    if (kind === 'pitching change') {
+      const mm = rest.match(/^(.*?) replaces (.*?)\.?$/i);
+      return `<div class="chg pc"><i>投手換人</i>${mm ? `${esc(mm[1])} 接替 ${esc(mm[2])}` : esc(rest)}</div>`;
+    }
+    const lab = /pinch-hitter/i.test(rest) ? '代打' : /pinch-runner/i.test(rest) ? '代跑' : kind === 'offensive substitution' ? '攻方換人' : '守備調動';
+    return `<div class="chg"><i>${lab}</i>${esc(rest)}</div>`;
+  }
+
   /* 每個打席依結果分類，決定左側色條與標籤：全壘打 > 得分 > 安打 > 出局 > 上壘 */
   const OUT_RE = /out|double play|triple play|grounded into|sac /i;
   const BASE_RE = /walk|hit by pitch|error|interference|fielders choice/i;
@@ -431,10 +458,9 @@
       body = esc(r.description || r.event || '');
     }
 
-    const subs = (p.playEvents || []).filter(isSubEvent).map((e) => {
-      const d = (e.details && (e.details.description || e.details.event)) || '';
-      return `<div class="sub">${zh ? '換人　' : ''}${esc(d)}</div>`;
-    }).join('');
+    const subEvs = (p.playEvents || []).filter(isSubEvent);
+    const subs = subEvs.map((e) => subHTML(e, zh)).join('');
+    const pitchRow = done ? pitchLine(p, zh) : '';
 
     let hit = '';
     const hdEv = [...(p.playEvents || [])].reverse().find((e) => e && e.hitData);
@@ -457,7 +483,7 @@
     const top = cat.label || score
       ? `<div class="p-top">${cat.label ? `<span class="tag">${cat.label}</span>` : '<span></span>'}${score}</div>` : '';
     return `<div class="${cls}" data-k="${ab.atBatIndex}">
-      ${top}<div class="p-body">${body}</div>${subs}${hit}${meta ? `<div class="p-meta">${meta}</div>` : ''}${en}</div>`;
+      ${top}<div class="p-body">${body}</div>${pitchRow}${hit}${subs}${meta ? `<div class="p-meta">${meta}</div>` : ''}${en}</div>`;
   }
 
   function textHTML(d) {
@@ -532,25 +558,26 @@
       const name = esc((p.person && p.person.fullName) || '');
       const pos = esc((p.position && p.position.abbreviation) || '');
       return `<tr class="${sub ? 'sub' : ''}"><th>${name}<small>${pos}</small></th>
-        <td>${dash(b.atBats)}</td><td>${dash(b.runs)}</td><td>${dash(b.hits)}</td><td>${dash(b.rbi)}</td>
-        <td>${dash(b.baseOnBalls)}</td><td>${dash(b.strikeOuts)}</td><td>${dash(avg)}</td></tr>`;
+        <td>${dash(b.atBats)}</td><td class="k">${dash(b.hits)}</td><td>${dash(b.rbi)}</td><td>${dash(b.runs)}</td>
+        <td class="x">${dash(b.baseOnBalls)}</td><td class="x">${dash(b.strikeOuts)}</td><td>${dash(avg)}</td></tr>`;
     }).join('');
 
     const pRows = (t.pitchers || []).map(get).filter(Boolean).map((p) => {
       const s = (p.stats && p.stats.pitching) || {};
       const era = p.seasonStats && p.seasonStats.pitching && p.seasonStats.pitching.era;
       return `<tr><th>${esc((p.person && p.person.fullName) || '')}</th>
-        <td>${dash(s.inningsPitched)}</td><td>${dash(s.hits)}</td><td>${dash(s.runs)}</td><td>${dash(s.earnedRuns)}</td>
-        <td>${dash(s.baseOnBalls)}</td><td>${dash(s.strikeOuts)}</td><td>${dash(s.pitchesThrown ?? s.numberOfPitches)}</td><td>${dash(era)}</td></tr>`;
+        <td class="k">${dash(s.inningsPitched)}</td><td>${dash(s.hits)}</td><td>${dash(s.earnedRuns)}</td><td>${dash(s.strikeOuts)}</td>
+        <td class="x">${dash(s.runs)}</td><td class="x">${dash(s.baseOnBalls)}</td><td class="x">${dash(s.pitchesThrown ?? s.numberOfPitches)}</td><td>${dash(era)}</td></tr>`;
     }).join('');
 
     return `
       <h3 class="inn">${lineupOnly ? '預定打線' : '打擊'}</h3>
-      <div class="scroll"><table class="box"><thead><tr><th>打者</th><th>打數</th><th>得分</th><th>安打</th><th>打點</th><th>四壞</th><th>三振</th><th>打擊率</th></tr></thead>
+      <div class="scroll"><table class="box${S.boxMore ? ' all' : ''}"><thead><tr><th>打者</th><th>打數</th><th>安打</th><th>打點</th><th>得分</th><th class="x">四壞</th><th class="x">三振</th><th>打擊率</th></tr></thead>
       <tbody>${bRows || '<tr><td colspan="8" class="empty">尚未公布</td></tr>'}</tbody></table></div>
       ${pRows ? `<h3 class="inn">投球</h3>
-      <div class="scroll"><table class="box"><thead><tr><th>投手</th><th>局數</th><th>被安</th><th>失分</th><th>責失</th><th>四壞</th><th>三振</th><th>球數</th><th>防禦率</th></tr></thead>
-      <tbody>${pRows}</tbody></table></div>` : ''}`;
+      <div class="scroll"><table class="box${S.boxMore ? ' all' : ''}"><thead><tr><th>投手</th><th>局數</th><th>被安</th><th>責失</th><th>三振</th><th class="x">失分</th><th class="x">四壞</th><th class="x">球數</th><th>防禦率</th></tr></thead>
+      <tbody>${pRows}</tbody></table></div>` : ''}
+      <button class="tgl" id="boxMore">${S.boxMore ? '收合欄位' : '更多欄位'}</button>`;
   }
 
   function renderBody() {
@@ -707,16 +734,6 @@
     $('#updated').textContent = '';
   }
 
-  function applyTheme() {
-    document.documentElement.dataset.theme = S.theme;
-    const dark = S.theme === 'dark' || (S.theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
-    const m = $('meta[name=theme-color]');
-    if (m) m.content = dark ? '#003a73' : '#004B93';
-    const b = $('#themeBtn');
-    b.textContent = { auto: '◐', light: '☀', dark: '☾' }[S.theme];
-    b.title = { auto: '主題：跟隨系統', light: '主題：淺色', dark: '主題：深色' }[S.theme];
-  }
-
   function applyLang() {
     $('#langBtn').textContent = S.lang === 'zh' ? '中' : 'EN';
   }
@@ -742,14 +759,8 @@
 
   function boot() {
     view = $('#view');
-    applyTheme();
     applyLang();
 
-    $('#themeBtn').onclick = () => {
-      S.theme = { auto: 'light', light: 'dark', dark: 'auto' }[S.theme];
-      store.set('theme', S.theme);
-      applyTheme();
-    };
     $('#langBtn').onclick = () => {
       S.lang = S.lang === 'zh' ? 'en' : 'zh';
       store.set('lang', S.lang);
@@ -797,6 +808,11 @@
         S.standView = b.dataset.sv;
         store.set('standView', S.standView);
         if (G && G.repaint) G.repaint();
+      } else if (b.id === 'boxMore') {
+        S.boxMore = !S.boxMore;
+        store.set('boxMore', S.boxMore);
+        G.sig = '';
+        renderBody();
       } else if (b.id === 'moreBtn') {
         G.limit += 60;
         G.sig = '';
@@ -818,7 +834,6 @@
     });
     addEventListener('online', () => poller && poller.kick());
     addEventListener('pageshow', () => poller && poller.kick());
-    matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
     setInterval(rollover, 20000);
 
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {

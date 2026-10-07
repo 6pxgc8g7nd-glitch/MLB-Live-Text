@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-Hant" data-theme="auto">
+<html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -14,10 +14,6 @@
   <meta name="apple-mobile-web-app-title" content="MLB 轉播">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="stylesheet" href="style.css">
-  <script>
-    /* 在畫面繪製前套用主題，避免深色模式閃白 */
-    try { document.documentElement.dataset.theme = JSON.parse(localStorage.getItem('theme')) || 'auto'; } catch (e) {}
-  </script>
 </head>
 <body>
   <header class="top">
@@ -25,7 +21,6 @@
     <h1 id="title">MLB 比分</h1>
     <span id="updated" class="upd"></span>
     <button id="langBtn" aria-label="切換中英文" hidden>中</button>
-    <button id="themeBtn" aria-label="切換主題">◐</button>
   </header>
   <div id="banner" class="banner" hidden></div>
   <main id="view"><div class="loading">載入中…</div></main>
