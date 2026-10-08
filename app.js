@@ -1142,7 +1142,7 @@
     const my = token;
     let data = null;
     view.innerHTML = `
-      <div class="chips">
+      <div class="chips stt">
         <button data-sv="division">分區</button><button data-sv="league">聯盟</button><button data-sv="post">季後賽</button><button data-sv="bracket">對戰樹</button>
       </div><div id="stand"><div class="loading">載入中…</div></div>`;
     const bk = { sig: '' };

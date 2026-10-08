@@ -638,3 +638,8 @@ a.bk2c:active { filter: brightness(.97); }
 .srow.stack > .sch { width: 100%; margin-left: 0; }
 .srow.stack .sch button { flex: 1; padding: 6px 4px; }
 .fsum { white-space: nowrap; }
+.chips.stt { display: flex; gap: 5px; flex-wrap: nowrap; }
+.chips.stt button { flex: 1; height: 38px; padding: 0; border: 0; border-radius: 6px; background: #fff; color: #5d6874; font-weight: 800; font-size: 14px;
+  -webkit-mask: radial-gradient(circle 5px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 5px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat;
+  mask: radial-gradient(circle 5px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 5px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat; }
+.chips.stt button.on { background: var(--navy); color: #fff; }
