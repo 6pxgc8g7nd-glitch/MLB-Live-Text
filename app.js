@@ -634,6 +634,7 @@
     const lineupOnly = !ids.length && (t.battingOrder || []).length > 0;
     if (lineupOnly) ids = t.battingOrder.slice();
 
+    const more = !!S.boxMore;
     const bRows = ids.map(get).filter(Boolean).map((p) => {
       const b = (p.stats && p.stats.batting) || {};
       const played = b.atBats != null || b.plateAppearances != null || lineupOnly;
@@ -642,26 +643,23 @@
       const avg = p.seasonStats && p.seasonStats.batting && p.seasonStats.batting.avg;
       const name = esc((p.person && p.person.fullName) || '');
       const pos = esc((p.position && p.position.abbreviation) || '');
-      return `<tr class="${sub ? 'sub' : ''}"><th>${name}<small>${pos}</small></th>
-        <td>${dash(b.atBats)}</td><td class="k">${dash(b.hits)}</td><td>${dash(b.rbi)}</td><td>${dash(b.runs)}</td>
-        <td class="x">${dash(b.baseOnBalls)}</td><td class="x">${dash(b.strikeOuts)}</td><td>${dash(avg)}</td></tr>`;
+      const hit = Number(b.hits) > 0;
+      const ln = lineupOnly ? '' : `<div class="ln"><span class="${hit ? 'hl' : ''}">${dash(b.atBats)} 打數 ${dash(b.hits)} 安打</span> ・ ${dash(b.rbi)} 打點 ・ ${dash(b.runs)} 得分${more ? ` ・ ${dash(b.baseOnBalls)} 四壞 ・ ${dash(b.strikeOuts)} 三振` : ''}</div>`;
+      return `<div class="pc${sub ? ' sub' : ''}${!lineupOnly && !hit ? ' z' : ''}"><div><div><span class="nm">${name}</span> <span class="ps">${pos}</span></div>${ln}</div><div class="av">${dash(avg)}<small>AVG</small></div></div>`;
     }).join('');
 
     const pRows = (t.pitchers || []).map(get).filter(Boolean).map((p) => {
       const s = (p.stats && p.stats.pitching) || {};
       const era = p.seasonStats && p.seasonStats.pitching && p.seasonStats.pitching.era;
-      return `<tr><th>${esc((p.person && p.person.fullName) || '')}</th>
-        <td class="k">${dash(s.inningsPitched)}</td><td>${dash(s.hits)}</td><td>${dash(s.earnedRuns)}</td><td>${dash(s.strikeOuts)}</td>
-        <td class="x">${dash(s.runs)}</td><td class="x">${dash(s.baseOnBalls)}</td><td class="x">${dash(s.pitchesThrown ?? s.numberOfPitches)}</td><td>${dash(era)}</td></tr>`;
+      return `<div class="pc"><div><div><span class="nm">${esc((p.person && p.person.fullName) || '')}</span></div>
+        <div class="ln"><span class="hl">${dash(s.inningsPitched)} 局</span> ・ ${dash(s.hits)} 被安 ・ ${dash(s.earnedRuns)} 責失 ・ ${dash(s.strikeOuts)} 三振${more ? ` ・ ${dash(s.runs)} 失分 ・ ${dash(s.baseOnBalls)} 四壞 ・ ${dash(s.pitchesThrown ?? s.numberOfPitches)} 球` : ''}</div></div><div class="av">${dash(era)}<small>ERA</small></div></div>`;
     }).join('');
 
     return `
       <h3 class="inn">${lineupOnly ? '預定打線' : '打擊'}</h3>
-      <div class="scroll"><table class="box${S.boxMore ? ' all' : ''}"><thead><tr><th>打者</th><th>打數</th><th>安打</th><th>打點</th><th>得分</th><th class="x">四壞</th><th class="x">三振</th><th>打擊率</th></tr></thead>
-      <tbody>${bRows || '<tr><td colspan="8" class="empty">尚未公布</td></tr>'}</tbody></table></div>
+      <div class="pcs">${bRows || '<div class="empty">尚未公布</div>'}</div>
       ${pRows ? `<h3 class="inn">投球</h3>
-      <div class="scroll"><table class="box${S.boxMore ? ' all' : ''}"><thead><tr><th>投手</th><th>局數</th><th>被安</th><th>責失</th><th>三振</th><th class="x">失分</th><th class="x">四壞</th><th class="x">球數</th><th>防禦率</th></tr></thead>
-      <tbody>${pRows}</tbody></table></div>` : ''}
+      <div class="pcs">${pRows}</div>` : ''}
       <button class="tgl" id="boxMore">${S.boxMore ? '收合欄位' : '更多欄位'}</button>`;
   }
 
