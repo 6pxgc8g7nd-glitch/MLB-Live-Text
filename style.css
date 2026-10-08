@@ -668,3 +668,20 @@ a.bk2c:active { filter: brightness(.97); }
 .ls-s .line td.z i { color: #9aa4af; }
 .ls-s .line td.sc i { background: var(--emph); color: #fff; font-weight: 800; }
 .ls-s .line td.cur i { box-shadow: inset 0 -3px 0 var(--navy); }
+
+/* 目前打席條：中間顯示上一打席結果，以及換打者／換半局／壘包／球數的輕微效果 */
+.livebar { position: sticky; overflow: hidden; }
+.livebar .lr { flex: none; max-width: 36%; line-height: 1.2; text-align: center; }
+.livebar .lr small { display: block; font-size: 9px; opacity: .75; }
+.livebar .lr .res { display: inline-block; font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 999px; background: rgba(255, 255, 255, .18); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: top; }
+.livebar .lr .res.hit { background: #e0a800; color: #14202e; } .livebar .lr .res.run { background: var(--emph); color: #fff; }
+.livebar .in { animation: lbin .45s ease-out; }
+@keyframes lbin { 0% { opacity: 0; transform: translateY(7px); } 100% { opacity: 1; transform: none; } }
+.lbs rect.pulse { transform-box: fill-box; transform-origin: center; animation: lbp .7s ease-out; }
+@keyframes lbp { 0% { transform: rotate(45deg) scale(1.5); } 100% { transform: rotate(45deg) scale(1); } }
+.livebar .lc b.pop { display: inline-block; animation: lbpop .35s ease-out; }
+@keyframes lbpop { 0% { transform: scale(1.35); color: #ffd24a; } 100% { transform: scale(1); } }
+.lov { position: absolute; inset: 0; background: var(--navy); display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 900; letter-spacing: 1px; pointer-events: none; animation: lbov 1.7s ease forwards; }
+.lov em { font-style: normal; font-size: 12px; background: #fff; color: var(--navy); padding: 2px 8px; border-radius: 3px; }
+@keyframes lbov { 0% { opacity: 0; transform: translateX(-14px); } 15%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .livebar .in, .lbs rect.pulse, .livebar .lc b.pop, .lov { animation-duration: .01s; } }
