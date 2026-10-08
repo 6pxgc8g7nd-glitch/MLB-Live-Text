@@ -9,12 +9,6 @@ import { pLink, pAttrs } from './player.js';
 import { wpPoints, wpHTML, bindWp } from './winprob.js';
 import { loadLiveFeed } from './livefeed.js';
 
-export const diamond = (on1, on2, on3) => {
-  const d = (cx, cy, on) =>
-    `<polygon class="${on ? 'on' : ''}" points="${cx},${cy - 8} ${cx + 8},${cy} ${cx},${cy + 8} ${cx - 8},${cy}"/>`;
-  return `<svg class="bases" viewBox="0 0 60 46" aria-hidden="true">${d(30, 11, on2)}${d(12, 29, on3)}${d(48, 29, on1)}</svg>`;
-};
-
 export function headHTML(d) {
   const gd = d.gameData || {};
   const ld = d.liveData || {};
@@ -338,16 +332,9 @@ export function liveHTML(d) {
   }
   const m = cur.matchup || {};
   const bat = m.batter || {}, pit = m.pitcher || {};
-  const c = cur.count || {};
-  const balls = c.balls != null ? c.balls : ls.balls, strikes = c.strikes != null ? c.strikes : ls.strikes, outs = c.outs != null ? c.outs : ls.outs;
   const subs = (cur.playEvents || []).filter(isSubEvent).map((e) => subHTML(e, zh)).join('');
   const zone = pitchZone(cur, zh);
-  return `<div class="lv-sit">
-      <div class="lv-inn"><b>${ls.currentInning || ''}局${HALF[ls.inningState] || ''}</b><span>${dash(outs)} 出局</span></div>
-      ${diamond(!!off.first, !!off.second, !!off.third)}
-      <div class="lv-cnt"><b>${dash(balls)}-${dash(strikes)}</b><span>球數</span></div>
-    </div>
-    <div class="lv-mu">
+  return `<div class="lv-mu">
       <div class="lv-p"><i>打</i><div>${pLink(bat, 'b', pit)}<small>${batToday(todayStat(d, bat.id, 'batting'))}</small></div></div>
       <div class="lv-p"><i>投</i><div>${pLink(pit, 'p', bat)}<small>${pitToday(todayStat(d, pit.id, 'pitching'))}</small></div></div>
     </div>

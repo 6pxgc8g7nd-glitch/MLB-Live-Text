@@ -246,7 +246,7 @@ const lvFeed = { ...feed, liveData: { ...feed.liveData,
       playEvents: [{ isPitch: true, details: { type: { code: 'SL', description: 'Slider' }, isBall: true, call: { description: 'Ball' } }, count: { balls: 1, strikes: 0 }, pitchData: { startSpeed: 85.2, coordinates: { pX: -1, pZ: 1.2 } } }] },
   ] } } };
 const lv = liveHTML(lvFeed);
-assert.ok(lv.includes('1局下') && lv.includes('1 出局') && lv.includes('2-1'), '局數、出局、球數');
+assert.ok(!lv.includes('lv-sit') && !lv.includes('class="bases"'), '局數／壘包／球數大卡已移除（目前打席條已有）');
 assert.ok(lv.includes('data-player="30"') && lv.includes('data-player="20"'), '打者與投手可開小卡');
 assert.ok(lv.includes('用球數 <b>77</b>') && lv.includes('今日 5.0 局'), '投手今日用球數');
 assert.ok(lv.includes('滑球') && lv.includes('class="pz"'), '本打席的每一球');

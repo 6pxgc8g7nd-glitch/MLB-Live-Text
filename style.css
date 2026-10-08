@@ -172,9 +172,6 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .line .tn { text-align: left; font-weight: 800; padding-left: 0; min-width: 44px; color: #fff; }
 .line .tot { font-weight: 800; color: #fff; border-left: 1px solid rgba(255, 255, 255, .25); }
 .sit { display: flex; align-items: center; gap: 14px; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, .2); }
-.bases { width: 64px; height: 50px; flex: none; }
-.bases polygon { fill: rgba(255, 255, 255, .14); stroke: rgba(255, 255, 255, .5); stroke-width: 1; }
-.bases polygon.on { fill: #fff; stroke: #fff; }
 .cnt { font-weight: 800; letter-spacing: .3px; }
 .mu { font-size: 13px; color: rgba(255, 255, 255, .8); }
 .dec { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, .2); font-size: 13px; color: rgba(255, 255, 255, .85); }
@@ -857,10 +854,6 @@ body.replaying .rp-go { display: none; }
 .lv-tab::before { content: '●'; margin-right: 4px; font-size: 10px; color: var(--emph); vertical-align: 1px; }
 .seg button.lv-tab.on::before { color: #ff6b7d; }
 .lv > * + * { margin-top: 8px; }
-.lv-sit { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-radius: 14px; background: var(--navy); color: #fff; box-shadow: var(--shadow); }
-.lv-inn b, .lv-cnt b { display: block; font-size: 22px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.lv-inn span, .lv-cnt span { font-size: 12px; opacity: .85; }
-.lv-cnt { text-align: right; }
 .lv-mu, .lv-pz, .lv-due, .lv-last, .lv-wait { background: var(--card); border-radius: 14px; box-shadow: var(--shadow); }
 .lv-mu { padding: 4px 14px; }
 .lv-p { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; font-size: 16px; font-weight: 700; }
