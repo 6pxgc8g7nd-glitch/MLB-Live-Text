@@ -761,8 +761,52 @@
     }
     $('#gameRow').innerHTML = `<div class="gstrip">${blk(aT)}<div class="gm">${showN ? `<b class="gn ${st.k}">${run('away')} : ${run('home')}</b>` : '<b class="gn vs">VS</b>'}<small>${esc(st.txt)}</small></div>${blk(hT)}</div>`;
   }
+  /* ---- 全壘打煙火（進行中的比賽出現新全壘打時播放，約 3.5 秒，不擋操作）---- */
+  function playHR(info) {
+    const old = document.getElementById('hrfx'); if (old) old.remove();
+    const el = document.createElement('div'); el.id = 'hrfx'; el.className = 'hrfx';
+    el.innerHTML = `<canvas></canvas><div class="hrx-flash"></div><div class="hrx-w"><div class="hrx-tk"><small>${esc(info.inn)}</small><h2>全壘打！</h2><p>${esc(info.kind)}${info.score ? ' ・ ' + esc(info.score) : ''}</p><small>${esc(info.who)}</small></div></div>`;
+    document.body.appendChild(el);
+    const cv = el.querySelector('canvas'), ctx = cv.getContext('2d');
+    const d = window.devicePixelRatio || 1, W = window.innerWidth, H = window.innerHeight;
+    cv.width = W * d; cv.height = H * d; ctx.setTransform(d, 0, 0, d, 0, 0);
+    const COL = ['#004B93', '#A6051A', '#e0a800', '#ffffff', '#5aa0e6'];
+    let parts = [];
+    const burst = (x, y) => { for (let i = 0; i < 70; i++) { const a = Math.random() * 6.283, sp = 170 * (.4 + Math.random() * .6); parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, t: 0, c: COL[Math.random() * COL.length | 0], r: 2 + Math.random() * 1.6 }); } };
+    [[.2, .3], [.8, .25], [.5, .15], [.3, .55], [.75, .5], [.5, .4]].forEach((p, i) => setTimeout(() => burst(p[0] * W, p[1] * H), i * 420));
+    let last = performance.now(); const t0 = last;
+    const loop = (ts) => {
+      const dt = Math.min(.04, (ts - last) / 1000 || .016); last = ts; ctx.clearRect(0, 0, W, H);
+      parts = parts.filter((p) => p.t < 1.5);
+      for (const p of parts) { p.t += dt; p.vy += 90 * dt; p.vx *= .985; p.x += p.vx * dt; p.y += p.vy * dt; const a = Math.max(0, 1 - p.t / 1.5); ctx.globalAlpha = a; ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.r * a + .6, 0, 6.283); ctx.fill(); }
+      ctx.globalAlpha = 1;
+      if (ts - t0 < 3700) requestAnimationFrame(loop); else el.remove();
+    };
+    requestAnimationFrame(loop);
+  }
+  if (typeof window !== 'undefined') window.__playHR = playHR;
+  function checkHR(d) {
+    const all = (d.liveData && d.liveData.plays && d.liveData.plays.allPlays) || [];
+    const hrs = all.filter((p) => p.result && p.result.eventType === 'home_run' && p.about && p.about.isComplete !== false);
+    const seen = G.hrSeen;
+    if (!seen) { G.hrSeen = new Set(hrs.map((p) => p.about.atBatIndex)); return; }
+    const st = d.gameData && d.gameData.status;
+    const live = st && gameState(st, d.liveData && d.liveData.linescore).k === 'live';
+    for (const p of hrs) {
+      const i = p.about.atBatIndex; if (seen.has(i)) continue; seen.add(i);
+      if (!live) continue;
+      const r = p.result, n = r.rbi || 1;
+      playHR({
+        inn: `${/top/i.test(p.about.halfInning || '') ? '上' : '下'} ${p.about.inning} 局`.replace(/^(.) (\d+) 局$/, '$2 局$1'),
+        kind: ['', '陽春砲', '兩分砲', '三分砲', '滿貫砲'][Math.min(n, 4)],
+        score: r.awayScore != null ? `${r.awayScore} : ${r.homeScore}` : '',
+        who: (p.matchup && p.matchup.batter && p.matchup.batter.fullName) || '',
+      });
+    }
+  }
   function renderGame() {
     if (!G || !G.data) return;
+    checkHR(G.data);
     const head = $('#gHead');
     const html = headHTML(G.data);
     if (head && html !== G.headSig) {
