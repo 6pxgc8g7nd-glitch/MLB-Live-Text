@@ -581,17 +581,20 @@ a.bk-card:active { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .2)) brightness(.
 .bk-card.big .bk-t em { font-size: 26px; }
 .bk-card.big .bk-h { padding: 5px 14px; font-size: 12px; }
 .bk-card.big .bk-s { margin: 0 14px; font-size: 12.5px; }
-.ptk { --c: var(--navy); background: var(--card); border-radius: 14px; overflow: hidden; margin: 0 0 12px; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .22)); }
+.ptk { --c: var(--navy); position: relative; background: var(--card); border-radius: 14px; margin: 0 0 12px; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .22)); }
 .ptk.live { --c: var(--emph); }
 .ptk.fin { --c: #7a8896; }
-.ptk .pth span { white-space: nowrap; }
-.ptk .pth { display: flex; justify-content: space-between; gap: 8px; background: var(--c); color: #fff; font-size: 10.5px; font-weight: 800; padding: 5px 14px; letter-spacing: 1.5px; }
-.ptk .ptm-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px 8px; }
+.ptk .pth { text-align: center; padding: 9px 0 0; font-size: 11px; color: var(--sub); letter-spacing: 1px; }
+.ptk .ptm-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 14px 10px; }
 .ptk .ptm { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 92px; font-size: 12px; text-align: center; }
 .ptk .ptm.l { opacity: .4; }
 .ptk .ptm .tcl { width: 42px; height: 42px; object-fit: contain; margin: 0; }
 .ptk .pq { width: 42px; height: 42px; border-radius: 50%; background: var(--chip); color: #9aa; font-weight: 900; display: flex; align-items: center; justify-content: center; }
-.ptk .pcn { text-align: center; }
-.ptk .psb { display: block; font-size: 32px; font-weight: 900; color: var(--c); line-height: 1; font-variant-numeric: tabular-nums; }
-.ptk .pcn small { font-size: 11px; color: var(--sub); font-weight: 700; }
-.ptk .pbc { display: block; height: 16px; margin: 0 14px 10px; opacity: .75; background: repeating-linear-gradient(90deg, #14202e 0 2px, #fff 2px 4px, #14202e 4px 5px, #fff 5px 8px, #14202e 8px 11px, #fff 11px 13px); }
+.ptk .psb { display: flex; gap: 6px; font-size: 34px; font-weight: 900; color: var(--c); font-variant-numeric: tabular-nums; }
+.ptk .psb s { text-decoration: none; color: #9aa; }
+.ptk .ptear { border-top: 2px dashed #d2d2d2; margin: 0 14px; position: relative; }
+.ptk .ptear::before, .ptk .ptear::after { content: ""; position: absolute; top: -10px; width: 18px; height: 18px; border-radius: 50%; background: var(--bg); }
+.ptk .ptear::before { left: -23px; }
+.ptk .ptear::after { right: -23px; }
+.ptk .ptf { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; font-size: 12px; font-weight: 800; color: var(--c); }
+.ptk .pbar { width: 110px; height: 14px; opacity: .6; background: repeating-linear-gradient(90deg, var(--c) 0 2px, #fff 2px 4px, var(--c) 4px 5px, #fff 5px 8px, var(--c) 8px 11px, #fff 11px 13px); }

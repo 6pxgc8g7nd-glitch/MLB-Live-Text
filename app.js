@@ -894,12 +894,11 @@
     const real = (t) => !!(t && TEAMS[t.id]);
     const lost = (t) => done && lead && lead.id !== t.id;
     const side = (t) => `<div class="ptm${lost(t) ? ' l' : ''}">${real(t) ? logo(t, 'tcl') : '<span class="pq">?</span>'}<b>${real(t) ? esc(teamName(t)) : '待定'}</b></div>`;
-    const played = games.filter((g) => gameState(g.status, g.linescore, g.gameDate).k === 'final').length;
-    const gNo = Math.min(n, done ? played : played + 1);
     const stText = live ? '● 進行中' : status;
-    return { k, html: `<div class="ptk ${k}"><div class="pth"><span>ADMIT ONE</span><span>${name}</span><span>${stText}</span></div>
-      <div class="ptm-row">${side(A)}<div class="pcn"><b class="psb">${wins[A.id]} : ${wins[H.id]}</b><small>G${gNo} / ${n}</small></div>${side(H)}</div>
-      <i class="pbc"></i></div>` };
+    return { k, html: `<div class="ptk ${k}"><div class="pth">${name}</div>
+      <div class="ptm-row">${side(A)}<b class="psb">${wins[A.id]}<s>:</s>${wins[H.id]}</b>${side(H)}</div>
+      <div class="ptear"></div>
+      <div class="ptf"><span>${stText}</span><i class="pbar"></i></div></div>` };
   }
   function postHTML(d) {
     const list = (d && d.series) || [];
