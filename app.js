@@ -374,11 +374,18 @@
       if (i === cur) return side === 'away' ? (ls.inningState === 'Top' ? '' : 0) : ls.inningState === 'End' ? 0 : '';
       return '';
     };
-    const th = Array.from({ length: n }, (_, i) => `<th>${i + 1}</th>`).join('');
-    const tr = (side, t) => `
-      <tr><th class="tn">${esc(teamAbbr(t) || (side === 'away' ? '客' : '主'))}</th>
-      ${Array.from({ length: n }, (_, i) => `<td>${cell(side, i + 1)}</td>`).join('')}
-      <td class="tot">${r(side)}</td><td>${dash(tot[side] && tot[side].hits)}</td><td>${dash(tot[side] && tot[side].errors)}</td></tr>`;
+    const curI = st.k === 'live' ? ls.currentInning || 0 : 0;
+    const th = Array.from({ length: n }, (_, i) => `<th class="${i + 1 === curI ? 'cur' : ''}">${i + 1}</th>`).join('');
+    const rowCells = (side) => Array.from({ length: n }, (_, i) => {
+      const v = cell(side, i + 1);
+      return `<td class="${i + 1 === curI ? 'cur' : ''}${v === 0 ? ' z' : ''}${typeof v === 'number' && v > 0 ? ' sc' : ''}">${v}</td>`;
+    }).join('');
+    const rhe = (side) => `<div class="rw"><b>${r(side)}</b><span>${dash(tot[side] && tot[side].hits)}</span><span>${dash(tot[side] && tot[side].errors)}</span></div>`;
+    const lsHTML = `<div class="ls3" data-cur="${curI}">
+      <div class="ls-l"><div class="lh"></div><div class="lw">${logo(aT, 'lw')}</div><div class="lw">${logo(hT, 'lw')}</div></div>
+      <div class="ls-s"><table class="line"><thead><tr>${th}</tr></thead><tbody><tr>${rowCells('away')}</tr><tr>${rowCells('home')}</tr></tbody></table></div>
+      <div class="ls-r"><div class="rh"><span>R</span><span>H</span><span>E</span></div>${rhe('away')}${rhe('home')}</div>
+    </div>`;
 
     let extra = '';
     const dec = ld.decisions;
@@ -401,8 +408,7 @@
       <div class="hero">
         <div class="h-top"><span class="pill ${st.k}">${esc(st.txt)}</span>
           <span>${esc(fmtTime(gd.datetime && gd.datetime.dateTime))}（台灣時間）${venue ? ' · ' + esc(venue) : ''}</span></div>
-        <div class="scroll"><table class="line"><thead><tr><th></th>${th}<th>R</th><th>H</th><th>E</th></tr></thead>
-        <tbody>${tr('away', aT)}${tr('home', hT)}</tbody></table></div>
+        ${lsHTML}
         ${extra}
       </div>`;
   }
@@ -724,7 +730,18 @@
     if (!G || !G.data) return;
     const head = $('#gHead');
     const html = headHTML(G.data);
-    if (head && html !== G.headSig) { head.innerHTML = html; G.headSig = html; }
+    if (head && html !== G.headSig) {
+      const sc0 = head.querySelector('.ls-s');
+      const keep = sc0 ? sc0.scrollLeft : null, prevCur = sc0 ? head.querySelector('.ls3').dataset.cur : null;
+      head.innerHTML = html; G.headSig = html;
+      const sc1 = head.querySelector('.ls-s');
+      if (sc1) {
+        const cur = head.querySelector('.ls3').dataset.cur;
+        const th = sc1.querySelector('th.cur');
+        if (keep != null && cur === prevCur) sc1.scrollLeft = keep;
+        else if (th) sc1.scrollLeft = Math.max(0, th.offsetLeft - sc1.clientWidth / 2 + th.offsetWidth / 2);
+      }
+    }
     gameHeader(G.data);
     renderBody();
   }

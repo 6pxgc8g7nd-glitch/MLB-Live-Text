@@ -344,3 +344,28 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .chips .af i::after { content: ''; position: absolute; left: 2px; top: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: left .15s; }
 .chips .af.on i { background: var(--navy); } .chips .af.on i::after { left: 14px; }
 .chips .af.on { background: var(--card); color: var(--navy); border-color: var(--line); }
+
+/* L2-6 雙票根記分條：隊伍欄與 R/H/E 欄固定，中間局數可橫向滑動 */
+.ls3 { display: grid; grid-template-columns: 58px minmax(0, 1fr) 88px; margin-top: 10px; background: #fff; color: var(--text); border-radius: 14px; overflow: hidden;
+  -webkit-mask: radial-gradient(circle 7px at 58px 0, #0000 98%, #000), radial-gradient(circle 7px at 58px 100%, #0000 98%, #000), radial-gradient(circle 7px at calc(100% - 88px) 0, #0000 98%, #000), radial-gradient(circle 7px at calc(100% - 88px) 100%, #0000 98%, #000);
+  -webkit-mask-composite: source-in;
+  mask: radial-gradient(circle 7px at 58px 0, #0000 98%, #000), radial-gradient(circle 7px at 58px 100%, #0000 98%, #000), radial-gradient(circle 7px at calc(100% - 88px) 0, #0000 98%, #000), radial-gradient(circle 7px at calc(100% - 88px) 100%, #0000 98%, #000);
+  mask-composite: intersect; }
+.ls-l, .ls-r { background: var(--navy); color: #fff; display: grid; grid-template-rows: 28px 46px 46px; text-align: center; align-items: center; }
+.ls-l { border-right: 2px dashed rgba(255, 255, 255, .65); justify-items: center; }
+.ls-r { border-left: 2px dashed rgba(255, 255, 255, .65); }
+.ls-l .lw { width: 100%; height: 100%; display: grid; place-items: center; }
+.ls-l img.lw, .ls-l .tl { width: 34px; height: 34px; background: #fff; border-radius: 50%; padding: 3px; margin: 0; object-fit: contain; }
+.rh, .rw { display: grid; grid-template-columns: 1.3fr 1fr 1fr; align-items: center; font-variant-numeric: tabular-nums; }
+.rh { font-size: 11px; opacity: .8; }
+.rw b { font-size: 20px; } .rw span { font-size: 13px; }
+.ls-s { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.ls-s::-webkit-scrollbar { display: none; }
+.ls-s table.line { border-collapse: collapse; min-width: 100%; width: max-content; text-align: center; font-variant-numeric: tabular-nums; }
+.ls-s .line th { height: 28px; min-width: 30px; font-size: 11px; font-weight: 700; color: var(--sub); }
+.ls-s .line td { height: 46px; min-width: 30px; font-size: 16px; font-weight: 600; }
+.ls-s .line .cur { background: #e5edf7; } .ls-s .line td.z { color: #9aa4af; } .ls-s .line td.sc { color: var(--emph); font-weight: 800; }
+.ls-s .line th, .ls-s .line td { padding: 0; }
+.ls-s .line thead th { border-bottom: 0; }
+.ls-s .line td { color: var(--text); }
+.ls-s .line td.z { color: #9aa4af; } .ls-s .line td.sc { color: var(--emph); }
