@@ -901,9 +901,14 @@
       <div class="ss">${status}</div></div>` };
     }
     const lost = (t) => done && lead && lead.id !== t.id;
-    const side = (t) => `<span class="pnm${lost(t) ? ' l' : ''}">${esc(teamName(t))}</span>`;
+    const real = (t) => !!(t && TEAMS[t.id]);
+    const side = (t, r) => {
+      const nm = `<span class="pnm${lost(t) ? ' l' : ''}">${real(t) ? esc(teamName(t)) : '待定'}</span>`;
+      const lg = real(t) ? logo(t, 'tcl') : '';
+      return `<div class="pside${r ? ' r' : ''}">${r ? nm + lg : lg + nm}</div>`;
+    };
     return { k, html: `<div class="prw ${k}"><div class="prt"><span>${name}</span><span>${status}</span></div>
-      <div class="prm">${logo(A, 'tcl')}${side(A)}<b class="psb">${wins[A.id]} : ${wins[H.id]}</b>${side(H).replace('class="pnm', 'class="pnm r')}${logo(H, 'tcl')}</div></div>` };
+      <div class="prm">${side(A)}<b class="psb">${wins[A.id]} : ${wins[H.id]}</b>${side(H, true)}</div></div>` };
   }
   function postHTML(d) {
     const list = (d && d.series) || [];
