@@ -145,6 +145,17 @@
       const u = $('#updated');
       if (u) u.textContent = '更新 ' + fmtClock(lastOk);
     } else {
+      const ld = document.querySelector('#view .loading');
+      if (ld) {
+        const off = navigator.onLine === false;
+        ld.className = 'errbox';
+        ld.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 9a15 15 0 0 1 19 0M5.5 12.5a10.5 10.5 0 0 1 13 0M8.7 16a6 6 0 0 1 6.6 0"/><circle cx="12" cy="19.5" r="1.2"/><path d="M4 4l16 16"/></svg>
+          <b>${off ? '目前沒有網路' : '資料載入失敗'}</b>
+          <small>${off ? '請確認網路連線後再試一次' : 'MLB 資料暫時連不上，請稍後再試'}</small>
+          <button id="retryBtn">重新載入</button>`;
+        b.hidden = true;
+        return;
+      }
       b.hidden = false;
       b.textContent =
         navigator.onLine === false
@@ -999,7 +1010,7 @@
     document.body.classList.toggle('nodates', tab !== 'scores');
     if (tab === 'scores') renderSegs();
     $$('.tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.tab === tab));
-    document.title = isGame ? 'MLB 文字轉播' : title;
+    document.title = isGame ? 'MLB Live Text' : title;
     $('#updated').textContent = '';
   }
 
@@ -1062,6 +1073,12 @@
       if (sv2) {
         S.standView = sv2.dataset.sv2; store.set('standView', S.standView);
         $$('[data-sv2]').forEach((b) => b.classList.toggle('on', b === sv2));
+        return;
+      }
+      if (e.target.closest('#retryBtn')) {
+        const eb = e.target.closest('.errbox');
+        if (eb) { eb.className = 'loading'; eb.textContent = '載入中…'; }
+        if (poller) poller.kick();
         return;
       }
       if (e.target.closest('#reloadApp')) {

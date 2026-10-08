@@ -1,6 +1,6 @@
 {
-  "name": "MLB 文字轉播",
-  "short_name": "MLB 轉播",
+  "name": "MLB Live Text",
+  "short_name": "MLB Live",
   "description": "MLB 比分、逐打席文字轉播與排名",
   "lang": "zh-Hant",
   "start_url": "./",
