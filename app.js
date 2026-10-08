@@ -186,6 +186,7 @@
     follow: true, // true = 跟著「今天」，台灣 0:00 自動換日
     standView: store.get('standView', 'division'),
     gtab: store.get('gtab', 'text'),
+    autoFollow: store.get('autoFollow', false),
   };
   let view = null;
   let poller = null;
@@ -379,13 +380,6 @@
       ${Array.from({ length: n }, (_, i) => `<td>${cell(side, i + 1)}</td>`).join('')}
       <td class="tot">${r(side)}</td><td>${dash(tot[side] && tot[side].hits)}</td><td>${dash(tot[side] && tot[side].errors)}</td></tr>`;
 
-    let sit = '';
-    if (st.k === 'live' && (ls.inningState === 'Top' || ls.inningState === 'Bottom')) {
-      const off = ls.offense || {}, def = ls.defense || {};
-      sit = `<div class="sit">${diamond(!!off.first, !!off.second, !!off.third)}
-        <div><div class="cnt">${dash(ls.balls)} 壞 ${dash(ls.strikes)} 好 ${dash(ls.outs)} 出局</div>
-        <div class="mu">打者 ${esc((off.batter && off.batter.fullName) || '–')}<br>投手 ${esc((def.pitcher && def.pitcher.fullName) || '–')}</div></div></div>`;
-    }
     let extra = '';
     const dec = ld.decisions;
     if (st.k === 'final' && dec) {
@@ -409,7 +403,7 @@
           <span>${esc(fmtTime(gd.datetime && gd.datetime.dateTime))}（台灣時間）${venue ? ' · ' + esc(venue) : ''}</span></div>
         <div class="scroll"><table class="line"><thead><tr><th></th>${th}<th>R</th><th>H</th><th>E</th></tr></thead>
         <tbody>${tr('away', aT)}${tr('home', hT)}</tbody></table></div>
-        ${sit}${extra}
+        ${extra}
       </div>`;
   }
 
@@ -423,6 +417,45 @@
 
 
   const PITCH_ZH = { FF: '四縫線速球', SI: '伸卡球', FT: '二縫線速球', FA: '速球', FC: '切球', SL: '滑球', ST: '橫掃球', SV: '大滑球', CU: '曲球', KC: '指節曲球', CS: '慢曲球', CH: '變速球', FS: '指叉球', FO: '指叉球', KN: '蝴蝶球', SC: '螺旋球', EP: '慢速球' };
+  /* 每球結果：b 壞球 / s 好球 / f 界外 / x 打進場內 */
+  const pitchCls = (e) => {
+    const d = e.details || {}, c = (d.call && d.call.description) || d.description || '';
+    if (d.isInPlay) return 'x';
+    if (/foul/i.test(c)) return 'f';
+    if (d.isBall) return 'b';
+    if (d.isStrike) return 's';
+    return 'b';
+  };
+  const PCALL = { b: '壞球', s: '好球', f: '界外', x: '擊出' };
+  function pitchDots(p) {
+    const ps = (p.playEvents || []).filter((e) => e && e.isPitch);
+    if (!ps.length) return '';
+    return `<div class="pd">${ps.map((e, i) => `<i class="${pitchCls(e)}">${i + 1}</i>`).join('')}</div>`;
+  }
+  function pitchZone(p, zh) {
+    const ps = (p.playEvents || []).filter((e) => e && e.isPitch);
+    if (!ps.length) return '';
+    const pos = ps.filter((e) => e.pitchData && e.pitchData.coordinates && e.pitchData.coordinates.pX != null && e.pitchData.coordinates.pZ != null);
+    const first = ps[0].pitchData || {};
+    const top = first.strikeZoneTop || 3.5, bot = first.strikeZoneBottom || 1.5;
+    const X = (x) => ((x + 2) / 4) * 120, Y = (z) => 150 - (z / 5) * 150;
+    const zl = X(-0.708), zr = X(0.708), zt = Y(top), zb = Y(bot);
+    const dots = pos.map((e) => {
+      const i = ps.indexOf(e) + 1;
+      const c = e.pitchData.coordinates;
+      return `<g class="zp ${pitchCls(e)}"><circle cx="${X(c.pX).toFixed(1)}" cy="${Y(c.pZ).toFixed(1)}" r="8"/><text x="${X(c.pX).toFixed(1)}" y="${(Y(c.pZ) + 3.5).toFixed(1)}">${i}</text></g>`;
+    }).join('');
+    const rows = ps.map((e, i) => {
+      const ty = e.details && e.details.type;
+      const nm = ty ? (zh ? PITCH_ZH[ty.code] || ty.description : ty.description) : '';
+      const sp = e.pitchData && e.pitchData.startSpeed;
+      const cnt = e.count ? `${e.count.balls}-${e.count.strikes}` : '';
+      return `<li><i class="${pitchCls(e)}">${i + 1}</i><span>${esc(nm)}${sp ? ' ' + Math.round(sp * 10) / 10 + ' mph' : ''}</span><em>${PCALL[pitchCls(e)]}${cnt ? ' · ' + cnt : ''}</em></li>`;
+    }).join('');
+    const svg = pos.length
+      ? `<svg class="zone" viewBox="0 0 120 150" aria-hidden="true"><rect x="0" y="0" width="120" height="150" rx="8" class="zbg"/><rect x="${zl.toFixed(1)}" y="${zt.toFixed(1)}" width="${(zr - zl).toFixed(1)}" height="${(zb - zt).toFixed(1)}" class="zbox"/>${dots}</svg>` : '';
+    return `<div class="pz">${svg}<ul class="pl2">${rows}</ul></div>`;
+  }
   function pitchLine(p, zh) {
     const ps = (p.playEvents || []).filter((e) => e && e.isPitch);
     if (!ps.length) return '';
@@ -508,7 +541,7 @@
     const top = cat.label || score
       ? `<div class="p-top">${cat.label ? `<span class="tag">${cat.label}</span>` : '<span></span>'}${score}</div>` : '';
     return `<div class="${cls}" data-k="${ab.atBatIndex}">
-      ${top}<div class="p-body">${body}</div>${pitchRow}${hit}${subs}${meta ? `<div class="p-meta">${meta}</div>` : ''}${en}</div>`;
+      ${top}<div class="p-body">${body}</div>${pitchDots(p)}${pitchRow}${hit}${subs}${meta ? `<div class="p-meta">${meta}</div>` : ''}${en}${pitchZone(p, zh)}</div>`;
   }
 
   function textHTML(d) {
@@ -517,6 +550,7 @@
     // 以 atBatIndex 去重（同一打席只留最新版本），並依打席順序排列
     const byIdx = new Map();
     all.forEach((p, i) => byIdx.set(p.about && p.about.atBatIndex != null ? p.about.atBatIndex : 'i' + i, p));
+    const zh0 = S.lang === 'zh';
     let plays = [...byIdx.values()];
     if (G.filter === 'score') plays = plays.filter((p) => p.about && p.about.isScoringPlay);
     else if (G.filter === 'key') plays = plays.filter(isKey);
@@ -525,6 +559,18 @@
     if (!plays.length) return { html: '<div class="empty">目前沒有符合的事件</div>', total, more: false };
 
     const aT = gd.teams && gd.teams.away, hT = gd.teams && gd.teams.home;
+    // 每個半局結束時的比數，用來算「本局得分」與目前比數
+    const fullList = [...byIdx.values()];
+    const halfEnd = new Map();
+    let prevKey = null, prevScore = { a: 0, h: 0 };
+    fullList.forEach((q) => {
+      const ab = q.about || {}, rr = q.result || {};
+      const k = `${ab.inning}-${ab.halfInning}`;
+      if (!halfEnd.has(k)) halfEnd.set(k, { from: prevScore, a: prevScore.a, h: prevScore.h, top: /top/i.test(ab.halfInning || '') });
+      const e = halfEnd.get(k);
+      if (rr.awayScore != null && rr.homeScore != null) { e.a = rr.awayScore; e.h = rr.homeScore; }
+      prevScore = { a: e.a, h: e.h };
+    });
     let last = '', out = '';
     for (const p of plays) {
       const ab = p.about || {};
@@ -533,9 +579,13 @@
         last = key;
         const top = /top/i.test(ab.halfInning || '');
         const bt = teamAbbr(top ? aT : hT);
+        const he = halfEnd.get(key);
+        const runs = he ? (top ? he.a - he.from.a : he.h - he.from.h) : null;
+        const sc = he
+          ? `<em class="hs">${zh0 ? '本局' : 'Inn'} ${runs} ${zh0 ? '分' : 'R'}　${esc(teamAbbr(aT))} ${he.a} – ${he.h} ${esc(teamAbbr(hT))}</em>` : '';
         out += S.lang === 'zh'
-          ? `<h3 class="inn">${ab.inning}局${top ? '上' : '下'}<small>${esc(bt)} 進攻</small></h3>`
-          : `<h3 class="inn">${top ? 'Top' : 'Bot'} ${ab.inning}<small>${esc(bt)} batting</small></h3>`;
+          ? `<h3 class="inn stk">${ab.inning}局${top ? '上' : '下'}<small>${esc(bt)} 進攻</small>${sc}</h3>`
+          : `<h3 class="inn stk">${top ? 'Top' : 'Bot'} ${ab.inning}<small>${esc(bt)} batting</small>${sc}</h3>`;
       }
       out += playHTML(p, gd);
     }
@@ -557,8 +607,12 @@
       const added = total - G.lastTotal;
       const chip = $('#newChip');
       if (chip && G.lastTotal && added > 0) {
-        chip.textContent = `↑ ${added} 則新事件`;
-        chip.hidden = false;
+        if (S.autoFollow) {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          chip.textContent = `↑ ${added} 則新事件`;
+          chip.hidden = false;
+        }
       }
     }
     G.lastTotal = total;
@@ -616,6 +670,7 @@
         body.innerHTML = `
           <div class="chips">
             <button data-f="all">全部</button><button data-f="key">重點</button><button data-f="score">得分</button>
+            <button class="af${S.autoFollow ? ' on' : ''}" data-af="1" role="switch" aria-checked="${S.autoFollow}">自動跟隨<i></i></button>
           </div><div id="plays"></div>`;
       } else {
         const gd = G.data.gameData || {};
@@ -652,13 +707,25 @@
     const rc = (t) => (t.record ? `${t.record.wins}-${t.record.losses}` : '');
     const blk = (t) => `<div class="tk">${logo(t, 'gl')}<small>${esc(rc(t))}</small></div>`;
     $('#title').textContent = label;
+    const lbEl = $('#liveBar');
+    if (lbEl) {
+      const on = st.k === 'live' && (ls.inningState === 'Top' || ls.inningState === 'Bottom');
+      lbEl.hidden = !on;
+      document.body.classList.toggle('haslb', on);
+      if (on) {
+        const off = ls.offense || {}, def = ls.defense || {};
+        const bs = `<svg class="lbs" viewBox="0 0 40 30" aria-hidden="true"><rect x="15" y="1" width="10" height="10" transform="rotate(45 20 6)" class="${off.second ? 'on' : ''}"/><rect x="2" y="12" width="10" height="10" transform="rotate(45 7 17)" class="${off.third ? 'on' : ''}"/><rect x="28" y="12" width="10" height="10" transform="rotate(45 33 17)" class="${off.first ? 'on' : ''}"/></svg>`;
+        lbEl.innerHTML = `<div class="lm"><b>${S.lang === 'zh' ? '打' : 'AB'} ${esc((off.batter && off.batter.fullName) || '–')}</b><span>${S.lang === 'zh' ? '投' : 'P'} ${esc((def.pitcher && def.pitcher.fullName) || '–')}</span></div>${bs}<div class="lc"><b>${dash(ls.balls)}-${dash(ls.strikes)}</b><span>${dash(ls.outs)} ${S.lang === 'zh' ? '出局' : 'out'}</span></div>`;
+      }
+    }
     $('#gameRow').innerHTML = `<div class="gstrip">${blk(aT)}<div class="gm">${showN ? `<b class="gn ${st.k}">${run('away')} : ${run('home')}</b>` : '<b class="gn vs">VS</b>'}<small>${esc(st.txt)}</small></div>${blk(hT)}</div>`;
   }
   function renderGame() {
     if (!G || !G.data) return;
     const head = $('#gHead');
     const html = headHTML(G.data);
-    if (head && html !== G.headSig) { head.innerHTML = html; G.headSig = html; gameHeader(G.data); }
+    if (head && html !== G.headSig) { head.innerHTML = html; G.headSig = html; }
+    gameHeader(G.data);
     renderBody();
   }
 
@@ -668,6 +735,7 @@
     const my = token;
     G = { pk, data: null, filter: 'all', side: 'away', limit: 60, sig: '', headSig: '', bodyTab: '', lastTotal: 0, open: new Set() };
     view.innerHTML = `
+      <div id="liveBar" class="livebar" hidden></div>
       <div id="gHead" class="ghead"><div class="loading">載入中…</div></div>
       <div class="seg" id="gTabs"><button data-t="text">文字轉播</button><button data-t="box">數據</button></div>
       <div id="gBody"></div>
@@ -874,6 +942,7 @@
     $('#langBtn').hidden = !isGame;
     document.body.classList.toggle('ingame', isGame);
     $('#gameRow').hidden = !isGame;
+    if (!isGame) document.body.classList.remove('haslb');
     if (!isGame) $('#gameRow').innerHTML = '';
     document.body.classList.toggle('nodates', tab !== 'scores');
     if (tab === 'scores') renderSegs();
@@ -922,7 +991,7 @@
 
     view.addEventListener('click', (e) => {
       const play = e.target.closest('.play');
-      if (play && G && G.open && S.lang === 'zh') {
+      if (play && G && G.open) {
         const k = Number(play.dataset.k);
         if (G.open.has(k)) G.open.delete(k); else G.open.add(k);
         play.classList.toggle('open', G.open.has(k));
@@ -939,6 +1008,11 @@
         S.gtab = b.dataset.t;
         store.set('gtab', S.gtab);
         renderBody();
+      } else if (b.dataset.af) {
+        S.autoFollow = !S.autoFollow;
+        store.set('autoFollow', S.autoFollow);
+        b.classList.toggle('on', S.autoFollow);
+        b.setAttribute('aria-checked', String(S.autoFollow));
       } else if (b.dataset.f) {
         G.filter = b.dataset.f;
         G.limit = 60;
