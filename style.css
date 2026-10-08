@@ -486,3 +486,7 @@ body.nonav .fab { bottom: calc(24px + env(safe-area-inset-bottom)); }
 .tc .tg { margin-left: auto; text-align: right; font-size: 11px; color: var(--sub); }
 .tc .tg b { display: block; font-size: 18px; color: var(--navy); font-variant-numeric: tabular-nums; }
 .tc.po { box-shadow: inset 4px 0 0 var(--navy); }
+
+/* 禁止雙擊放大與選取文字 */
+html, body, * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+html, body { touch-action: manipulation; }

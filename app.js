@@ -1167,6 +1167,10 @@
       if (Math.abs(dy) > 6 || y <= 0) lastY = y;
     }, { passive: true });
 
+    // iOS Safari 會忽略 user-scalable=no：擋掉雙指縮放手勢（雙擊放大由 touch-action: manipulation 處理）
+    ['gesturestart', 'gesturechange', 'gestureend'].forEach((n) => document.addEventListener(n, (e) => e.preventDefault()));
+    document.addEventListener('selectstart', (e) => e.preventDefault());
+
     addEventListener('hashchange', route);
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) { rollover(); if (poller) poller.kick(); }
