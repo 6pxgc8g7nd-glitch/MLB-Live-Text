@@ -119,15 +119,7 @@
 
   /* ================= 資料層 ================= */
   const cache = new Map(); // path -> { t, d }  只用來避免短時間內重複請求
-  async function api(path, opts) {
-    if (!S.testMode || !window.MLB_MOCK) return apiReal(path, opts);
-    const mk = window.MLB_MOCK;
-    const m = mk.handle(path, S.testStart);
-    if (m) return m;
-    let d;
-    try { d = await apiReal(path, opts); } catch (e) { d = /schedule|people/.test(path) ? {} : (() => { throw e; })(); }
-    return mk.decorate(path, d, twDate(), S.testStart);
-  }
+  const api = (path, opts) => apiReal(path, opts);
   async function apiReal(path, { ttl = 0, timeout = 12000 } = {}) {
     const hit = cache.get(path);
     if (hit && Date.now() - hit.t < ttl) return hit.d;
@@ -152,7 +144,7 @@
       lastOk = Date.now();
       b.hidden = true;
       const u = $('#updated');
-      if (u) u.textContent = (G && G.liveMode ? 'LIVE ・ ' : '') + (S.testMode ? '測試模式 ・ ' : '') + '更新 ' + fmtClock(lastOk);
+      if (u) u.textContent = (G && G.liveMode ? 'LIVE ・ ' : '') + '更新 ' + fmtClock(lastOk);
     } else {
       const ld = document.querySelector('#view .loading');
       if (ld) {
@@ -209,9 +201,7 @@
     gtab: store.get('gtab', 'text'),
     autoFollow: store.get('autoFollow', false),
     gFold: store.get('gFold', false),
-    testMode: store.get('testMode', false),
     favs: store.get('favs', []),
-    testStart: store.get('testStart', Date.now()),
   };
   let view = null;
   let poller = null;
@@ -1232,8 +1222,6 @@
         <div class="srow stack"><div><b>排名預設檢視</b><small>進入排名頁時先看哪一種</small></div>
           <div class="sch">${[['division', '分區'], ['league', '聯盟'], ['post', '季後賽'], ['bracket', '對戰樹']].map(([k, n]) => `<button data-sv2="${k}" class="${S.standDef === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
         <button class="srow srbtn" id="favOpen"><div><b>我的最愛球隊</b><small>選擇後，比分、排名與季後賽頁會標示這些球隊</small></div><span class="fsum" id="favSum">${favSumHTML()}</span><span class="chev">›</span></button>
-        <div class="srow"><div><b>測試模式</b><small>用模擬比賽測試轉播功能（比分頁會多出三場「測試模式」比賽，不影響真實資料）</small></div><button class="sw${S.testMode ? ' on' : ''}" data-set="testMode" role="switch" aria-checked="${S.testMode}"><i></i></button></div>
-        ${S.testMode ? '<div class="srow"><div><b>重新開始模擬</b><small>重置模擬比賽，之後每 3 秒投一球，球數、壘包與打席結果會一球一球推進</small></div><button class="sact" id="testRestart">重新開始</button></div>' : ''}
         <div class="srow"><div><b>更新應用程式</b><small id="verTxt">清除快取並重新載入最新版本</small></div><button class="sact" id="reloadApp">更新</button></div>
       </div>`;
     fetch('sw.js', { cache: 'no-store' }).then((r) => r.text()).then((t) => {
@@ -1562,16 +1550,14 @@
   }
 
   /* ================= 下拉更新（比分頁） ================= */
-  // 在比分頁最上方往下拉：MLB 標誌隨拉動旋轉，標題欄提示「下拉更新／放開更新」，放開後重新載入；更新期間標誌持續轉動。
+  // 在比分頁最上方往下拉：標題欄提示「下拉更新／放開更新」，放開後重新載入。
   function initPull(refresh) {
     const THRESH = 56;                    // 內容被拉下的距離（已套用阻力）超過這個值，放開才會更新
-    const ic = $('#ballIc');
     let t0 = null, busy = false, saved = '';
     const note = (txt) => { const u = $('#updated'); if (u) { if (txt) u.textContent = txt; else if (saved) u.textContent = saved; } };
     const reset = (anim) => {
       view.style.transition = anim ? 'transform .26s cubic-bezier(.22,.8,.3,1)' : 'none';
       view.style.transform = '';
-      if (ic && !busy) { ic.style.transform = ''; }
       setTimeout(() => { if (!t0) view.style.removeProperty('transition'); }, 300);
     };
     document.addEventListener('touchstart', (e) => {
@@ -1594,7 +1580,6 @@
       t0.pull = pull;
       view.style.transition = 'none';
       view.style.transform = `translate3d(0,${pull}px,0)`;
-      if (ic) ic.style.transform = `rotate(${Math.round(Math.min(1, pull / THRESH) * 360)}deg)`;
       note(pull >= THRESH ? '放開更新' : '下拉更新');
     }, { passive: true });
     const end = async () => {
@@ -1603,10 +1588,8 @@
       if (s.pull >= THRESH) {
         busy = true;
         reset(true);
-        if (ic) { ic.style.transform = ''; ic.classList.add('spin'); }
         note('更新中…');
         try { await refresh(); } catch (e) { /* 失敗由橫幅顯示 */ }
-        if (ic) { ic.classList.remove('spin'); ic.classList.remove('pulse'); }
         busy = false;
         const u = $('#updated'); if (u && u.textContent === '更新中…') u.textContent = saved;
       } else {
@@ -1653,7 +1636,7 @@
       if (!G.liveMode && !live) { toast('這場比賽目前不是進行中，無法開啟 LIVE 模式'); return; }
       G.liveMode = !G.liveMode;
       toast(G.liveMode ? 'LIVE 模式已開啟・每秒更新' : 'LIVE 模式已關閉');
-      const u = $('#updated'); if (u) u.textContent = (G.liveMode ? 'LIVE ・ ' : '') + (S.testMode ? '測試模式 ・ ' : '') + '更新 ' + fmtClock(lastOk || Date.now());
+      const u = $('#updated'); if (u) u.textContent = (G.liveMode ? 'LIVE ・ ' : '') + '更新 ' + fmtClock(lastOk || Date.now());
       poller.kick();
     });
     $('#title').onclick = manualRefresh;
@@ -1663,24 +1646,6 @@
     view.addEventListener('click', (e) => {
       if (e.target.closest('#favOpen')) { openFavSheet(); return; }
       if (e.target.closest('#gFold')) { S.gFold = !S.gFold; store.set('gFold', S.gFold); $('#gCtl').classList.toggle('fold', S.gFold); return; }
-      const st = e.target.closest('[data-set]');
-      if (st) {
-        const k = st.dataset.set;
-        S[k] = !S[k];
-        store.set(k, S[k]);
-        if (k === 'testMode') {
-          if (S[k]) { S.testStart = Date.now(); store.set('testStart', S.testStart); }
-          cache.clear();
-          showSettings();
-        }
-        return;
-      }
-      if (e.target.closest('#testRestart')) {
-        S.testStart = Date.now(); store.set('testStart', S.testStart);
-        cache.clear();
-        e.target.closest('#testRestart').textContent = '已重置';
-        return;
-      }
       const sv2 = e.target.closest('[data-sv2]');
       if (sv2) {
         S.standDef = sv2.dataset.sv2; store.set('standView', S.standDef);
