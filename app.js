@@ -1491,7 +1491,7 @@
   }
   function pfRender() {
     if (!PF.el) return;
-    const show = pfList().length > 0;
+    const show = pfList().length > 0 && !/^#\/settings/.test(location.hash); // 設定頁不顯示
     PF.el.hidden = !show;
     if (!show) { pfClose(); return; }
     const card = $('.pf-card', PF.el);
