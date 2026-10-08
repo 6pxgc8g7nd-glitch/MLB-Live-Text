@@ -1,5 +1,5 @@
 /* 測試模式：用「模擬比賽」取代真實資料，沒有比賽的時候也能測試轉播功能。
- * 模擬比賽依時間逐打席推進（每 8 秒一個打席），結果由固定亂數種子決定，所以每次輪詢都會得到一致的內容。 */
+ * 模擬比賽依時間「一球一球」推進（每 3 秒投一球，打席的最後一球投出後才會有結果），結果由固定亂數種子決定，所以每次輪詢都會得到一致的內容。 */
 (function () {
   const PK = { live: 999001, final: 999002, upcoming: 999003 };
   const TEAM = { away: { id: 147, name: 'New York Yankees' }, home: { id: 119, name: 'Los Angeles Dodgers' } };
@@ -8,7 +8,7 @@
                  home: ['Alvarez', 'Hayes', 'Tanaka', 'Mercer', 'Delgado', 'Foster', 'Park', 'Navarro', 'Quinn'] };
   const POS = ['CF', 'SS', 'RF', 'DH', '1B', '3B', 'LF', 'C', '2B'];
   const PITCHER = { away: 'Marcus Reed', home: 'Kenji Ito' };
-  const STEP = 8000;
+  const STEP = 3000; // 每一球的間隔（毫秒）
   const PRE = 14; // 開啟測試模式時已經打完的打席數
   const bname = (side, i) => `${FIRST[i]} ${LAST[side][i]}`;
   const bid = (side, i) => (side === 'away' ? 1000 : 2000) + i + 1;
@@ -87,7 +87,7 @@
     }
   }
 
-  function simulate(seed, nDone, partialFrac) {
+  function simulate(seed, nDone, budget) {
     const r = rng(seed);
     const S = {
       inning: 1, half: 'top', outs: 0, bases: [null, null, null], idx: { away: 0, home: 0 }, score: { away: 0, home: 0 },
@@ -101,15 +101,18 @@
     const sideOf = () => (S.half === 'top' ? 'away' : 'home');
     const defOf = () => (S.half === 'top' ? 'home' : 'away');
 
-    for (let k = 0; k <= nDone && !S.final; k++) {
+    for (let k = 0; !S.final; k++) {
       const bs = sideOf(), ds = defOf();
       const i = S.idx[bs];
       const name = bname(bs, i);
       const ev = pickEvent(r);
       const pitches = genAtBat(r, ev, name, PITCHER[ds], S);
-      if (k === nDone) { // 進行中的打席：只顯示部分投球
-        inProgress = { bs, ds, i, name, ev, pitches, frac: partialFrac };
-        break;
+      if (k >= nDone) { // 超過已完成的打席後，依「球數預算」一球一球推進
+        if (budget < pitches.length) { // 這個打席還沒投完：只顯示已投出的球（最後一球要等到結果出來才算）
+          inProgress = { bs, ds, i, name, ev, pitches, shown: Math.max(0, budget) };
+          break;
+        }
+        budget -= pitches.length;
       }
       // 套用結果
       const rec = S.box[bs][i];
@@ -162,7 +165,7 @@
     if (kind === 'final') return simulate(77, 1000, 0);
     if (kind === 'upcoming') return simulate(5, 0, 0);
     const el = Math.max(0, Date.now() - startedAt);
-    return simulate(20261008, PRE + Math.floor(el / STEP), (el % STEP) / STEP);
+    return simulate(20261008, PRE, Math.floor(el / STEP));
   }
 
   function boxFor(side, sm) {
@@ -199,7 +202,7 @@
     let balls = 0, strikes = 0;
     if (inProgress && kind === 'live') {
       const total = inProgress.pitches.length;
-      const shown = inProgress.pitches.slice(0, Math.min(total - 1, Math.floor(inProgress.frac * total)));
+      const shown = inProgress.pitches.slice(0, Math.min(total - 1, inProgress.shown));
       if (shown.length) { balls = shown[shown.length - 1].count.balls; strikes = shown[shown.length - 1].count.strikes; }
       allPlays.push({
         about: { atBatIndex: plays.length, inning: S.inning, halfInning: S.half, isComplete: false, isScoringPlay: false },
