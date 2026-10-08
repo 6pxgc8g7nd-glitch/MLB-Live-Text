@@ -1132,10 +1132,8 @@
       if (chip && !chip.hidden && window.scrollY < 80) chip.hidden = true;
       const y = window.scrollY;
       const dy = y - lastY;
-      if (document.body.classList.contains('ingame')) {
-        if (y > 240 && dy > 6) document.body.classList.add('nonav');
-        else if (dy < -6 || y <= 240) document.body.classList.remove('nonav');
-      } else document.body.classList.remove('nonav');
+      if (y > 240 && dy > 6) document.body.classList.add('nonav');
+      else if (dy < -6 || y <= 240) document.body.classList.remove('nonav');
       if (Math.abs(dy) > 6 || y <= 0) lastY = y;
     }, { passive: true });
 
