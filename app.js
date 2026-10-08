@@ -208,6 +208,7 @@
     standView: 'division',
     gtab: store.get('gtab', 'text'),
     autoFollow: store.get('autoFollow', false),
+    gFold: store.get('gFold', false),
     testMode: store.get('testMode', false),
     favs: store.get('favs', []),
     testStart: store.get('testStart', Date.now()),
@@ -861,11 +862,11 @@
     view.innerHTML = `
       <div id="liveBar" class="livebar" hidden></div>
       <div id="gHead" class="ghead"><div class="loading">載入中…</div></div>
-      <div class="tkw"><div class="tk">
+      <div class="tkw${S.gFold ? ' fold' : ''}" id="gCtl"><div class="tk">
         <div class="seg" id="gTabs"><button data-t="text">文字轉播</button><button data-t="box">數據</button></div>
         <div class="tr"></div>
         <div id="gChips"></div>
-      </div></div>
+      </div><button class="fbt" id="gFold" aria-label="收合或展開工具列"><svg viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1l5 5 5-5"/></svg></button></div>
       <div id="gBody"></div>
       <button id="newChip" class="fab" hidden></button>`;
     window.scrollTo(0, 0);
@@ -1441,6 +1442,7 @@
 
     view.addEventListener('click', (e) => {
       if (e.target.closest('#favOpen')) { openFavSheet(); return; }
+      if (e.target.closest('#gFold')) { S.gFold = !S.gFold; store.set('gFold', S.gFold); $('#gCtl').classList.toggle('fold', S.gFold); return; }
       const st = e.target.closest('[data-set]');
       if (st) {
         const k = st.dataset.set;

@@ -693,3 +693,13 @@ a.bk2c:active { filter: brightness(.97); }
 .livebar::before, .livebar::after { content: ''; position: absolute; top: 50%; width: 14px; height: 14px; margin-top: -7px; border-radius: 50%; background: var(--bg); z-index: 1; }
 .livebar::before { left: -7px; } .livebar::after { right: -7px; }
 .livebar .lr { height: 34px; margin: 0 10px; padding: 0 12px; display: flex; flex-direction: column; justify-content: center; }
+
+/* 轉播頁工具列收合：撕線＋圓形按鈕（收合時只剩一條撕線與按鈕） */
+.tkw { position: relative; margin-bottom: 22px; }
+.tkw .fbt { position: absolute; left: 50%; bottom: -14px; transform: translateX(-50%); width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; background: var(--navy); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0, 0, 0, .25); z-index: 2; }
+.tkw .fbt svg { width: 12px; height: 8px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transform: rotate(180deg); transition: transform .2s; }
+.tkw.fold { height: 30px; margin: 6px 0 10px; filter: none; }
+.tkw.fold .tk { display: none; }
+.tkw.fold::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; border-top: 2px dashed #b9c0c8; }
+.tkw.fold .fbt { bottom: auto; top: 1px; }
+.tkw.fold .fbt svg { transform: none; }
