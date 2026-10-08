@@ -309,7 +309,7 @@
       if ((ap && ap.fullName) || (hp && hp.fullName)) foot = `<div class="g-foot pp">${pcol(ap)}${pcol(hp)}</div>`;
     } else if (st.k === 'final' && g.decisions && g.decisions.winner) {
       const d = g.decisions;
-      const it = (cls, lbl, p) => (p ? `<span><em class="${cls}">${lbl}</em>${esc(p.fullName)}</span>` : '');
+      const it = (cls, lbl, p) => (p ? `<span title="${esc(p.fullName)}"><em class="${cls}">${lbl}</em><i class="pn">${esc(shortName(p.fullName))}</i></span>` : '');
       foot = `<div class="g-foot dc">${it('w', '勝', d.winner)}${it('l', '敗', d.loser)}${it('s', '救', d.save)}</div>`;
     }
     const side = (t, win) => `
@@ -352,6 +352,14 @@
     // 內容沒變就不重畫，避免隊徽被重新載入而閃爍
     if (html !== box._sig) { box.innerHTML = html; box._sig = html; }
     loadPitStats(games);
+  }
+
+  // 球員名縮寫：名字只留第一個字母＋姓（Edgardo Henriquez → E. Henriquez）；去掉 Jr./Sr./II 等後綴；已是縮寫（J.T. Realmuto）或單一名字則照舊
+  function shortName(full) {
+    const parts = String(full || '').replace(/\s+(Jr\.?|Sr\.?|II|III|IV)$/i, '').trim().split(/\s+/);
+    if (parts.length < 2) return parts[0] || '';
+    const first = parts[0];
+    return `${/\./.test(first) ? first : Array.from(first)[0] + '.'} ${parts.slice(1).join(' ')}`;
   }
 
   // 已結束的比賽：贏的比分維持深色、輸的淡化（進行中不套用）

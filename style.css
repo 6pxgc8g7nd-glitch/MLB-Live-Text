@@ -303,11 +303,13 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .cal-lg i { width: 5px; height: 5px; border-radius: 50%; background: var(--navy); }
 
 .g-foot.pp { display: flex; justify-content: space-around; padding: 8px 10px 9px; }
-.g-foot.pp div { display: flex; flex-direction: column; align-items: center; line-height: 1.3; }
-.g-foot.pp b { color: var(--text); font-size: 13px; }
+.g-foot.pp div { min-width: 0; max-width: 48%; display: flex; flex-direction: column; align-items: center; line-height: 1.3; }
+.g-foot.pp b { color: var(--text); font-size: 13px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .g-foot.pp span { font-size: 11px; min-height: 14px; font-variant-numeric: tabular-nums; }
-.g-foot.dc { display: flex; justify-content: center; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 13px; }
-.g-foot.dc span { display: flex; align-items: center; gap: 6px; color: var(--text); font-weight: 600; }
+.g-foot.dc { display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: nowrap; font-size: 13px; }
+.g-foot.dc span { display: flex; align-items: center; gap: 5px; min-width: 0; color: var(--text); font-weight: 600; }
+.g-foot.dc .pn { font-style: normal; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.g-foot.dc em { flex: none; }
 .g-foot.dc em { font-style: normal; font-size: 11px; font-weight: 800; padding: 0 6px; border-radius: 5px; color: #fff; }
 .g-foot.dc em.w { background: var(--navy); } .g-foot.dc em.l { background: #8b95a1; } .g-foot.dc em.s { background: var(--emph); }
 
