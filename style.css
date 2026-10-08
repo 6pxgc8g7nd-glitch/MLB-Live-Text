@@ -650,7 +650,7 @@ a.bk2c:active { filter: brightness(.97); }
 .hrx-tk { background: #fff; border-radius: 10px; padding: 14px 24px; text-align: center; opacity: 0; animation: hrxpop 3.6s ease forwards;
   -webkit-mask: radial-gradient(circle 9px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 9px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat;
   mask: radial-gradient(circle 9px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 9px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat; }
-.hrx-tk { padding: 12px 26px 16px; max-width: 86vw; }
+.hrx-tk { padding: 10px 24px 14px; max-width: 86vw; border: 3px solid #004B93; }
 .hrx-tag { display: inline-block; background: #A6051A; color: #fff; font-weight: 900; font-size: 11px; letter-spacing: 2px; padding: 3px 10px; border-radius: 3px; }
 .hrx-tk h2 { margin: 8px 0 2px; font-size: 30px; font-weight: 900; color: #004B93; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0; }
 .hrx-tk p { margin: 0; font-weight: 800; font-size: 14px; color: #5d6874; }
