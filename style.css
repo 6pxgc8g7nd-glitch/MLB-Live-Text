@@ -433,3 +433,9 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .pc.cur { background: #fbeaec; box-shadow: inset 4px 0 0 var(--emph); }
 
 #langBtn.off { filter: grayscale(1); opacity: .45; pointer-events: none; }
+
+/* 轉播往下滑時收起底部導覽 */
+.tabbar { transition: transform .25s ease; }
+body.nonav .tabbar { transform: translateY(calc(100% + 30px)); }
+.fab { transition: bottom .25s ease; }
+body.nonav .fab { bottom: calc(24px + env(safe-area-inset-bottom)); }
