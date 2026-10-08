@@ -109,7 +109,7 @@ def feed(state, det, ls_state='Top'):
             'linescore': {'currentInning': 6, 'inningState': ls_state, 'outs': 1, 'balls': 2, 'strikes': 1, 'scheduledInnings': 9,
                           'innings': [{'num': 1, 'home': {'runs': 1}, 'away': {}}, {'num': 2, 'home': {}, 'away': {}},
                                       {'num': 3, 'home': {}, 'away': {'runs': 4}}, {'num': 4, 'home': {'runs': 1}, 'away': {}},
-                                      {'num': 5, 'home': {}, 'away': {'runs': 1}}, {'num': 6, 'home': {}, 'away': {'runs': 2}}],
+                                      {'num': 5, 'home': {}, 'away': {'runs': 1}}, {'num': 6, 'home': {}, 'away': {'runs': 2, 'hits': 1, 'leftOnBase': 0}}],
                           'teams': {'home': {'runs': 2, 'hits': 5, 'errors': 0}, 'away': {'runs': 7, 'hits': 7, 'errors': 0}},
                           'offense': {'first': {'id': 1}, 'third': {'id': 2}, 'batter': {'id': 4, 'fullName': 'Brayan Rocchio'}, 'onDeck': {'id': 3}},
                           'defense': {'pitcher': {'fullName': 'Grant Taylor'}}},
@@ -158,6 +158,10 @@ def handler(route):
     url = route.request.url
     if '/feed/live/timestamps' in url:
         return route.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin': '*'}, body=json.dumps(stamps))
+    if '/game/3/feed/live' in url:  # 半局之間（6 局上剛結束，換場中）：LIVE 分頁顯示半局回顧
+        f = feed('Live', 'In Progress', 'Middle')
+        f['liveData']['plays']['allPlays'] = [q for q in plays if q['about']['isComplete']]
+        return route.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin': '*'}, body=json.dumps(f))
     if '/game/2/feed/live' in url and 'timecode=' not in url:  # 已結束比賽的最終資料（有重播按鈕）
         return route.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin': '*'}, body=json.dumps(feed('Final', 'Final')))
     if '/winProbability' in url:
@@ -189,7 +193,7 @@ httpd = socketserver.TCPServer(('127.0.0.1', PORT), functools.partial(Q, directo
 PORT = httpd.server_address[1]
 threading.Thread(target=httpd.serve_forever, daemon=True).start()
 
-shots = [('scores', '#/scores', 'light'), ('gametop', '#/game/1', 'light'), ('game', '#/game/1', 'light'), ('box', '#/game/1', 'light', 'box'), ('settings', '#/settings', 'light'), ('yday', '#/scores', 'light'), ('err', '#/scores', 'light'), ('stand', '#/standings', 'light'), ('tset', '#/settings', 'light'), ('post', '#/standings', 'light'), ('br', '#/standings', 'light'), ('fav', '#/scores', 'light'), ('favst', '#/standings', 'light'), ('favset', '#/settings', 'light'), ('favsheet', '#/settings', 'light'), ('pcard', '#/game/1', 'light'), ('wp', '#/game/1', 'light', 'box'), ('rp', '#/game/2', 'light'), ('lv', '#/game/1', 'light', 'live')]
+shots = [('scores', '#/scores', 'light'), ('gametop', '#/game/1', 'light'), ('game', '#/game/1', 'light'), ('box', '#/game/1', 'light', 'box'), ('settings', '#/settings', 'light'), ('yday', '#/scores', 'light'), ('err', '#/scores', 'light'), ('stand', '#/standings', 'light'), ('tset', '#/settings', 'light'), ('post', '#/standings', 'light'), ('br', '#/standings', 'light'), ('fav', '#/scores', 'light'), ('favst', '#/standings', 'light'), ('favset', '#/settings', 'light'), ('favsheet', '#/settings', 'light'), ('pcard', '#/game/1', 'light'), ('wp', '#/game/1', 'light', 'box'), ('rp', '#/game/2', 'light'), ('lv', '#/game/1', 'light', 'live'), ('lvgap', '#/game/3', 'light', 'live')]
 
 failures = []
 with sync_playwright() as p:

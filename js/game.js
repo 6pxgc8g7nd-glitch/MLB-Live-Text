@@ -317,6 +317,69 @@ const seasonNum = (d, t, key, label) => {
   return `<div class="lv-av"><b>${esc(v)}</b><small>${SEASON_LBL[type] || ''}${SEASON_LBL[type] ? ' ' : ''}${label}</small></div>`;
 };
 
+/* ---- 半局回顧：半局之間（還沒有新打席）的 LIVE 分頁顯示剛結束的那個半局 ---- */
+// 要回顧哪個半局：換場中是剛結束的那半局；打席之間（半局剛開始、還沒人上場）則是它的前一個半局；開賽前沒有可回顧的
+export function recapTarget(ls) {
+  const n = (ls && ls.currentInning) || 0, st = ls && ls.inningState;
+  if (!n) return null;
+  if (st === 'Middle') return { inning: n, top: true };
+  if (st === 'End') return { inning: n, top: false };
+  if (st === 'Bottom') return { inning: n, top: true };
+  if (st === 'Top') return n > 1 ? { inning: n - 1, top: false } : null;
+  return null;
+}
+const isTopHalf = (ab) => (ab.isTopInning != null ? !!ab.isTopInning : /top/i.test(ab.halfInning || ''));
+
+export function recapHTML(d, tgt, waiting) {
+  const ls = (d.liveData && d.liveData.linescore) || {};
+  const gd = d.gameData || {};
+  const zh = S.lang === 'zh';
+  const status = waiting ? '等待下一個打席' : '換場中';
+  if (!tgt) {
+    const st = ls.currentInning ? `${ls.currentInning}局${HALF[ls.inningState] || ''}` : '比賽即將開始';
+    return `<div class="lv-wait"><b>${esc(st)}</b><span>等待第一個打席</span></div>`;
+  }
+  const all = (d.liveData && d.liveData.plays && d.liveData.plays.allPlays) || [];
+  const ps = all.filter((p) => p.about && p.about.inning === tgt.inning && isTopHalf(p.about) === tgt.top && p.about.isComplete !== false);
+  const aT = gd.teams && gd.teams.away, hT = gd.teams && gd.teams.home;
+  const bat = teamAbbr(tgt.top ? aT : hT);
+  const inn = (ls.innings || [])[tgt.inning - 1];
+  const line = (inn && inn[tgt.top ? 'away' : 'home']) || {};
+  // 半局結束時的比數：取到這個半局為止、最近一個有記錄比數的打席（沒得分的打席不一定帶比數）
+  const upto = all.filter((p) => p.about && p.about.isComplete !== false && (p.about.inning < tgt.inning || (p.about.inning === tgt.inning && (!tgt.top || isTopHalf(p.about)))));
+  const lr = (upto.slice().reverse().find((p) => p.result && p.result.awayScore != null && p.result.homeScore != null) || {}).result;
+  const score = lr
+    ? `<span class="rc-s">${esc(teamAbbr(aT))} ${lr.awayScore} – ${lr.homeScore} ${esc(teamAbbr(hT))}</span>` : '';
+  const runs = Number(line.runs) || 0;
+  const cells = [['得分', line.runs], ['安打', line.hits], ['殘壘', line.leftOnBase]].filter(([, v]) => v != null)
+    .map(([k, v]) => `<div><b>${esc(v)}</b><small>${k}</small></div>`).join('');
+  const rows = ps.map((p) => {
+    const m = p.matchup || {}, r = p.result || {};
+    const cls = playCat(p, true).cls;
+    const res = zh ? evZh(r.event) : (r.event || '');
+    return `<li${cls === 'hr' || cls === 'score' ? ' class="hot"' : ''}><div>${pLink(m.batter, 'b', m.pitcher)}</div><span>${esc(res)}${r.rbi ? `<em>${r.rbi}分打點</em>` : ''}</span></li>`;
+  }).join('');
+  // 這個半局的投手與用球數（依出場順序）
+  const pit = new Map();
+  ps.forEach((p) => {
+    const x = p.matchup && p.matchup.pitcher;
+    if (!x || !x.fullName) return;
+    const cur = pit.get(x.fullName) || { who: x, n: 0 };
+    cur.n += (p.playEvents || []).filter((e) => e && e.isPitch).length;
+    pit.set(x.fullName, cur);
+  });
+  const pits = [...pit.values()].map((o) => `${pLink(o.who, 'p')}${o.n ? `（${o.n} 球）` : ''}`).join('、');
+  if (!rows && !cells) {
+    return `<div class="lv-wait"><b>${esc(`${tgt.inning}局${tgt.top ? '上' : '下'}`)}</b><span>${status}</span></div>`;
+  }
+  return `<div class="lv-rc">
+    <div class="rc-h"><div><b>${tgt.inning}局${tgt.top ? '上' : '下'} 回顧</b><small>${esc(bat)} 進攻・${status}</small></div>${runs > 0 ? `<span class="rc-r">+${runs}</span>` : ''}${score}</div>
+    ${cells ? `<div class="rc-g">${cells}</div>` : ''}
+    ${rows ? `<ul class="rc-l">${rows}</ul>` : ''}
+    ${pits ? `<p class="rc-p">投手　${pits}</p>` : ''}
+  </div>`;
+}
+
 export function liveHTML(d) {
   const ls = (d.liveData && d.liveData.linescore) || {};
   const plays = (d.liveData && d.liveData.plays) || {};
@@ -325,15 +388,8 @@ export function liveHTML(d) {
     ? plays.currentPlay
     : all.slice().reverse().find((p) => p.about && p.about.isComplete === false);
   const zh = S.lang === 'zh';
-  const off = ls.offense || {};
   const half = ls.inningState === 'Top' || ls.inningState === 'Bottom';
-  const name = (x) => esc((x && x.fullName) || '');
-  if (!cur || !half) {
-    // 半局之間：還沒有新打席
-    const st = ls.currentInning ? `${ls.currentInning}局${HALF[ls.inningState] || ''}` : '比賽即將開始';
-    const next = [off.batter, off.onDeck, off.inHole].filter((x) => x && x.fullName).map(name).join('、');
-    return `<div class="lv-wait"><b>${esc(st)}</b><span>${half ? '等待下一個打席' : '換場中'}</span>${next ? `<p>接下來：${next}</p>` : ''}</div>`;
-  }
+  if (!cur || !half) return recapHTML(d, recapTarget(ls), half); // 半局之間：回顧剛結束的半局
   const m = cur.matchup || {};
   const bat = m.batter || {}, pit = m.pitcher || {};
   const subs = (cur.playEvents || []).filter(isSubEvent).map((e) => subHTML(e, zh)).join('');
