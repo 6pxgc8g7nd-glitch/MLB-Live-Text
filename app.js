@@ -243,6 +243,7 @@
     return { k: 'upcoming', txt: fmtTime(gameDate) };
   }
 
+  const seriesLbl = new Map();
   const pitStat = new Map();
   async function loadPitStats(games) {
     const ids = [];
@@ -271,6 +272,7 @@
     const hWin = st.k === 'final' && h.score > a.score;
     const label = [seriesZh(g), g.gameType !== 'R' && g.seriesGameNumber ? `第${g.seriesGameNumber}戰` : '']
       .filter(Boolean).join(' ');
+    seriesLbl.set(g.gamePk, label || '例行賽');
     const rec = (t) => (t.leagueRecord ? `${t.leagueRecord.wins}-${t.leagueRecord.losses}` : '');
     let foot = '';
     if (st.k === 'upcoming') {
@@ -405,11 +407,6 @@
       <div class="hero">
         <div class="h-top"><span class="pill ${st.k}">${esc(st.txt)}</span>
           <span>${esc(fmtTime(gd.datetime && gd.datetime.dateTime))}（台灣時間）${venue ? ' · ' + esc(venue) : ''}</span></div>
-        <div class="h-score">
-          ${teamBlk('away', aT, '客')}
-          <div class="h-nums">${num(aRuns, dimA)}<i>:</i>${num(hRuns, dimH)}</div>
-          ${teamBlk('home', hT, '主')}
-        </div>
         <div class="scroll"><table class="line"><thead><tr><th></th>${th}<th>R</th><th>H</th><th>E</th></tr></thead>
         <tbody>${tr('away', aT)}${tr('home', hT)}</tbody></table></div>
         ${sit}${extra}
@@ -643,11 +640,25 @@
     if (lb) lb.style.visibility = S.gtab === 'text' ? 'visible' : 'hidden';
   }
 
+  function gameHeader(d) {
+    const gd = d.gameData || {}, ls = (d.liveData && d.liveData.linescore) || {};
+    const aT = (gd.teams && gd.teams.away) || {}, hT = (gd.teams && gd.teams.home) || {};
+    const st = gameState(gd.status, ls, gd.datetime && gd.datetime.dateTime);
+    const tot = ls.teams || {};
+    const typeZh = { F: '外卡系列賽', D: '分區系列賽', L: '聯盟冠軍賽', W: '世界大賽', R: '例行賽', S: '春訓', A: '明星賽' };
+    const label = seriesLbl.get(G.pk) || typeZh[gd.game && gd.game.type] || '比賽';
+    const showN = st.k === 'live' || st.k === 'final';
+    const run = (side) => dash(tot[side] && tot[side].runs != null ? tot[side].runs : 0);
+    const rc = (t) => (t.record ? `${t.record.wins}-${t.record.losses}` : '');
+    const blk = (t) => `<div class="tk">${logo(t, 'gl')}<small>${esc(rc(t))}</small></div>`;
+    $('#title').textContent = label;
+    $('#gameRow').innerHTML = `<div class="gstrip">${blk(aT)}<div class="gm">${showN ? `<b class="gn ${st.k}">${run('away')} : ${run('home')}</b>` : '<b class="gn vs">VS</b>'}<small>${esc(st.txt)}</small></div>${blk(hT)}</div>`;
+  }
   function renderGame() {
     if (!G || !G.data) return;
     const head = $('#gHead');
     const html = headHTML(G.data);
-    if (head && html !== G.headSig) { head.innerHTML = html; G.headSig = html; }
+    if (head && html !== G.headSig) { head.innerHTML = html; G.headSig = html; gameHeader(G.data); }
     renderBody();
   }
 
@@ -862,6 +873,8 @@
     $('#ballIc').hidden = isGame;
     $('#langBtn').hidden = !isGame;
     document.body.classList.toggle('ingame', isGame);
+    $('#gameRow').hidden = !isGame;
+    if (!isGame) $('#gameRow').innerHTML = '';
     document.body.classList.toggle('nodates', tab !== 'scores');
     if (tab === 'scores') renderSegs();
     $$('.tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.tab === tab));

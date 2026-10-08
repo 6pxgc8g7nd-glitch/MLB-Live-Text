@@ -24,7 +24,8 @@ a { color: inherit; text-decoration: none; }
 
 /* ---------- 頂欄 ---------- */
 :root { --th: 114px; }
-body.ingame, body.nodates { --th: 56px; }
+body.nodates { --th: 56px; }
+body.ingame { --th: 148px; }
 .top {
   position: sticky; top: 0; z-index: 20; padding-top: env(safe-area-inset-top);
   filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .3));
@@ -297,3 +298,18 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .msub { margin-top: 4px; font-size: 11px; color: var(--sub); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .game.live .msub { color: var(--emph); font-weight: 700; }
 
+
+.r3 { margin: 0 8px; border-top: 2px dashed rgba(255, 255, 255, .4); padding: 8px 0; }
+.r3[hidden] { display: none; }
+.gstrip {
+  height: 74px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; justify-items: center; color: var(--text);
+  background: radial-gradient(circle 6px at 0 50%, #0000 98%, #fff) left / 51% 100% no-repeat, radial-gradient(circle 6px at 100% 50%, #0000 98%, #fff) right / 51% 100% no-repeat;
+  border-radius: 10px;
+}
+.gstrip .tk { text-align: center; line-height: 1.1; }
+.gstrip .tk small { display: block; font-size: 11px; color: var(--sub); margin-top: 2px; min-height: 13px; }
+.gstrip .gl { width: 44px; height: 44px; object-fit: contain; display: block; margin: 0 auto; }
+.gstrip .gm { text-align: center; min-width: 120px; line-height: 1.1; }
+.gstrip .gn { font-size: 32px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text); }
+.gstrip .gn.live { color: var(--emph); } .gstrip .gn.vs { color: #5d6874; }
+.gstrip .gm small { display: block; margin-top: 3px; font-size: 11px; color: var(--sub); white-space: nowrap; }
