@@ -1,4 +1,4 @@
-import json, subprocess, threading, time, http.server, socketserver, functools, os
+import json, re, subprocess, threading, time, http.server, socketserver, functools, os
 from datetime import datetime, timedelta, timezone
 from playwright.sync_api import sync_playwright
 
@@ -58,7 +58,7 @@ def P(idx, inn, half, ev, desc, bat, pit, score=False, rbi=None, a=None, h=None,
     if rbi: r['rbi'] = rbi
     if a is not None: r['awayScore'] = a; r['homeScore'] = h
     p = {'about': {'atBatIndex': idx, 'inning': inn, 'halfInning': half, 'isComplete': done, 'isScoringPlay': score},
-         'result': r, 'matchup': {'batter': {'fullName': bat}, 'pitcher': {'fullName': pit}}, 'count': {'outs': outs}}
+         'result': r, 'matchup': {'batter': {'id': 1000 + idx, 'fullName': bat}, 'pitcher': {'id': 2000 + len(pit), 'fullName': pit}}, 'count': {'outs': outs}}
     if pe: p['playEvents'] = pe
     return p
 
@@ -130,8 +130,18 @@ postseason = {'series': [
   {'series': {'id': 'D_3', 'sortNumber': 3}, 'games': [pg(31, LAD, ATL, 1, 'Final', (3, 4), gt='D', desc='NL Division Series', dt=-72), pg(32, LAD, ATL, 2, 'Preview', gt='D', desc='NL Division Series', dt=30)]},
 ]}
 
+person = {'people': [{'id': 1007, 'fullName': 'Brayan Rocchio', 'primaryNumber': '4', 'primaryPosition': {'abbreviation': 'SS'},
+    'batSide': {'code': 'S'}, 'pitchHand': {'code': 'R'}, 'currentAge': 24, 'currentTeam': {'id': 114},
+    'stats': [{'type': {'displayName': 'season'}, 'group': {'displayName': 'hitting'}, 'splits': [{'season': '2026', 'stat': {'gamesPlayed': 152, 'avg': '.251', 'homeRuns': 9, 'rbi': 58, 'stolenBases': 21, 'ops': '.672'}}]},
+              {'type': {'displayName': 'career'}, 'group': {'displayName': 'hitting'}, 'splits': [{'stat': {'gamesPlayed': 431, 'avg': '.243', 'homeRuns': 24, 'rbi': 160, 'stolenBases': 55, 'ops': '.651'}}]}]}]}
+vs_stats = {'stats': [{'type': {'displayName': 'vsPlayerTotal'}, 'splits': [{'stat': {'plateAppearances': 7, 'atBats': 6, 'hits': 2, 'homeRuns': 1, 'baseOnBalls': 1, 'strikeOuts': 2, 'avg': '.333'}}]}]}
+
 def handler(route):
     url = route.request.url
+    if 'stats=vsPlayerTotal' in url:
+        return route.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin': '*'}, body=json.dumps(vs_stats))
+    if re.search(r'/people/\d+\?', url):
+        return route.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin': '*'}, body=json.dumps(person))
     if '/people' in url:
         pp=lambda i,w,l,e:{'id':i,'stats':[{'splits':[{'stat':{'wins':w,'losses':l,'era':e}}]}]}
         return route.fulfill(status=200,content_type='application/json',headers={'access-control-allow-origin':'*'},body=json.dumps({'people':[pp(101,2,1,'3.12'),pp(102,1,0,'2.45')]}))
@@ -154,7 +164,7 @@ socketserver.TCPServer.allow_reuse_address = True
 httpd = socketserver.TCPServer(('127.0.0.1', PORT), functools.partial(Q, directory=ROOT))
 threading.Thread(target=httpd.serve_forever, daemon=True).start()
 
-shots = [('scores', '#/scores', 'light'), ('gametop', '#/game/1', 'light'), ('game', '#/game/1', 'light'), ('box', '#/game/1', 'light', 'box'), ('settings', '#/settings', 'light'), ('yday', '#/scores', 'light'), ('err', '#/scores', 'light'), ('stand', '#/standings', 'light'), ('tset', '#/settings', 'light'), ('post', '#/standings', 'light'), ('br', '#/standings', 'light'), ('fav', '#/scores', 'light'), ('favst', '#/standings', 'light'), ('favset', '#/settings', 'light'), ('favsheet', '#/settings', 'light')]
+shots = [('scores', '#/scores', 'light'), ('gametop', '#/game/1', 'light'), ('game', '#/game/1', 'light'), ('box', '#/game/1', 'light', 'box'), ('settings', '#/settings', 'light'), ('yday', '#/scores', 'light'), ('err', '#/scores', 'light'), ('stand', '#/standings', 'light'), ('tset', '#/settings', 'light'), ('post', '#/standings', 'light'), ('br', '#/standings', 'light'), ('fav', '#/scores', 'light'), ('favst', '#/standings', 'light'), ('favset', '#/settings', 'light'), ('favsheet', '#/settings', 'light'), ('pcard', '#/game/1', 'light')]
 
 failures = []
 with sync_playwright() as p:
@@ -176,6 +186,7 @@ with sync_playwright() as p:
         if name == 'br': pg.click('[data-sv=bracket]'); pg.wait_for_timeout(3000)
         if name == 'post': pg.click('[data-sv=post]'); pg.wait_for_timeout(600)
         if name == 'favsheet': pg.click('#favOpen'); pg.wait_for_timeout(500)
+        if name == 'pcard': pg.click('#plays .pl-n'); pg.wait_for_timeout(700); print('pcard:', pg.evaluate("(document.querySelector('#pcdBody')||{}).innerText").replace('\n', ' | ')[:160])
         if name in ('stand', 'gametop'):
             n0 = len(reqs); pg.click('#title'); pg.wait_for_timeout(400); print(name, 'refresh requests:', len(reqs) - n0, 'toast:', pg.evaluate("(document.getElementById('toast')||{}).textContent"))
         if name == 'yday': pg.click('#segL'); pg.wait_for_timeout(800)

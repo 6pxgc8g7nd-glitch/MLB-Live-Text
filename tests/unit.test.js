@@ -5,6 +5,7 @@ import { gameState, cardHTML } from '../js/scores.js';
 import { headHTML, textHTML, boxHTML } from '../js/game.js';
 import { standingsHTML } from '../js/standings.js';
 import { S, setG } from '../js/state.js';
+import { pLink, pickStat, playerCardHTML } from '../js/player.js';
 
 const T = { twDate, shiftDate, evZh, seriesZh, gameState, cardHTML, headHTML, textHTML, boxHTML, standingsHTML, S, setG };
 
@@ -112,5 +113,34 @@ T.S.standView = 'league';
 sh = T.standingsHTML(stand);
 assert.ok(sh.includes('聯盟排名'));
 assert.ok(T.standingsHTML({}).includes('目前沒有排名資料'));
+
+// 球員小卡
+assert.strictEqual(pLink({ fullName: 'No Id' }, 'b'), 'No Id', '沒有 id 就只顯示名字');
+assert.strictEqual(pLink(null, 'b'), '');
+const lk = pLink({ id: 7, fullName: 'A <b>' }, 'b', { id: 9, fullName: 'P' });
+assert.ok(lk.includes('data-player="7"') && lk.includes('data-vs="9"') && lk.includes('A &lt;b&gt;'), '名字要跳脫');
+const st = (type, group, splits) => ({ type: { displayName: type }, group: { displayName: group }, splits });
+const traded = [st('season', 'hitting', [{ team: { id: 1 }, stat: { avg: '.200' } }, { team: { id: 2 }, stat: { avg: '.300' } }, { stat: { avg: '.250' } }])];
+assert.strictEqual(pickStat(traded, 'season', 'hitting').stat.avg, '.250', '交易球員取合計');
+assert.strictEqual(pickStat(traded, 'season', 'pitching'), null);
+const hitter = { fullName: 'Hit Ter', primaryNumber: '5', primaryPosition: { abbreviation: '1B' }, batSide: { code: 'L' }, pitchHand: { code: 'R' }, currentAge: 26, currentTeam: { id: 145 },
+  stats: [st('season', 'hitting', [{ season: '2026', stat: { gamesPlayed: 127, avg: '.207', homeRuns: 35, rbi: 77, stolenBases: 1, ops: '.825' } }])] };
+let pc = playerCardHTML(hitter, 'b', { name: 'Pit Cher', stat: { plateAppearances: 4, atBats: 3, hits: 1, homeRuns: 1, baseOnBalls: 1, strikeOuts: 1, avg: '.333' } });
+assert.ok(pc.includes('#5') && pc.includes('一壘手') && pc.includes('左打右投') && pc.includes('2026 本季打擊') && pc.includes('.825'));
+assert.ok(pc.includes('生涯打擊') && pc.includes('尚無數據'), '缺生涯數據不丟錯');
+assert.ok(pc.includes('對上投手 Pit Cher') && pc.includes('3 打數 1 安打') && pc.includes('1 全壘打') && pc.includes('.333'));
+pc = playerCardHTML(hitter, 'p', null); // 點的是投手身分但只有打擊數據：改顯示打擊
+assert.ok(pc.includes('本季打擊') && !pc.includes('對戰'));
+assert.ok(playerCardHTML(hitter, 'b', { name: 'X', stat: {} }).includes('首次對戰'));
+const twp = { fullName: 'Two Way', stats: [st('season', 'hitting', [{ stat: { avg: '.275' } }]), st('season', 'pitching', [{ stat: { era: '1.79', wins: 8, losses: 2 } }])] };
+assert.ok(playerCardHTML(twp, 'p').includes('1.79') && playerCardHTML(twp, 'p').includes('8-2'), '二刀流點投手看投球');
+assert.ok(playerCardHTML(twp, 'b').includes('.275'));
+assert.ok(playerCardHTML(undefined, 'b').includes('找不到'));
+// 轉播文字裡的名字可點，且帶對戰對象
+T.setG({ filter: 'all', limit: 60, open: new Set() });
+const fp = { ...feed, liveData: { ...feed.liveData, plays: { allPlays: [{ about: { atBatIndex: 0, inning: 1, halfInning: 'top', isComplete: true }, result: { event: 'Single' },
+  matchup: { batter: { id: 11, fullName: 'Bat' }, pitcher: { id: 22, fullName: 'Pit' } }, count: { outs: 0 } }] } } };
+const th = T.textHTML(fp).html;
+assert.ok(th.includes('data-player="11" data-role="b" data-vs="22"') && th.includes('data-player="22" data-role="p" data-vs="11"'));
 
 console.log('all tests passed');

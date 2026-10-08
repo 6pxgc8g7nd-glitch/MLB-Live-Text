@@ -6,6 +6,7 @@ import { showScores } from './scores.js';
 import { showGame } from './game.js';
 import { showStandings } from './standings.js';
 import { showSettings } from './settings.js';
+import { closePlayer } from './player.js';
 
 /* 標題欄日期：三張小票（前一天 / 目前日期 / 後一天） */
 export function segLabel(d, offset) {
@@ -135,6 +136,7 @@ export function route() {
   nextToken();
   setG(null);
   const hrfx = document.getElementById('hrfx'); if (hrfx) hrfx.remove(); // 換頁時立刻結束全壘打動畫
+  closePlayer();
   $('#banner').hidden = true;
   const [name, arg] = location.hash.replace(/^#\/?/, '').split('/');
   if (name === 'game' && /^\d+$/.test(arg || '')) { showGame(arg); return; }

@@ -11,6 +11,7 @@ import { renderBody, renderGame } from './game.js';
 import { openFavSheet } from './settings.js';
 import { bindSegs, applyLang, route, rollover, toast } from './shell.js';
 import { initSwipe, initPull } from './gestures.js';
+import { openPlayer } from './player.js';
 
 function boot() {
   setView($('#view'));
@@ -80,6 +81,11 @@ function boot() {
       })();
       return;
     }
+    const pl = e.target.closest('[data-player]'); // 球員名字：開小卡，不要同時展開／收合打席
+    if (pl) {
+      openPlayer({ id: +pl.dataset.player, role: pl.dataset.role, vs: pl.dataset.vs ? +pl.dataset.vs : null, vsName: pl.dataset.vsn });
+      return;
+    }
     const play = e.target.closest('.play');
     if (play && G && G.open) {
       const k = Number(play.dataset.k);
@@ -131,6 +137,10 @@ function boot() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       b.hidden = true;
     }
+  });
+
+  view.addEventListener('keydown', (e) => { // 球員名字是 span，補上鍵盤操作
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('[data-player]')) { e.preventDefault(); e.target.click(); }
   });
 
   let lastY = 0;

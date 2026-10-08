@@ -2,9 +2,10 @@
 import { $, $$, esc, dash } from './util.js';
 import { teamName, logo, teamAbbr, HALF, HIT_EVENTS, KEY_EVENTS, evZh } from './dict.js';
 import { api, createPoller } from './api.js';
-import { S, view, poller, token, route$, G, setRoute, setPoller, setG } from './state.js';
+import { S, view, poller, token, G, setRoute, setPoller, setG } from './state.js';
 import { gameState, seriesLbl } from './scores.js';
 import { setHeader } from './shell.js';
+import { pLink } from './player.js';
 
 export const diamond = (on1, on2, on3) => {
   const d = (cx, cy, on) =>
@@ -169,10 +170,10 @@ export function playHTML(p, gd) {
 
   let body;
   if (!done) {
-    body = zh ? `打擊中　${esc(bat)}（對 ${esc(pit)}）` : `At bat: ${esc(bat)} vs ${esc(pit)}`;
+    body = zh ? `打擊中　${pLink(m.batter, 'b', m.pitcher)}（對 ${pLink(m.pitcher, 'p', m.batter)}）` : `At bat: ${pLink(m.batter, 'b', m.pitcher)} vs ${pLink(m.pitcher, 'p', m.batter)}`;
   } else if (zh) {
     const ev = evZh(r.event);
-    body = `${esc(bat)} ${HIT_EVENTS.includes(r.event) ? '擊出' : ''}<span class="ev">${esc(ev)}</span>`;
+    body = `${pLink(m.batter, 'b', m.pitcher)} ${HIT_EVENTS.includes(r.event) ? '擊出' : ''}<span class="ev">${esc(ev)}</span>`;
     if (r.rbi) body += `<em>${r.rbi}分打點</em>`;
   } else {
     body = esc(r.description || r.event || '');
@@ -196,7 +197,7 @@ export function playHTML(p, gd) {
   const score = ab.isScoringPlay && r.awayScore != null
     ? `<span class="p-score">${esc(teamAbbr(aT))} ${r.awayScore} – ${r.homeScore} ${esc(teamAbbr(hT))}</span>` : '';
   const outs = p.count && p.count.outs != null && done ? `${p.count.outs} 出局` : '';
-  const meta = zh && done ? [pit ? `投手 ${esc(pit)}` : '', outs].filter(Boolean).join(' · ') : '';
+  const meta = zh && done ? [pit ? `投手 ${pLink(m.pitcher, 'p', m.batter)}` : '', outs].filter(Boolean).join(' · ') : '';
   const cat = playCat(p, done);
   // 進行中的打席自動展開（除非手動收起）；已結束的一律收起（除非手動展開）
   const isOpen = done ? G.open.has(ab.atBatIndex) : !(G.shut && G.shut.has(ab.atBatIndex));
@@ -305,7 +306,7 @@ export function boxHTML(d, side) {
     if (!played) return '';
     const sub = p.battingOrder && !/00$/.test(String(p.battingOrder));
     const avg = p.seasonStats && p.seasonStats.batting && p.seasonStats.batting.avg;
-    const name = esc((p.person && p.person.fullName) || '');
+    const name = pLink(p.person, 'b');
     const pos = esc((p.position && p.position.abbreviation) || '');
     const hit = Number(b.hits) > 0;
     const bo = String(p.battingOrder || '');
@@ -321,7 +322,7 @@ export function boxHTML(d, side) {
   const pRows = (t.pitchers || []).map(get).filter(Boolean).map((p) => {
     const s = (p.stats && p.stats.pitching) || {};
     const era = p.seasonStats && p.seasonStats.pitching && p.seasonStats.pitching.era;
-    return `<div class="pc"><div><div><span class="nm">${esc((p.person && p.person.fullName) || '')}</span></div>
+    return `<div class="pc"><div><div><span class="nm">${pLink(p.person, 'p')}</span></div>
       <div class="ln"><span class="hl">${dash(s.inningsPitched)} 局</span> ・ ${dash(s.hits)} 被安 ・ ${dash(s.earnedRuns)} 責失 ・ ${dash(s.strikeOuts)} 三振${more ? ` ・ ${dash(s.runs)} 失分 ・ ${dash(s.baseOnBalls)} 四壞 ・ ${dash(s.pitchesThrown ?? s.numberOfPitches)} 球` : ''}</div></div><div class="av">${dash(era)}<small>ERA</small></div></div>`;
   }).join('');
 
@@ -417,7 +418,7 @@ export function gameHeader(d) {
       const offT = (gd.teams && gd.teams[offSide]) || {};
       const half = zh ? `${ls.currentInning} 局${HALF[ls.inningState] || ''}` : `${ls.inningState === 'Top' ? 'Top' : 'Bot'} ${ls.currentInning}`;
       const ov = fx.half ? `<div class="lov"><em>${esc(half)}</em>${esc(teamAbbr(offT))} ${zh ? '進攻' : 'batting'}</div>` : '';
-      lbEl.innerHTML = `<div class="lm${fx.bat ? ' in' : ''}"><b>${zh ? '打' : 'AB'} ${esc(bat.fullName || '–')}</b><span>${zh ? '投' : 'P'} ${esc((def.pitcher && def.pitcher.fullName) || '–')}</span></div>${mid}<div class="lbr">${bs}<div class="lc"><b${fx.cnt ? ' class="pop"' : ''}>${dash(ls.balls)}-${dash(ls.strikes)}</b><span>${dash(ls.outs)} ${zh ? '出局' : 'out'}</span></div></div>${ov}`;
+      lbEl.innerHTML = `<div class="lm${fx.bat ? ' in' : ''}"><b>${zh ? '打' : 'AB'} ${pLink(bat, 'b', def.pitcher) || '–'}</b><span>${zh ? '投' : 'P'} ${pLink(def.pitcher, 'p', bat) || '–'}</span></div>${mid}<div class="lbr">${bs}<div class="lc"><b${fx.cnt ? ' class="pop"' : ''}>${dash(ls.balls)}-${dash(ls.strikes)}</b><span>${dash(ls.outs)} ${zh ? '出局' : 'out'}</span></div></div>${ov}`;
     }
   }
   $('#gameRow').innerHTML = `<div class="gstrip">${blk(aT)}<div class="gm">${showN ? `<b class="gn ${st.k}">${run('away')}<i class="cn"></i>${run('home')}</b>` : '<b class="gn vs">VS</b>'}<small>${esc(st.txt)}</small></div>${blk(hT)}</div>`;
