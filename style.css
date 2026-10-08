@@ -397,3 +397,8 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 /* 返回鍵：票券缺口 */
 #back { border: 0; border-radius: 10px; min-width: 40px; padding: 0 12px 0 8px; background: radial-gradient(circle 6px at 100% 50%, #0000 98%, rgba(255, 255, 255, .2)); }
 #back:active { background: radial-gradient(circle 6px at 100% 50%, #0000 98%, rgba(255, 255, 255, .34)); }
+
+/* 語言切換：中｜EN */
+#langBtn { display: inline-flex; gap: 2px; padding: 3px; font-size: 14px; min-width: 0; }
+#langBtn span { padding: 0 8px; min-width: 30px; display: flex; align-items: center; justify-content: center; border-radius: 7px; color: rgba(255, 255, 255, .7); }
+#langBtn span.on { background: #fff; color: var(--navy); }

@@ -973,7 +973,7 @@
   }
 
   function applyLang() {
-    $('#langBtn').textContent = S.lang === 'zh' ? '中' : 'EN';
+    $('#langBtn').innerHTML = `<span${S.lang === 'zh' ? ' class="on"' : ''}>中</span><span${S.lang === 'zh' ? '' : ' class="on"'}>EN</span>`;
   }
 
   function route() {
