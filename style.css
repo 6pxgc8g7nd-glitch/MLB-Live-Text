@@ -422,3 +422,12 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .pc.sub { padding-left: 26px; }
 .pc.z .nm { font-weight: 500; color: var(--sub); }
 .pcs .empty { padding: 14px; }
+
+.pc .ord { flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-right: 2px; }
+.pc .ord.s { background: var(--chip); color: var(--sub); }
+.pc .ord:empty { visibility: hidden; }
+.pc.sub { padding-left: 14px; }
+.pc.sub .ord { margin-left: 12px; }
+.pc .now { margin-left: 6px; background: var(--emph); color: #fff; font-size: 11px; font-weight: 800; border-radius: 5px; padding: 1px 6px; vertical-align: 1px; }
+.pc .dk { margin-left: 6px; border: 1px solid var(--navy); color: var(--navy); font-size: 11px; font-weight: 700; border-radius: 5px; padding: 0 5px; vertical-align: 1px; }
+.pc.cur { background: #fbeaec; box-shadow: inset 4px 0 0 var(--emph); }

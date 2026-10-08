@@ -635,6 +635,10 @@
     if (lineupOnly) ids = t.battingOrder.slice();
 
     const more = !!S.boxMore;
+    const live = d.gameData && d.gameData.status && d.gameData.status.abstractGameState === 'Live';
+    const off = (live && d.liveData && d.liveData.linescore && d.liveData.linescore.offense) || {};
+    const curId = off.batter && off.batter.id;
+    const deckId = off.onDeck && off.onDeck.id;
     const bRows = ids.map(get).filter(Boolean).map((p) => {
       const b = (p.stats && p.stats.batting) || {};
       const played = b.atBats != null || b.plateAppearances != null || lineupOnly;
@@ -644,8 +648,14 @@
       const name = esc((p.person && p.person.fullName) || '');
       const pos = esc((p.position && p.position.abbreviation) || '');
       const hit = Number(b.hits) > 0;
+      const bo = String(p.battingOrder || '');
+      const ord = bo ? bo[0] : '';
+      const pid = p.person && p.person.id;
+      const isCur = live && pid != null && pid === curId;
+      const isDeck = live && pid != null && pid === deckId;
       const ln = lineupOnly ? '' : `<div class="ln"><span class="${hit ? 'hl' : ''}">${dash(b.atBats)} 打數 ${dash(b.hits)} 安打</span> ・ ${dash(b.rbi)} 打點 ・ ${dash(b.runs)} 得分${more ? ` ・ ${dash(b.baseOnBalls)} 四壞 ・ ${dash(b.strikeOuts)} 三振` : ''}</div>`;
-      return `<div class="pc${sub ? ' sub' : ''}${!lineupOnly && !hit ? ' z' : ''}"><div><div><span class="nm">${name}</span> <span class="ps">${pos}</span></div>${ln}</div><div class="av">${dash(avg)}<small>AVG</small></div></div>`;
+      const tagC = isCur ? '<span class="now">打擊中</span>' : isDeck ? '<span class="dk">下一棒</span>' : '';
+      return `<div class="pc${sub ? ' sub' : ''}${!lineupOnly && !hit ? ' z' : ''}${isCur ? ' cur' : ''}"><span class="ord${sub ? ' s' : ''}">${ord}</span><div><div><span class="nm">${name}</span> <span class="ps">${pos}</span>${tagC}</div>${ln}</div><div class="av">${dash(avg)}<small>AVG</small></div></div>`;
     }).join('');
 
     const pRows = (t.pitchers || []).map(get).filter(Boolean).map((p) => {
