@@ -211,6 +211,8 @@
     gFold: store.get('gFold', false),
     testMode: store.get('testMode', false),
     favs: store.get('favs', []),
+    pin: store.get('pin', null), // 釘選的比賽 { pk }
+    fabPos: store.get('fabPos', null), // 懸浮按鈕位置 { s: 'l'|'r', y: 0~1 }
     testStart: store.get('testStart', Date.now()),
   };
   let view = null;
@@ -863,7 +865,7 @@
       <div id="liveBar" class="livebar" hidden></div>
       <div id="gHead" class="ghead"><div class="loading">載入中…</div></div>
       <div class="tkw${S.gFold ? ' fold' : ''}" id="gCtl"><div class="tk">
-        <div class="seg" id="gTabs"><button data-t="text">文字轉播</button><button data-t="box">數據</button></div>
+        <div class="seg" id="gTabs"><button data-t="text">文字轉播</button><button data-t="box">數據</button><button id="gPin" class="pinb">釘選</button></div>
         <div class="tr"></div>
         <div id="gChips"></div>
       </div><button class="fbt" id="gFold" aria-label="收合或展開工具列"><svg viewBox="0 0 16 10" aria-hidden="true"><path d="M2 8l6-6 6 6"/></svg></button></div>
@@ -1379,10 +1381,12 @@
     const hrfx = document.getElementById('hrfx'); if (hrfx) hrfx.remove(); // 換頁時立刻結束全壘打動畫
     $('#banner').hidden = true;
     const [name, arg] = location.hash.replace(/^#\/?/, '').split('/');
-    if (name === 'game' && /^\d+$/.test(arg || '')) return showGame(arg);
-    if (name === 'standings') return showStandings();
-    if (name === 'settings') return showSettings();
-    return showScores();
+    pfClose();
+    if (name === 'game' && /^\d+$/.test(arg || '')) { showGame(arg); pfRender(); pfBtn(); return; }
+    if (name === 'standings') showStandings();
+    else if (name === 'settings') showSettings();
+    else showScores();
+    pfRender();
   }
 
   function rollover() {
@@ -1391,6 +1395,157 @@
       S.date = twDate();
       route();
     }
+  }
+
+
+  let toastT = 0;
+  const toast = (txt, hold) => {
+    let t = document.getElementById('toast');
+    if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
+    t.textContent = txt; t.classList.add('show');
+    clearTimeout(toastT);
+    if (hold !== true) toastT = setTimeout(() => t.classList.remove('show'), 1400);
+  };
+
+  /* ================= 釘選比賽・懸浮按鈕 ================= */
+  const PF = { el: null, data: null, timer: 0, drag: null };
+  const PF_FIELDS = 'gameData,status,abstractGameState,detailedState,datetime,dateTime,teams,away,home,id,name,abbreviation,teamName,liveData,linescore,currentInning,inningState,balls,strikes,outs,offense,first,second,third,runs,scheduledInnings';
+  const PF_SIZE = 52;
+  const pfOnThis = () => !!S.pin && location.hash === '#/game/' + S.pin.pk;
+
+  function pfBtn() { // 轉播頁的「釘選」按鈕文字
+    const b = $('#gPin');
+    if (!b || !G) return;
+    const on = !!S.pin && S.pin.pk === G.pk;
+    b.textContent = on ? '已釘選' : '釘選';
+    b.classList.toggle('pinned', on);
+  }
+  function pfToggle(pk) {
+    if (!pk) return;
+    if (S.pin && S.pin.pk === pk) { pfUnpin(); return; }
+    S.pin = { pk }; store.set('pin', S.pin); PF.data = null;
+    toast('已釘選這場比賽，切換頁面時可用懸浮按鈕快速查看');
+    pfBtn(); pfRender(); pfFetch();
+  }
+  function pfUnpin() {
+    S.pin = null; store.set('pin', null); PF.data = null;
+    clearTimeout(PF.timer); pfClose(); pfBtn(); pfRender();
+  }
+  function pfClose() { const c = PF.el && $('.pf-card', PF.el); if (c) c.hidden = true; }
+  function pfPulse() {
+    const b = PF.el && $('.pf-ball', PF.el);
+    if (!b) return;
+    b.classList.remove('pulse'); void b.offsetWidth; b.classList.add('pulse');
+  }
+  async function pfFetch() {
+    clearTimeout(PF.timer);
+    if (!S.pin) return;
+    const pk = S.pin.pk;
+    let next = 15000;
+    if (!document.hidden) {
+      try {
+        const d = await api(`/api/v1.1/game/${pk}/feed/live?fields=${PF_FIELDS}`);
+        if (!S.pin || S.pin.pk !== pk) return;
+        const gd = d.gameData || {}, ls = (d.liveData && d.liveData.linescore) || {}, t = ls.teams || {}, o = ls.offense || {};
+        const st = gameState(gd.status, ls, gd.datetime && gd.datetime.dateTime);
+        const cur = {
+          k: st.k, txt: st.txt,
+          aw: teamAbbr(gd.teams && gd.teams.away), hm: teamAbbr(gd.teams && gd.teams.home),
+          ar: (t.away && t.away.runs) || 0, hr: (t.home && t.home.runs) || 0,
+          half: `${ls.currentInning || 0}-${ls.inningState || ''}`,
+          inn: ls.currentInning ? `${ls.currentInning}局${HALF[ls.inningState] || ''}` : '',
+          outs: ls.outs || 0, balls: ls.balls || 0, strikes: ls.strikes || 0,
+          bases: [o.first, o.second, o.third].map((x) => (x ? 1 : 0)),
+        };
+        const pv = PF.data; PF.data = cur;
+        if (pv && (pv.ar !== cur.ar || pv.hr !== cur.hr || pv.half !== cur.half || pv.k !== cur.k)) pfPulse();
+        pfRender();
+        if (cur.k === 'final' || cur.k === 'other') return; // 已結束：不再更新，按鈕保留到取消釘選
+        next = cur.k === 'upcoming' ? 30000 : 15000;
+      } catch (e) { /* 網路失敗：下次再試 */ }
+    }
+    PF.timer = setTimeout(pfFetch, next);
+  }
+  function pfCardHTML() {
+    const p = PF.data;
+    if (!p) return '<div class="pf-h"><span>載入中…</span></div>';
+    const live = p.k === 'live';
+    const dia = (on, c) => `<i class="${c}${on ? ' on' : ''}"></i>`;
+    return `<div class="pf-h"><span class="${live ? 'pf-lv' : ''}">${live ? '● LIVE' : esc(p.txt)}</span><span>${live ? esc(p.inn) : ''}</span></div>
+      <div class="pf-sc"><b>${esc(p.aw)}</b><em>${p.ar}</em><u>:</u><em class="r">${p.hr}</em><b>${esc(p.hm)}</b></div>
+      ${live ? `<div class="pf-f"><span class="pf-bs">${dia(p.bases[1], 'b2')}${dia(p.bases[2], 'b3')}${dia(p.bases[0], 'b1')}</span><span>${p.outs}出局　${p.balls}-${p.strikes}</span></div>` : ''}
+      <div class="pf-a"><button data-pf="unpin">取消釘選</button><button data-pf="go">進入轉播 ›</button></div>`;
+  }
+  function pfPlace() {
+    const el = PF.el; if (!el) return;
+    const ball = $('.pf-ball', el), card = $('.pf-card', el);
+    const W = innerWidth, H = innerHeight;
+    const safeB = Math.max(0, (parseFloat(getComputedStyle(document.body).paddingBottom) || 0) - 92);
+    const minTop = 130, maxTop = Math.max(minTop, H - PF_SIZE - 96 - safeB);
+    let pos = S.fabPos || { s: 'r', y: 1 };
+    const x = PF.drag && PF.drag.moved ? PF.drag.x : (pos.s === 'l' ? 10 : W - PF_SIZE - 10);
+    const y = PF.drag && PF.drag.moved ? PF.drag.y : minTop + pos.y * (maxTop - minTop);
+    ball.style.left = x + 'px'; ball.style.top = Math.min(maxTop, Math.max(minTop, y)) + 'px';
+    if (!card.hidden) {
+      const cw = Math.min(250, W - 16);
+      card.style.width = cw + 'px';
+      card.style.left = Math.min(W - cw - 8, Math.max(8, x + PF_SIZE - cw)) + 'px';
+      const bt = parseFloat(ball.style.top);
+      if (bt > H / 2) { card.style.top = 'auto'; card.style.bottom = (H - bt + 10) + 'px'; }
+      else { card.style.bottom = 'auto'; card.style.top = (bt + PF_SIZE + 10) + 'px'; }
+    }
+  }
+  function pfRender() {
+    if (!PF.el) return;
+    const show = !!S.pin && !pfOnThis();
+    PF.el.hidden = !show;
+    if (!show) { pfClose(); return; }
+    const card = $('.pf-card', PF.el);
+    if (!card.hidden) card.innerHTML = pfCardHTML();
+    pfPlace();
+  }
+  function pfInit() {
+    const el = document.createElement('div');
+    el.className = 'pfab'; el.hidden = true;
+    el.innerHTML = `<div class="pf-card" hidden></div><button class="pf-ball" aria-label="釘選的比賽"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M12 7Q19 20 12 33M28 7Q21 20 28 33"/></svg></button>`;
+    document.body.appendChild(el); PF.el = el;
+    const ball = $('.pf-ball', el), card = $('.pf-card', el);
+    ball.addEventListener('pointerdown', (e) => {
+      ball.setPointerCapture(e.pointerId);
+      const r = ball.getBoundingClientRect();
+      PF.drag = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: r.left, oy: r.top, x: r.left, y: r.top, moved: false };
+    });
+    ball.addEventListener('pointermove', (e) => {
+      const d = PF.drag; if (!d || d.id !== e.pointerId) return;
+      const dx = e.clientX - d.sx, dy = e.clientY - d.sy;
+      if (!d.moved && Math.hypot(dx, dy) < 6) return;
+      if (!d.moved) { d.moved = true; card.hidden = true; ball.classList.add('drag'); }
+      d.x = d.ox + dx; d.y = d.oy + dy; pfPlace();
+    });
+    const end = (e) => {
+      const d = PF.drag; if (!d || d.id !== e.pointerId) return;
+      PF.drag = null; ball.classList.remove('drag');
+      if (d.moved) { // 放開後吸附到左或右側，記住位置
+        const H = innerHeight, safeB = Math.max(0, (parseFloat(getComputedStyle(document.body).paddingBottom) || 0) - 92);
+        const minTop = 130, maxTop = Math.max(minTop, H - PF_SIZE - 96 - safeB);
+        S.fabPos = { s: d.x + PF_SIZE / 2 < innerWidth / 2 ? 'l' : 'r', y: Math.min(1, Math.max(0, (d.y - minTop) / (maxTop - minTop || 1))) };
+        store.set('fabPos', S.fabPos); pfPlace();
+      } else if (e.type === 'pointerup') {
+        card.hidden = !card.hidden;
+        if (!card.hidden) { card.innerHTML = pfCardHTML(); pfFetch(); }
+        pfPlace();
+      }
+    };
+    ball.addEventListener('pointerup', end); ball.addEventListener('pointercancel', end);
+    card.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-pf]'); if (!b || !S.pin) return;
+      if (b.dataset.pf === 'unpin') pfUnpin();
+      else { const pk = S.pin.pk; pfClose(); location.hash = '#/game/' + pk; }
+    });
+    document.addEventListener('pointerdown', (e) => { if (!card.hidden && !el.contains(e.target)) card.hidden = true; });
+    addEventListener('resize', pfPlace);
+    pfRender();
+    if (S.pin) pfFetch();
   }
 
   function boot() {
@@ -1403,14 +1558,6 @@
       store.set('lang', S.lang);
       applyLang();
       if (G && G.data) { G.sig = ''; renderGame(); }
-    };
-    let toastT = 0;
-    const toast = (txt, hold) => {
-      let t = document.getElementById('toast');
-      if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
-      t.textContent = txt; t.classList.add('show');
-      clearTimeout(toastT);
-      if (hold !== true) toastT = setTimeout(() => t.classList.remove('show'), 1400);
     };
     const manualRefresh = async () => {
       if (route$ !== 'scores') return;
@@ -1443,6 +1590,7 @@
 
     view.addEventListener('click', (e) => {
       if (e.target.closest('#favOpen')) { openFavSheet(); return; }
+      if (e.target.closest('#gPin')) { pfToggle(G && G.pk); return; }
       if (e.target.closest('#gFold')) { S.gFold = !S.gFold; store.set('gFold', S.gFold); $('#gCtl').classList.toggle('fold', S.gFold); return; }
       const st = e.target.closest('[data-set]');
       if (st) {
@@ -1564,6 +1712,7 @@
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
     }
+    pfInit();
     route();
   }
 
