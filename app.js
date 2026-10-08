@@ -834,6 +834,28 @@
     return out;
   }
 
+  function showSettings() {
+    route$ = 'settings';
+    setHeader('設定', false, 'settings');
+    const sw = (k, v) => `<button class="sw${v ? ' on' : ''}" data-set="${k}" role="switch" aria-checked="${v}"><i></i></button>`;
+    view.innerHTML = `
+      <div class="set">
+        <div class="srow"><div><b>文字轉播語言</b><small>事件描述顯示中文或英文原文</small></div>
+          <div class="sch"><button data-lang="zh" class="${S.lang === 'zh' ? 'on' : ''}">中文</button><button data-lang="en" class="${S.lang === 'en' ? 'on' : ''}">EN</button></div></div>
+        <div class="srow"><div><b>自動跟隨最新</b><small>文字轉播有新動態時自動回到最上方</small></div>${sw('autoFollow', S.autoFollow)}</div>
+        <div class="srow"><div><b>數據顯示更多欄位</b><small>打擊多顯示四壞、三振；投球多顯示失分、四壞、球數</small></div>${sw('boxMore', S.boxMore)}</div>
+        <div class="srow"><div><b>排名預設檢視</b><small>進入排名頁時先看哪一種</small></div>
+          <div class="sch"><button data-sv2="division" class="${S.standView === 'division' ? 'on' : ''}">分區</button><button data-sv2="league" class="${S.standView === 'league' ? 'on' : ''}">聯盟</button></div></div>
+        <div class="srow"><div><b>更新應用程式</b><small id="verTxt">清除快取並重新載入最新版本</small></div><button class="sact" id="reloadApp">更新</button></div>
+      </div>`;
+    fetch('sw.js', { cache: 'no-store' }).then((r) => r.text()).then((t) => {
+      const m = /VERSION\s*=\s*'([^']+)'/.exec(t);
+      const el = $('#verTxt');
+      if (m && el) el.textContent = '目前版本 ' + m[1] + '・清除快取並重新載入';
+    }).catch(() => {});
+    G = null;
+  }
+
   function showStandings() {
     route$ = 'standings';
     setHeader('MLB 排名', false, 'standings');
@@ -994,6 +1016,7 @@
     const [name, arg] = location.hash.replace(/^#\/?/, '').split('/');
     if (name === 'game' && /^\d+$/.test(arg || '')) return showGame(arg);
     if (name === 'standings') return showStandings();
+    if (name === 'settings') return showSettings();
     return showScores();
   }
 
@@ -1021,6 +1044,38 @@
     };
 
     view.addEventListener('click', (e) => {
+      const st = e.target.closest('[data-set]');
+      if (st) {
+        const k = st.dataset.set;
+        S[k] = !S[k];
+        store.set(k, S[k]);
+        st.classList.toggle('on', S[k]);
+        st.setAttribute('aria-checked', S[k]);
+        return;
+      }
+      const lg = e.target.closest('[data-lang]');
+      if (lg) {
+        S.lang = lg.dataset.lang; store.set('lang', S.lang); applyLang();
+        $$('[data-lang]').forEach((b) => b.classList.toggle('on', b === lg));
+        return;
+      }
+      const sv2 = e.target.closest('[data-sv2]');
+      if (sv2) {
+        S.standView = sv2.dataset.sv2; store.set('standView', S.standView);
+        $$('[data-sv2]').forEach((b) => b.classList.toggle('on', b === sv2));
+        return;
+      }
+      if (e.target.closest('#reloadApp')) {
+        const done = () => location.reload();
+        (async () => {
+          try {
+            if ('serviceWorker' in navigator) { const rs = await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map((r) => r.unregister())); }
+            if (window.caches) { const ks = await caches.keys(); await Promise.all(ks.map((k) => caches.delete(k))); }
+          } catch (_) {}
+          done();
+        })();
+        return;
+      }
       const play = e.target.closest('.play');
       if (play && G && G.open) {
         const k = Number(play.dataset.k);

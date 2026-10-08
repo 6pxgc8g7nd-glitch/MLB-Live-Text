@@ -82,10 +82,12 @@ main { max-width: 720px; margin: 0 auto; padding: 12px; }
 }
 .tb-in {
   display: flex; height: 100%; background: var(--card); border-radius: 14px;
-  -webkit-mask: radial-gradient(circle 8px at 50% 0, #0000 98%, #000) top / 100% 51% no-repeat,
-                radial-gradient(circle 8px at 50% 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
-          mask: radial-gradient(circle 8px at 50% 0, #0000 98%, #000) top / 100% 51% no-repeat,
-                radial-gradient(circle 8px at 50% 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
+  -webkit-mask: radial-gradient(circle 8px at 33.333% 0, #0000 98%, #000), radial-gradient(circle 8px at 66.666% 0, #0000 98%, #000),
+                radial-gradient(circle 8px at 33.333% 100%, #0000 98%, #000), radial-gradient(circle 8px at 66.666% 100%, #0000 98%, #000);
+  -webkit-mask-composite: source-in;
+          mask: radial-gradient(circle 8px at 33.333% 0, #0000 98%, #000), radial-gradient(circle 8px at 66.666% 0, #0000 98%, #000),
+                radial-gradient(circle 8px at 33.333% 100%, #0000 98%, #000), radial-gradient(circle 8px at 66.666% 100%, #0000 98%, #000);
+          mask-composite: intersect;
 }
 .tabbar a {
   position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
@@ -96,6 +98,7 @@ main { max-width: 720px; margin: 0 auto; padding: 12px; }
 .tabbar a.on { color: var(--navy); font-weight: 800; background: linear-gradient(#dbe7f4, #fff 70%); }
 .tabbar a:first-child.on { border-radius: 14px 0 0 14px; }
 .tabbar a:last-child.on { border-radius: 0 14px 14px 0; }
+.tabbar a:not(:first-child):not(:last-child).on { border-radius: 0; }
 
 /* ---------- 狀態標籤 ---------- */
 .pill {
@@ -439,3 +442,18 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 body.nonav .tabbar { transform: translateY(calc(100% + 30px)); }
 .fab { transition: bottom .25s ease; }
 body.nonav .fab { bottom: calc(24px + env(safe-area-inset-bottom)); }
+
+/* 設定頁 */
+.set { background: var(--card); border-radius: 12px; box-shadow: var(--shadow); margin-top: 12px; overflow: hidden; }
+.srow { display: flex; align-items: center; gap: 12px; padding: 14px; border-bottom: 1px dashed var(--line); }
+.srow:last-child { border-bottom: 0; }
+.srow b { display: block; font-size: 15px; }
+.srow small { display: block; color: var(--sub); font-size: 12px; margin-top: 2px; line-height: 1.4; }
+.srow > :last-child { margin-left: auto; flex: none; }
+.sch { display: flex; gap: 4px; background: var(--chip); border-radius: 9px; padding: 3px; }
+.sch button { border: 0; background: none; color: var(--sub); font-weight: 700; font-size: 13px; padding: 5px 12px; border-radius: 7px; }
+.sch button.on { background: #fff; color: var(--navy); box-shadow: 0 1px 3px rgba(0, 0, 0, .18); }
+.sw { width: 46px; height: 28px; border: 0; border-radius: 14px; background: #cfcfcf; position: relative; padding: 0; }
+.sw i { position: absolute; left: 3px; top: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: left .15s; }
+.sw.on { background: var(--navy); } .sw.on i { left: 21px; }
+.sact { border: 1px solid var(--navy); color: var(--navy); background: none; font-weight: 700; border-radius: 9px; padding: 6px 14px; }
