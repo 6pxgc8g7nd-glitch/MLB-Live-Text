@@ -88,7 +88,7 @@ main { max-width: 720px; margin: 0 auto; padding: 12px; }
   padding-top: 4px; color: var(--sub); font-size: 12px; font-weight: 600;
 }
 .tabbar a + a { border-left: 2px dashed #cfcfcf; }
-.tabbar svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tabbar svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .tabbar a.on { color: var(--navy); font-weight: 800; background: linear-gradient(#dbe7f4, #fff 70%); }
 .tabbar a:first-child.on { border-radius: 14px 0 0 14px; }
 .tabbar a:last-child.on { border-radius: 0 14px 14px 0; }
@@ -296,3 +296,5 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .game.other .gt { background: #b07d00; }
 .msub { margin-top: 4px; font-size: 11px; color: var(--sub); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .game.live .msub { color: var(--emph); font-weight: 700; }
+
+.tabbar svg.fl { fill: currentColor; stroke: none; }
