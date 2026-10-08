@@ -55,11 +55,11 @@ try:
         fx = pg.locator('#hrfx'); txt = lambda: fx.locator('.hrx-tk').inner_text().replace('\n', ' ')
         res = {'載入時不播': fx.count() == 0}
         pg.wait_for_timeout(11000)          # 第 1 次輪詢（約 10 秒）→ 第一支
-        res['第一支有播'] = fx.count() == 1 and '全壘打' in txt()
+        res['第一支有播'] = fx.count() == 1 and 'HOME RUN' in txt()
         pg.wait_for_timeout(4200)
         res['動畫結束後移除'] = fx.count() == 0
         pg.wait_for_timeout(4500)           # 第 2 次輪詢 → 第二支
-        res['第二支有播'] = fx.count() == 1 and '全壘打' in txt()
+        res['第二支有播'] = fx.count() == 1 and 'HOME RUN' in txt()
         res['無 JS 錯誤'] = not errs
 finally:
     srv.terminate()

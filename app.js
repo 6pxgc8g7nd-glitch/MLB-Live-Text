@@ -765,7 +765,7 @@
   function playHR(info) {
     const old = document.getElementById('hrfx'); if (old) old.remove();
     const el = document.createElement('div'); el.id = 'hrfx'; el.className = 'hrfx';
-    el.innerHTML = `<canvas></canvas><div class="hrx-flash"></div><div class="hrx-w"><div class="hrx-tk"><small>${esc(info.inn)}</small><h2>全壘打！</h2><p>${esc(info.kind)}${info.score ? ' ・ ' + esc(info.score) : ''}</p><small>${esc(info.who)}</small></div></div>`;
+    el.innerHTML = `<canvas></canvas><div class="hrx-flash"></div><div class="hrx-w"><div class="hrx-tk"><span class="hrx-tag">HOME RUN ・ ${esc(info.inn)}</span><h2>${esc(info.who)}</h2><p>${esc(info.kind)}${info.score ? `<b>${esc(info.score)}</b>` : ''}</p></div></div>`;
     document.body.appendChild(el);
     const cv = el.querySelector('canvas'), ctx = cv.getContext('2d');
     const d = window.devicePixelRatio || 1, W = window.innerWidth, H = window.innerHeight;
