@@ -405,3 +405,6 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 #langBtn { display: inline-flex; gap: 2px; padding: 3px; font-size: 14px; min-width: 0; }
 #langBtn span { padding: 0 8px; min-width: 30px; display: flex; align-items: center; justify-content: center; border-radius: 7px; color: rgba(255, 255, 255, .7); }
 #langBtn span.on { background: #fff; color: var(--navy); }
+
+#gameRow { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+#gameRow:active { opacity: .85; }

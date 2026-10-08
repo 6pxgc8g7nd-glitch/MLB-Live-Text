@@ -960,7 +960,6 @@
 
   function setHeader(title, isGame, tab) {
     $('#title').textContent = title;
-    $('#back').hidden = !isGame;
     $('#ballIc').hidden = isGame;
     $('#langBtn').hidden = !isGame;
     document.body.classList.toggle('ingame', isGame);
@@ -1008,7 +1007,7 @@
       applyLang();
       if (G && G.data) { G.sig = ''; renderGame(); }
     };
-    $('#back').onclick = () => {
+    $('#gameRow').onclick = () => {
       location.hash = '#/scores';
     };
 
