@@ -27,9 +27,9 @@ style.css             樣式（藍色票券風格）
 mock.js               測試模式的模擬比賽資料
 sw.js                 Service Worker（外殼 network-first，VERSION 變更即更新）
 manifest.webmanifest  PWA 設定
-icons/                App 圖示（192、512、apple-touch）
+icons/                App 圖示（192、512、apple-touch、maskable）
 logos/                球隊 logo 副本（見 logos/README.md）
-tests/hr_replay.py    用已完成的真實比賽回放，驗證全壘打偵測與動畫
+tests/                單元測試、截圖檢查、全壘打回放
 ```
 
 ## 本機執行
@@ -48,12 +48,13 @@ python3 -m http.server 8000
 
 ## 測試
 
-`tests/hr_replay.py` 以 Playwright（Chromium）開啟專案、回放一場已結束的比賽，檢查全壘打事件是否正確偵測並顯示動畫。
-它讀取本資料夾的檔案，執行前請先確認已儲存最新修改。
-
 ```bash
-pip install playwright && python3 tests/hr_replay.py
+node tests/unit.test.js          # 單元測試（解析、格式化、狀態判斷）
+python3 tests/shots.py [輸出資料夾]  # 以 Playwright 截 16 張頁面圖，輸出中 "errors: []" 應出現 16 次
+python3 tests/hr_replay.py       # 回放已結束的真實比賽，驗證全壘打偵測與動畫
 ```
+
+截圖與回放需要 `pip install playwright`（Chromium）。三者都讀取本資料夾的檔案，執行前請先儲存最新修改。
 
 ## 設計
 
