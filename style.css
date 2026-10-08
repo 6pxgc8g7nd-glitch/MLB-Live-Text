@@ -539,7 +539,6 @@ html, body { touch-action: manipulation; }
 .ft { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 5px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--sub); font-size: 10px; font-weight: 700; }
 .ft .tcl { width: 34px; height: 34px; object-fit: contain; margin: 0; }
 .ft.on { border-color: var(--navy); background: #eaf1f9; color: var(--navy); box-shadow: inset 0 0 0 1px var(--navy); }
-.ft.on::after { content: '★'; position: absolute; right: 3px; top: 0; color: #e0a800; font-size: 13px; }
 .fs-done { width: 100%; height: 46px; margin-top: 12px; border: 0; border-radius: 12px; background: var(--navy); color: #fff; font-weight: 800; font-size: 16px; }
 .g-tm { position: relative; }
 .fvm { position: absolute; top: 8px; right: 14px; z-index: 2; font-style: normal; font-size: 20px; line-height: 1; color: #e0a800; pointer-events: none; }
