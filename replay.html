@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>重播模式 · MLB Live Text</title>
+  <meta name="robots" content="noindex">
+  <style>
+    :root { --bg: #E6E6E6; --card: #fff; --text: #14202e; --sub: #5d6874; --line: #d2d2d2; --navy: #004B93; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", sans-serif; }
+    .wrap { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; align-items: flex-start; padding: 16px; }
+    aside { width: 340px; max-width: 100%; background: var(--card); border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.05); }
+    h1 { margin: 0 0 4px; font-size: 18px; color: var(--navy); }
+    p.note { margin: 0 0 14px; color: var(--sub); font-size: 12px; }
+    label { display: block; margin: 12px 0 4px; font-size: 12px; font-weight: 700; color: var(--sub); }
+    select, button, input[type=number] { font: inherit; }
+    select, input[type=number] { width: 100%; height: 36px; border: 1px solid var(--line); border-radius: 10px; padding: 0 8px; background: #fff; }
+    .row { display: flex; gap: 8px; }
+    .row > * { flex: 1; }
+    button { height: 36px; border: 0; border-radius: 10px; background: var(--navy); color: #fff; font-weight: 800; cursor: pointer; }
+    button.ghost { background: var(--bg); color: var(--navy); }
+    input[type=range] { width: 100%; accent-color: var(--navy); }
+    #status { margin-top: 8px; padding: 10px 12px; border-radius: 10px; background: var(--bg); font-variant-numeric: tabular-nums; }
+    #status b { display: block; font-size: 16px; }
+    #halves { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+    #halves button { height: 30px; font-size: 12px; background: var(--bg); color: var(--navy); }
+    #halves button.on { background: var(--navy); color: #fff; }
+    .phone { width: 390px; max-width: 100%; height: min(844px, calc(100vh - 32px)); border-radius: 28px; overflow: hidden; background: #000; padding: 6px; box-shadow: 0 6px 24px rgba(0,0,0,.25); }
+    .phone iframe { width: 100%; height: 100%; border: 0; border-radius: 22px; background: var(--bg); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <aside>
+      <h1>重播模式</h1>
+      <p class="note">把已結束的真實比賽當作直播重播，用 MLB 的歷史快照（約每 15 秒一筆）。開發測試用，不會出現在正式 App 裡。</p>
+      <label for="game">比賽（最近 7 天已結束）</label>
+      <select id="game"><option>載入中…</option></select>
+      <label for="pk">或輸入 gamePk</label>
+      <div class="row"><input id="pk" type="number" inputmode="numeric" placeholder="例如 849833"><button id="load" class="ghost">載入</button></div>
+      <label>播放</label>
+      <div class="row">
+        <button id="play">暫停</button>
+        <select id="speed" aria-label="倍速">
+          <option value="1">1×（真實速度）</option><option value="5">5×</option><option value="10" selected>10×</option><option value="30">30×</option><option value="60">60×</option>
+        </select>
+      </div>
+      <label for="seek">進度</label>
+      <input id="seek" type="range" min="0" max="1000" value="0">
+      <div id="status"><b>—</b><span>等待比賽載入</span></div>
+      <label>跳到半局</label>
+      <div id="halves"></div>
+    </aside>
+    <div class="phone"><iframe id="app" title="App 畫面"></iframe></div>
+  </div>
+
+  <script type="module">
+    import { esc, twDate, shiftDate } from './js/util.js';
+    import { teamAbbr } from './js/dict.js';
+
+    const $ = (s) => document.querySelector(s);
+    const frame = $('#app');
+    const tw = new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    const HALF = { Top: '上', Bottom: '下', Middle: '中場', End: '局末' };
+    let st = null, dragging = false;
+
+    const send = (cmd, value) => frame.contentWindow && frame.contentWindow.postMessage({ type: 'replay', cmd, value }, location.origin);
+    function load(pk) {
+      if (!/^\d+$/.test(String(pk))) return;
+      st = null; $('#halves').innerHTML = '';
+      $('#status').innerHTML = '<b>載入中…</b><span>抓取歷史快照</span>';
+      frame.src = `index.html?replay=${pk}#/game/${pk}`;
+      const sel = $('#game');
+      if ([...sel.options].some((o) => o.value === String(pk))) sel.value = String(pk); else sel.selectedIndex = -1;
+      history.replaceState(null, '', `?pk=${pk}`);
+    }
+
+    // 最近 7 天（台灣日期）已結束的比賽，新的在前
+    (async () => {
+      const today = twDate();
+      const r = await fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&startDate=${shiftDate(today, -7)}&endDate=${today}`);
+      const d = await r.json();
+      const games = (d.dates || []).flatMap((x) => x.games || [])
+        .filter((g) => g.status && g.status.abstractGameState === 'Final' && !/postpone|cancel/i.test(g.status.detailedState || ''))
+        .sort((a, b) => Date.parse(b.gameDate) - Date.parse(a.gameDate));
+      const sel = $('#game');
+      sel.innerHTML = '';
+      games.forEach((g) => {
+        const a = g.teams.away, h = g.teams.home;
+        const o = document.createElement('option');
+        o.value = g.gamePk;
+        o.textContent = `${tw.format(new Date(g.gameDate)).split(' ')[0]}　${teamAbbr(a.team)} ${a.score ?? ''} – ${h.score ?? ''} ${teamAbbr(h.team)}`;
+        sel.appendChild(o);
+      });
+      if (!games.length) sel.innerHTML = '<option>最近 7 天沒有已結束的比賽</option>';
+      const want = new URLSearchParams(location.search).get('pk');
+      if (want) { $('#pk').value = want; load(want); }
+      else if (games.length) load(games[0].gamePk);
+    })().catch(() => { $('#game').innerHTML = '<option>賽程載入失敗，請直接輸入 gamePk</option>'; });
+
+    $('#game').addEventListener('change', (e) => load(e.target.value));
+    $('#load').addEventListener('click', () => load($('#pk').value.trim()));
+    $('#play').addEventListener('click', () => send(st && st.playing ? 'pause' : 'play'));
+    $('#speed').addEventListener('change', (e) => send('speed', e.target.value));
+    $('#seek').addEventListener('input', () => { dragging = true; });
+    $('#seek').addEventListener('change', (e) => {
+      dragging = false;
+      if (st) send('seek', st.start + (e.target.value / 1000) * (st.end - st.start));
+    });
+    $('#halves').addEventListener('click', (e) => { const b = e.target.closest('[data-i]'); if (b) send('half', b.dataset.i); });
+    frame.addEventListener('load', () => send('speed', $('#speed').value));
+
+    addEventListener('message', (e) => {
+      if (e.origin !== location.origin || e.source !== frame.contentWindow || !e.data || e.data.type !== 'replay-status') return;
+      const first = !st;
+      st = e.data;
+      $('#play').textContent = st.playing ? '暫停' : '播放';
+      if (!dragging) $('#seek').value = Math.round(((st.vt - st.start) / (st.end - st.start || 1)) * 1000);
+      const inn = st.inning ? `${st.inning}局${HALF[st.half] || ''}` : '開賽前';
+      const cnt = st.half === 'Top' || st.half === 'Bottom' ? `　${st.outs ?? 0} 出局　${st.balls ?? 0}-${st.strikes ?? 0}` : '';
+      $('#status').innerHTML = `<b>${esc(inn + cnt)}</b><span>${esc(st.state)}・台灣時間 ${esc(tw.format(new Date(st.vt)))}</span>`;
+      if (first) {
+        $('#halves').innerHTML = st.halves.map((h, i) => `<button data-i="${i}">${h.inning}${h.top ? '上' : '下'}</button>`).join('');
+      }
+      const cur = st.halves.findIndex((h) => h.inning === st.inning && (h.top ? 'Top' : 'Bottom') === st.half);
+      document.querySelectorAll('#halves button').forEach((b, i) => b.classList.toggle('on', i === cur));
+    });
+  </script>
+</body>
+</html>

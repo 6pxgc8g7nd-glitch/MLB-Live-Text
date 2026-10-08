@@ -7,6 +7,7 @@ import { standingsHTML } from '../js/standings.js';
 import { S, setG } from '../js/state.js';
 import { pLink, pickStat, playerCardHTML } from '../js/player.js';
 import { wpPoints, wpHTML } from '../js/winprob.js';
+import { tcToMs, stampAt, halfStarts } from '../js/replay.js';
 
 const T = { twDate, shiftDate, evZh, seriesZh, gameState, cardHTML, headHTML, textHTML, boxHTML, standingsHTML, S, setG };
 
@@ -162,5 +163,20 @@ assert.ok(wh.includes('class="wp-line"') && wh.includes('>CWS<') && wh.includes(
 assert.ok(wh.includes('CWS 60%') || wh.includes('CLE 60%'), '目前勝率以領先方表示');
 assert.ok(wh.includes('B &lt;i&gt; 全壘打') && wh.indexOf('B &lt;i&gt;') < wh.indexOf('>C 二壘安打'), '影響最大的打席依幅度排序且跳脫');
 assert.ok(wh.includes('CLE +26%'), '客隊得利的打席歸給客隊');
+
+// 重播模式：時間點換算與搜尋
+assert.strictEqual(tcToMs('20261007_205955'), Date.parse('2026-10-07T20:59:55Z'));
+const tms = ['20261007_200000', '20261007_200015', '20261007_200030'].map(tcToMs);
+assert.strictEqual(stampAt(tms, tms[1] + 5000), 1, '取不晚於目前時間的最後一筆');
+assert.strictEqual(stampAt(tms, tms[2] + 1), 2);
+assert.strictEqual(stampAt(tms, tms[0] - 1), 0, '比第一筆還早就用第一筆');
+const hs = halfStarts([
+  { about: { inning: 1, isTopInning: true, startTime: '2026-10-07T20:08:10Z' } },
+  { about: { inning: 1, isTopInning: true, startTime: '2026-10-07T20:09:10Z' } },
+  { about: { inning: 1, isTopInning: false, startTime: '2026-10-07T20:15:00Z' } },
+  { about: { inning: 2, halfInning: 'top', startTime: '2026-10-07T20:21:00Z' } },
+]);
+assert.deepStrictEqual(hs.map((h) => `${h.inning}${h.top ? '上' : '下'}`), ['1上', '1下', '2上']);
+assert.strictEqual(hs[1].t, Date.parse('2026-10-07T20:15:00Z'));
 
 console.log('all tests passed');

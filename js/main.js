@@ -4,7 +4,7 @@
  *       → shell 外框與路由 → gestures 滑動換頁與下拉更新 → main 啟動與事件綁定 */
 
 import { $, $$, store, twDate, shiftDate, fmtClock } from './util.js';
-import { cache, lastOk } from './api.js';
+import { api, cache, lastOk } from './api.js';
 import { S, view, poller, route$, G, setView } from './state.js';
 import { gameState, skelTicket, skelRows } from './scores.js';
 import { renderBody, renderGame } from './game.js';
@@ -175,7 +175,11 @@ function boot() {
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   }
-  route();
+  // 開發用重播模式（見 replay.html）：網址帶 ?replay=<gamePk> 才載入，正式使用不會下載這段
+  const rp = new URLSearchParams(location.search).get('replay');
+  if (rp && /^\d+$/.test(rp)) {
+    import('./replay.js').then((m) => m.startReplay(rp, api)).catch((e) => toast((e && e.message) || '重播載入失敗', true)).then(route);
+  } else route();
 }
 
 boot();

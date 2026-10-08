@@ -3,7 +3,9 @@ import { API, $, store, fmtClock } from './util.js';
 import { G } from './state.js';
 
 export const cache = new Map(); // path -> { t, d }  只用來避免短時間內重複請求
-export const api = (path, opts) => apiReal(path, opts);
+let override = null; // 重播模式（js/replay.js）會換掉部分請求；平常一律直接抓 API
+export const setApiOverride = (fn) => { override = fn; };
+export const api = (path, opts) => (override ? override(path, opts, apiReal) : apiReal(path, opts));
 export async function apiReal(path, { ttl = 0, timeout = 12000 } = {}) {
   const hit = cache.get(path);
   if (hit && Date.now() - hit.t < ttl) return hit.d;
