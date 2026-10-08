@@ -297,4 +297,3 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .msub { margin-top: 4px; font-size: 11px; color: var(--sub); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .game.live .msub { color: var(--emph); font-weight: 700; }
 
-.tabbar svg.fl { fill: currentColor; stroke: none; }
