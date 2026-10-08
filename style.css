@@ -291,3 +291,8 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .g-foot.dc span { display: flex; align-items: center; gap: 6px; color: var(--text); font-weight: 600; }
 .g-foot.dc em { font-style: normal; font-size: 11px; font-weight: 800; padding: 0 6px; border-radius: 5px; color: #fff; }
 .g-foot.dc em.w { background: var(--navy); } .g-foot.dc em.l { background: #8b95a1; } .g-foot.dc em.s { background: var(--emph); }
+
+.gt { min-width: 64px; text-align: center; padding-left: 0; padding-right: 0; }
+.game.other .gt { background: #b07d00; }
+.msub { margin-top: 4px; font-size: 11px; color: var(--sub); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.game.live .msub { color: var(--emph); font-weight: 700; }

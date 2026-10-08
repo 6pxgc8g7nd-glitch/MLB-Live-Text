@@ -289,11 +289,12 @@
         ${logo(t.team)}
         <div class="rc">${esc(rec(t))}</div>
       </div>`;
-    const mid = showScore
+    const subTxt = st.k === 'final' ? st.txt.replace('比賽結束', '') : st.k === 'other' && st.txt !== '延賽' && st.txt !== '取消' ? st.txt : st.k === 'other' ? '' : st.txt;
+    const mid = '<div class="g-mid">' + (showScore
       ? `<div class="big">${dash(a.score ?? 0)}<i>:</i>${dash(h.score ?? 0)}</div>`
-      : '<div class="big vs">VS</div>';
+      : '<div class="big vs">VS</div>') + (subTxt ? `<div class="msub">${esc(subTxt)}</div>` : '') + '</div>';
     if (!foot) foot = `<div class="g-foot">${st.k === 'live' ? '進入文字轉播 ›' : st.k === 'final' ? '查看比賽紀錄 ›' : '尚無預定先發資訊'}</div>`;
-    const corner = st.k === 'live' ? `● ${st.txt}` : st.txt;
+    const corner = { live: '● 進行', upcoming: '○ 未賽', final: '■ 終了' }[st.k] || (st.txt === '取消' ? '△ 取消' : st.txt === '延賽' ? '△ 延賽' : '△ 暫停');
     return `
       <a class="game ${st.k}" href="#/game/${g.gamePk}">
         <span class="gt">${esc(corner)}</span>
