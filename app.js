@@ -907,7 +907,7 @@
     list.forEach((s) => { const g = (s.games || [])[0]; if (g) (byType[g.gameType] = byType[g.gameType] || []).push(s); });
     const order = { F: 0, L: 1, D: 2, W: 3 };
     const groups = { live: [], todo: [], fin: [] };
-    ['F', 'L', 'D', 'W'].forEach((t) => {
+    ['W', 'D', 'L', 'F'].forEach((t) => {
       (byType[t] || []).slice().sort((x, y) => (x.series.sortNumber || 0) - (y.series.sortNumber || 0)).forEach((s) => {
         const r = seriesHTML(s);
         if (r) groups[r.k].push(r.html);
