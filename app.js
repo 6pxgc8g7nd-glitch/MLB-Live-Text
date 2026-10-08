@@ -699,8 +699,6 @@
     if (lb) lb.style.visibility = S.gtab === 'text' ? 'visible' : 'hidden';
   }
 
-  const bsoRow = (lbl, n, max, cls) => `<div class="br"><em>${lbl}</em>${Array.from({ length: max }, (_, i) => `<i class="${cls}${i < (n || 0) ? ' on' : ''}"></i>`).join('')}</div>`;
-  const bso = (ls) => `<div class="bso" aria-label="${dash(ls.balls)} 壞 ${dash(ls.strikes)} 好 ${dash(ls.outs)} 出局">${bsoRow('B', ls.balls, 3, 'b')}${bsoRow('S', ls.strikes, 2, 's')}${bsoRow('O', ls.outs, 2, 'o')}</div>`;
   function gameHeader(d) {
     const gd = d.gameData || {}, ls = (d.liveData && d.liveData.linescore) || {};
     const aT = (gd.teams && gd.teams.away) || {}, hT = (gd.teams && gd.teams.home) || {};
@@ -721,7 +719,7 @@
       if (on) {
         const off = ls.offense || {}, def = ls.defense || {};
         const bs = `<svg class="lbs" viewBox="0 0 40 30" aria-hidden="true"><rect x="15" y="1" width="10" height="10" transform="rotate(45 20 6)" class="${off.second ? 'on' : ''}"/><rect x="2" y="12" width="10" height="10" transform="rotate(45 7 17)" class="${off.third ? 'on' : ''}"/><rect x="28" y="12" width="10" height="10" transform="rotate(45 33 17)" class="${off.first ? 'on' : ''}"/></svg>`;
-        lbEl.innerHTML = `<div class="lm"><b>${S.lang === 'zh' ? '打' : 'AB'} ${esc((off.batter && off.batter.fullName) || '–')}</b><span>${S.lang === 'zh' ? '投' : 'P'} ${esc((def.pitcher && def.pitcher.fullName) || '–')}</span></div>${bs}${bso(ls)}`;
+        lbEl.innerHTML = `<div class="lm"><b>${S.lang === 'zh' ? '打' : 'AB'} ${esc((off.batter && off.batter.fullName) || '–')}</b><span>${S.lang === 'zh' ? '投' : 'P'} ${esc((def.pitcher && def.pitcher.fullName) || '–')}</span></div>${bs}<div class="lc"><b>${dash(ls.balls)}-${dash(ls.strikes)}</b><span>${dash(ls.outs)} ${S.lang === 'zh' ? '出局' : 'out'}</span></div>`;
       }
     }
     $('#gameRow').innerHTML = `<div class="gstrip">${blk(aT)}<div class="gm">${showN ? `<b class="gn ${st.k}">${run('away')} : ${run('home')}</b>` : '<b class="gn vs">VS</b>'}<small>${esc(st.txt)}</small></div>${blk(hT)}</div>`;
