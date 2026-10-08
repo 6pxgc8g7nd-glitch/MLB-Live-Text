@@ -312,15 +312,18 @@
     if (!box) return;
     if (!games.length) {
       box.innerHTML = '<div class="empty">這一天沒有比賽</div>';
+      box._sig = '';
       return;
     }
     const groups = { live: [], upcoming: [], final: [], other: [] };
     games.forEach((g) => groups[gameState(g.status, g.linescore, g.gameDate).k].push(g));
     const titles = { live: '進行中', upcoming: '尚未開打', final: '已結束', other: '其他' };
-    box.innerHTML = ['live', 'upcoming', 'final', 'other']
+    const html = ['live', 'upcoming', 'final', 'other']
       .filter((k) => groups[k].length)
       .map((k) => `<h2 class="grp">${titles[k]}<small>${groups[k].length}</small></h2>${groups[k].map(cardHTML).join('')}`)
       .join('');
+    // 內容沒變就不重畫，避免隊徽被重新載入而閃爍
+    if (html !== box._sig) { box.innerHTML = html; box._sig = html; }
     loadPitStats(games);
   }
 
