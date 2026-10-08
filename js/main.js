@@ -57,6 +57,11 @@ function boot() {
 
   view.addEventListener('click', (e) => {
     if (e.target.closest('#favOpen')) { openFavSheet(); return; }
+    if (e.target.closest('#rpStart') && G && G.pk) {
+      const pk = G.pk;
+      import('./replay.js').then((m) => m.startInApp(pk, api, route)).catch((err) => toast((err && err.message) || '重播載入失敗'));
+      return;
+    }
     if (e.target.closest('#gFold')) { S.gFold = !S.gFold; store.set('gFold', S.gFold); $('#gCtl').classList.toggle('fold', S.gFold); return; }
     const sv2 = e.target.closest('[data-sv2]');
     if (sv2) {

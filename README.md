@@ -19,6 +19,8 @@
 - **局數表與數據**：局數表（含 H、E，左右欄固定、中間可滑動）、打擊與投球數據（可展開更多欄位）
 - **球員小卡**：點文字轉播裡的球員名字、目前打席條左半邊或數據頁的整列，從下方滑出本季／生涯數據；
   從轉播或打席條開啟時另外顯示打者對投手的生涯對戰，點對手名字可直接換成對手的小卡
+- **重播**：已結束的比賽頁有「重播這場比賽」按鈕，把整場比賽當作直播重播（任何日期都可以，用日曆找到比賽即可）；
+  下方控制列可播放／暫停、調倍速（1×–60×）、跳到任一半局、拖進度條，按「結束」或離開這場比賽就回到最終結果
 - **勝率走勢**：數據頁上方的主隊勝率折線，可拖曳、滑鼠移動或用方向鍵逐打席查看，並列出影響最大的三個打席
 - **排名與季後賽**：分區／聯盟排名（含季後賽線），季後賽系列賽戰況與對戰樹
 - **最愛球隊**：在設定頁選擇，比分頁會把這些球隊的比賽排在各組前面，比分、排名與季後賽頁都會標示
@@ -45,8 +47,8 @@ js/                   主程式，原生 ES modules，不需建置
   settings.js         設定頁與最愛球隊
   shell.js            外框：標題欄日期、日曆、路由
   gestures.js         左右滑動換頁、下拉更新
-  replay.js           重播模式（只在網址帶 ?replay= 時載入）
-replay.html           重播模式控制頁（開發用）
+  replay.js           重播（按下重播按鈕或網址帶 ?replay= 時才載入）
+replay.html           重播的開發用外框頁
 style.css             樣式（藍色票券風格）
 sw.js                 Service Worker（外殼 network-first，VERSION 變更即更新）
 manifest.webmanifest  PWA 設定
@@ -71,15 +73,19 @@ python3 -m http.server 8000
 需要經過 HTTP 伺服器才能載入 ES modules 與註冊 Service Worker，直接開檔案不行。
 `http.server` 不會送出快取標頭，瀏覽器可能沿用舊的 CSS／JS；改完看不到效果時請強制重新整理。
 
-## 重播模式（開發用）
+## 重播
 
-沒有比賽進行時，也能看到「直播中」的畫面：開啟 `replay.html`
+App 內：進入任何一場已結束的比賽，按局數表下方的「重播這場比賽」。重播用 MLB 的歷史快照
+（`feed/live?timecode=`，約每 15 秒一筆）把比賽當作直播播放，目前打席條、文字轉播、勝率圖、全壘打動畫、球員小卡
+都會照直播的方式運作；重播期間下方導覽列換成控制列，按「結束」或離開這場比賽就停止。
+
+開發用外框：沒有比賽進行時想並排看控制項與手機畫面，可以開 `replay.html`
 （本機 http://localhost:8000/replay.html，或網站上的 https://6pxgc8g7nd-glitch.github.io/MLB-Live-Text/replay.html），
 選一場最近 7 天已結束的比賽，或輸入 gamePk。它會用 MLB 的歷史快照（`feed/live?timecode=`，約每 15 秒一筆）
 把比賽當作直播重播，旁邊是真正的 App 畫面：目前打席條、文字轉播、勝率圖、全壘打動畫都會照直播的方式運作。
 
 - 可暫停、調倍速（1×–60×）、拖進度條、跳到任一半局
-- 只在網址帶 `?replay=<gamePk>` 時才載入 `js/replay.js`，正式 App 的畫面與設定頁不受影響
+- 外框透過網址的 `?replay=<gamePk>` 啟動 App 內的重播，`js/replay.js` 只有用到時才會下載
 - 手機上控制面板在上方，App 畫面在下方
 
 ## 部署與更新
@@ -108,7 +114,7 @@ node scripts/sw.mjs sync              # 也可以手動執行：重寫 SHELL 清
 node tests/unit.test.js          # 單元測試（解析、格式化、球員小卡、勝率圖、重播），也可用 npm test
 npm ci && npx eslint .           # ESLint（第一次先 npm ci 安裝）
 node scripts/sw.mjs check        # sw.js 的 SHELL 清單是否和實際檔案一致（加上 git ref 會一併檢查 VERSION 是否調高）
-python3 tests/shots.py [輸出資料夾]  # 以 Playwright 截 17 張頁面圖（模擬 API），有 JS 錯誤時回傳失敗
+python3 tests/shots.py [輸出資料夾]  # 以 Playwright 截 18 張頁面圖（模擬 API），有 JS 錯誤時回傳失敗
 python3 tests/hr_replay.py       # 回放已結束的真實比賽，驗證全壘打偵測與動畫（需要網路）
 node scripts/verify-diffpatch.mjs <gamePk> [分鐘]  # 比賽進行中：驗證差異更新與整份資料逐欄一致、統計省下的流量
 ```

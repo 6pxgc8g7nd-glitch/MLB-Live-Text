@@ -57,7 +57,8 @@ def P(idx, inn, half, ev, desc, bat, pit, score=False, rbi=None, a=None, h=None,
     r = {'event': ev, 'description': desc}
     if rbi: r['rbi'] = rbi
     if a is not None: r['awayScore'] = a; r['homeScore'] = h
-    p = {'about': {'atBatIndex': idx, 'inning': inn, 'halfInning': half, 'isComplete': done, 'isScoringPlay': score},
+    p = {'about': {'atBatIndex': idx, 'inning': inn, 'halfInning': half, 'isComplete': done, 'isScoringPlay': score,
+                   'startTime': iso(start + timedelta(hours=4, minutes=2 * idx))},
          'result': r, 'matchup': {'batter': {'id': 1000 + idx, 'fullName': bat}, 'pitcher': {'id': 2000 + len(pit), 'fullName': pit}}, 'count': {'outs': outs}}
     if pe: p['playEvents'] = pe
     return p
@@ -146,8 +147,17 @@ for q in plays:
                     'about': {'inning': q['about']['inning'], 'isTopInning': q['about']['halfInning'] == 'top', 'isComplete': True},
                     'result': {'event': q['result']['event']}, 'matchup': {'batter': q['matchup']['batter']}})
 
+# 重播：第 2 場（已結束）的歷史快照時間點，每分鐘一筆
+_t0 = min(q['about']['startTime'] for q in plays)
+_t0 = datetime.strptime(_t0, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
+stamps = [(_t0 + timedelta(minutes=m)).strftime('%Y%m%d_%H%M%S') for m in range(-1, 200)]
+
 def handler(route):
     url = route.request.url
+    if '/feed/live/timestamps' in url:
+        return route.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin': '*'}, body=json.dumps(stamps))
+    if '/game/2/feed/live' in url and 'timecode=' not in url:  # 已結束比賽的最終資料（有重播按鈕）
+        return route.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin': '*'}, body=json.dumps(feed('Final', 'Final')))
     if '/winProbability' in url:
         return route.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin': '*'}, body=json.dumps(wp_data))
     if 'stats=vsPlayerTotal' in url:
@@ -177,7 +187,7 @@ httpd = socketserver.TCPServer(('127.0.0.1', PORT), functools.partial(Q, directo
 PORT = httpd.server_address[1]
 threading.Thread(target=httpd.serve_forever, daemon=True).start()
 
-shots = [('scores', '#/scores', 'light'), ('gametop', '#/game/1', 'light'), ('game', '#/game/1', 'light'), ('box', '#/game/1', 'light', 'box'), ('settings', '#/settings', 'light'), ('yday', '#/scores', 'light'), ('err', '#/scores', 'light'), ('stand', '#/standings', 'light'), ('tset', '#/settings', 'light'), ('post', '#/standings', 'light'), ('br', '#/standings', 'light'), ('fav', '#/scores', 'light'), ('favst', '#/standings', 'light'), ('favset', '#/settings', 'light'), ('favsheet', '#/settings', 'light'), ('pcard', '#/game/1', 'light'), ('wp', '#/game/1', 'light', 'box')]
+shots = [('scores', '#/scores', 'light'), ('gametop', '#/game/1', 'light'), ('game', '#/game/1', 'light'), ('box', '#/game/1', 'light', 'box'), ('settings', '#/settings', 'light'), ('yday', '#/scores', 'light'), ('err', '#/scores', 'light'), ('stand', '#/standings', 'light'), ('tset', '#/settings', 'light'), ('post', '#/standings', 'light'), ('br', '#/standings', 'light'), ('fav', '#/scores', 'light'), ('favst', '#/standings', 'light'), ('favset', '#/settings', 'light'), ('favsheet', '#/settings', 'light'), ('pcard', '#/game/1', 'light'), ('wp', '#/game/1', 'light', 'box'), ('rp', '#/game/2', 'light')]
 
 failures = []
 with sync_playwright() as p:
@@ -203,6 +213,9 @@ with sync_playwright() as p:
             pg.evaluate("document.querySelector('#wp').scrollIntoView(); window.scrollBy(0, -170)"); pg.wait_for_timeout(300)
             pg.hover('.wp-c', position={'x': 200, 'y': 60}); pg.wait_for_timeout(200)
             print('wp:', pg.evaluate("[(document.querySelector('.wp-now')||{}).textContent, (document.querySelector('.wp-tip')||{}).innerText]"))
+        if name == 'rp':
+            pg.click('#rpStart'); pg.wait_for_timeout(1500)
+            print('rp:', pg.evaluate("[(document.querySelector('#rpBar .rp-l b')||{}).textContent, getComputedStyle(document.querySelector('.tabbar')).display, !!document.querySelector('#plays .play')]"))
         if name == 'pcard':
             pg.click('#plays .pl-n'); pg.wait_for_timeout(700)  # 點轉播裡的球員名字
             print('pcard:', pg.evaluate("(document.querySelector('#pcdBody')||{}).innerText").replace('\n', ' | ')[:120])

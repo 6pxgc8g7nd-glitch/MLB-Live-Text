@@ -833,3 +833,22 @@ i.sk { font-style: normal; height: 12px; }
 .wp-ki { flex: none; width: 44px; color: var(--sub); font-size: 12px; }
 .wp-kw { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wp-keys b { flex: none; color: var(--navy); font-variant-numeric: tabular-nums; }
+
+/* 重播：已結束比賽頁的按鈕，與重播時取代下方導覽列的控制列 */
+.rp-go { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 40px; margin-top: 10px; border: 1px solid var(--navy); border-radius: 12px; background: var(--card); color: var(--navy); font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
+.rp-go:active { background: var(--accent-soft); }
+body.replaying { padding-bottom: calc(118px + env(safe-area-inset-bottom)); }
+body.replaying .tabbar { display: none; }
+body.replaying .rp-go { display: none; }
+.rpbar { position: fixed; left: 14px; right: 14px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 21; max-width: 692px; margin: 0 auto; padding: 8px 10px; background: var(--card); border-radius: 16px; box-shadow: 0 -1px 2px rgba(0, 0, 0, .18), 0 8px 16px rgba(0, 0, 0, .3); }
+.rpbar > .rp-l { padding: 10px 4px; color: var(--sub); font-size: 13px; }
+.rp-r1 { display: flex; align-items: center; gap: 8px; }
+.rp-r2 { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.rp-pp { flex: none; width: 44px; height: 40px; border: 0; border-radius: 12px; background: var(--navy); color: #fff; font-size: 15px; cursor: pointer; }
+.rp-r1 .rp-l { flex: 1; min-width: 0; line-height: 1.25; }
+.rp-r1 .rp-l b { display: block; font-size: 15px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rp-r1 .rp-l small { display: block; font-size: 11px; color: var(--sub); }
+.rp-sp, .rp-h { height: 36px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--navy); font: inherit; font-size: 13px; font-weight: 700; padding: 0 6px; }
+.rp-x { flex: none; height: 36px; padding: 0 12px; border: 0; border-radius: 10px; background: var(--bg); color: var(--text); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.rp-h { flex: none; }
+.rp-rg { flex: 1; min-width: 0; accent-color: var(--navy); }

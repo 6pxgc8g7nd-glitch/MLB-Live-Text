@@ -7,7 +7,7 @@ import { standingsHTML } from '../js/standings.js';
 import { S, setG } from '../js/state.js';
 import { pLink, pickStat, playerCardHTML } from '../js/player.js';
 import { wpPoints, wpHTML } from '../js/winprob.js';
-import { tcToMs, stampAt, halfStarts } from '../js/replay.js';
+import { tcToMs, stampAt, halfStarts, barLabel } from '../js/replay.js';
 import { applyPatch, loadLiveFeed } from '../js/livefeed.js';
 
 const T = { twDate, shiftDate, evZh, seriesZh, gameState, cardHTML, headHTML, textHTML, boxHTML, standingsHTML, S, setG };
@@ -224,5 +224,14 @@ assert.strictEqual(fa.calls[0], '/api/v1.1/game/7/feed/live', '沒開 LIVE 模�
 gs = { data: fullDoc(), diffN: 120 }; fa = fakeApi([fullDoc()]);
 await loadLiveFeed(fa, 7, gs, true);
 assert.ok(!fa.calls[0].includes('diffPatch') && gs.diffN === 0, '定期抓整份重新對齊');
+
+// 重播按鈕只出現在已結束的比賽；控制列的進度文字
+const finFeed = { ...feed, gameData: { ...feed.gameData, status: { abstractGameState: 'Final', detailedState: 'Final' } } };
+assert.ok(T.headHTML(finFeed).includes('id="rpStart"'), '已結束的比賽有重播按鈕');
+assert.ok(!T.headHTML(feed).includes('id="rpStart"'), '進行中的比賽沒有重播按鈕');
+assert.strictEqual(barLabel({ inning: 3, half: 'Top', outs: 1, balls: 2, strikes: 1 }), '3局上 1出局 2-1');
+assert.strictEqual(barLabel({ inning: 3, half: 'Middle' }), '3局中場');
+assert.strictEqual(barLabel({ inning: 0 }), '開賽前');
+assert.strictEqual(barLabel({ inning: 9, half: 'Bottom', done: true }), '重播結束');
 
 console.log('all tests passed');

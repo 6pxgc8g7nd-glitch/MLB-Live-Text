@@ -58,10 +58,13 @@ export function headHTML(d) {
     const ap = pp.away && pp.away.fullName, hp = pp.home && pp.home.fullName;
     if (ap || hp) extra = `<div class="dec">預定先發　${esc(ap || '未定')} vs ${esc(hp || '未定')}</div>`;
   }
+  // 已結束的比賽可以當作直播重播（按鈕由 main.js 處理，重播程式需要時才載入）
+  const replay = st.k === 'final' ? '<button class="rp-go" id="rpStart"><span aria-hidden="true">▶</span> 重播這場比賽</button>' : '';
   return `
     <div class="hero">
       ${lsHTML}
       ${extra}
+      ${replay}
     </div>`;
 }
 
