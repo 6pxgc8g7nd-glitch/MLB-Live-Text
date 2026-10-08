@@ -1395,9 +1395,6 @@
     };
     $('#title').onclick = manualRefresh;
     $('#ballIc').onclick = manualRefresh;
-    $('#gameRow').onclick = () => {
-      location.hash = '#/scores';
-    };
 
     view.addEventListener('click', (e) => {
       if (e.target.closest('#favOpen')) { openFavSheet(); return; }
