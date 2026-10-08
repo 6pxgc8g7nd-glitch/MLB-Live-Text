@@ -1421,7 +1421,8 @@
   const PF = { el: null, games: [], prev: new Map(), timer: 0, last: 0, drag: null, busy: false };
   const PF_SIZE = 52;
   const pfSafeB = () => Math.max(0, (parseFloat(getComputedStyle(document.body).paddingBottom) || 0) - 92);
-  const pfRange = () => { const top = $('.top'); const minTop = Math.round((top ? top.getBoundingClientRect().bottom : 114) + 12); return [minTop, Math.max(minTop, innerHeight - PF_SIZE - 96 - pfSafeB())]; };
+  // 上緣以「比分」頁的標題列高度（114px＋安全區）為準，各頁固定，切換頁面時白球不會上下跳動
+  const pfRange = () => { const top = $('.top'); const minTop = Math.round(114 + (top ? parseFloat(getComputedStyle(top).paddingTop) || 0 : 0) + 12); return [minTop, Math.max(minTop, innerHeight - PF_SIZE - 96 - pfSafeB())]; };
   const pfCurPk = () => { const m = /^#\/game\/(\d+)/.exec(location.hash); return m ? m[1] : null; };
   const pfList = () => PF.games.filter((g) => String(g.pk) !== pfCurPk());
 
