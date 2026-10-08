@@ -893,12 +893,16 @@
     const name = esc(seriesZh(g0) || g0.seriesDescription || '');
     const real = (t) => !!(t && TEAMS[t.id]);
     const lost = (t) => done && lead && lead.id !== t.id;
-    const side = (t) => `<div class="ptm${lost(t) ? ' l' : ''}">${real(t) ? logo(t, 'tcl') : '<span class="pq">?</span>'}<b>${real(t) ? esc(teamName(t)) : '待定'}</b></div>`;
-    const stText = live ? '● 進行中' : status;
-    return { k, html: `<div class="ptk ${k}"><div class="pth">${name}</div>
-      <div class="ptm-row">${side(A)}<b class="psb">${wins[A.id]}<s>:</s>${wins[H.id]}</b>${side(H)}</div>
-      <div class="ptear"></div>
-      <div class="ptf"><span>${stText}</span><i class="pbar"></i></div></div>` };
+    const side = (t) => `<div class="ptm${lost(t) ? ' l' : ''}"><b>${real(t) ? esc(teamName(t)) : '待定'}</b>${real(t) ? logo(t, 'tcl') : '<span class="pq">?</span>'}</div>`;
+    const played = games.filter((g) => gameState(g.status, g.linescore, g.gameDate).k === 'final').length;
+    const gNo = Math.min(n, done ? played : played + 1);
+    const desc = g0.seriesDescription || '';
+    const lgc = /^AL /i.test(desc) ? 'AL' : /^NL /i.test(desc) ? 'NL' : '';
+    const abbr = { W: lgc + 'WC', D: lgc + 'DS', L: lgc + 'CS', F: 'WS' }[g0.gameType] || '';
+    const stText = live ? '進行中' : status;
+    return { k, html: `<div class="ptk ${k}"><div class="pth"><span>${name}</span><span>${abbr}</span></div>
+      <div class="ptm-row">${side(A)}<div class="pcn"><b class="psb">${wins[A.id]} : ${wins[H.id]}</b><i class="par"></i></div>${side(H)}</div>
+      <div class="pinf"><div><small>場次</small><b>G${gNo} / ${n}</b></div><div><small>狀態</small><b>${stText}</b></div><div><small>制度</small><b>${n} 戰 ${need} 勝</b></div></div></div>` };
   }
   function postHTML(d) {
     const list = (d && d.series) || [];
