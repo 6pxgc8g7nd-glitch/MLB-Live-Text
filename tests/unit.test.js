@@ -1,7 +1,12 @@
-globalThis.__MLB_TEST__ = {};
-require(require('path').join(__dirname, '..', 'app.js'));
-const T = globalThis.__MLB_TEST__;
-const assert = require('assert');
+import assert from 'node:assert';
+import { twDate, shiftDate } from '../js/util.js';
+import { evZh, seriesZh } from '../js/dict.js';
+import { gameState, cardHTML } from '../js/scores.js';
+import { headHTML, textHTML, boxHTML } from '../js/game.js';
+import { standingsHTML } from '../js/standings.js';
+import { S, setG } from '../js/state.js';
+
+const T = { twDate, shiftDate, evZh, seriesZh, gameState, cardHTML, headHTML, textHTML, boxHTML, standingsHTML, S, setG };
 
 // 日期：台灣 0:00 換日
 assert.strictEqual(T.twDate(new Date('2026-10-07T15:59:59Z')), '2026-10-07');

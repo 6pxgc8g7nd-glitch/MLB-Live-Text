@@ -1,10 +1,28 @@
 /* Service Worker：只快取「網頁外殼」，MLB 資料一律走網路，不快取。
  * 外殼採「網路優先、離線才用快取」，所以更新網頁後重新開啟就是新版，不會卡在舊版。
- * 若要強制清掉舊快取，修改 VERSION 即可。 */
-const VERSION = 'v163';
+ * SHELL 與 VERSION 由 scripts/sw.mjs 維護（提交時 pre-commit hook 自動執行），不需要手動修改。 */
+const VERSION = 'v164';
 const CACHE = 'mlb-shell-' + VERSION;
-const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest',
-  'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/icon-maskable-512.png',
+const SHELL = [
+  './',
+  'index.html',
+  'style.css',
+  'js/api.js',
+  'js/dict.js',
+  'js/game.js',
+  'js/gestures.js',
+  'js/main.js',
+  'js/scores.js',
+  'js/settings.js',
+  'js/shell.js',
+  'js/standings.js',
+  'js/state.js',
+  'js/util.js',
+  'manifest.webmanifest',
+  'icons/apple-touch-icon.png',
+  'icons/icon-192.png',
+  'icons/icon-512.png',
+  'icons/icon-maskable-512.png',
   'logos/108.svg',
   'logos/109.svg',
   'logos/110.svg',
@@ -37,7 +55,8 @@ const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest'
   'logos/158.svg',
   'logos/league-103.svg',
   'logos/league-104.svg',
-  'logos/mlb-on-dark.svg'];
+  'logos/mlb-on-dark.svg',
+];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
