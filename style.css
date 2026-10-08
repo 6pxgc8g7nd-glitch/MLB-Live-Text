@@ -707,10 +707,6 @@ a.bk2c:active { filter: brightness(.97); }
 .tkw { filter: none; }
 .tkw .tk { filter: drop-shadow(0 2px 5px rgba(0, 0, 0, .12)); }
 
-/* ---------- 釘選按鈕（轉播頁工具列） ---------- */
-.tk .seg .pinb { flex: 0 0 64px; background: none; color: var(--sub); border: 1.5px dashed #c4c4c4; font-size: 14px; }
-.tk .seg .pinb.pinned { color: var(--navy); border-style: solid; border-color: var(--navy); }
-
 /* ---------- 懸浮按鈕：白球＋光暈 ---------- */
 .pfab[hidden], .pf-card[hidden] { display: none !important; }
 .pf-ball {
@@ -725,11 +721,16 @@ a.bk2c:active { filter: brightness(.97); }
 @keyframes pfglow { 50% { box-shadow: 0 0 0 7px rgba(0, 75, 147, .26), 0 0 0 15px rgba(0, 75, 147, .08), 0 4px 10px rgba(0, 0, 0, .35); } }
 @keyframes pfpulse { from { transform: scale(1); opacity: 1; } to { transform: scale(2); opacity: 0; } }
 .pf-card { position: fixed; z-index: 41; background: #fff; color: var(--text); border: 2px solid #004B93; border-radius: 14px; padding: 10px 14px 8px; box-shadow: 0 8px 20px rgba(0, 0, 0, .35); }
+
+.pf-g + .pf-g { border-top: 2px dashed #cfcfcf; margin-top: 8px; padding-top: 8px; }
+.pf-g { cursor: pointer; }
+.pf-g.one .pf-sc em { font-size: 44px; }
+.pf-go { margin-left: auto; color: var(--navy); font-weight: 800; }
 .pf-h { display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; color: var(--sub); }
 .pf-lv { color: #A6051A; }
 .pf-sc { display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 900; margin: 2px 0 4px; }
 .pf-sc b { font-size: 14px; width: 44px; text-align: center; }
-.pf-sc em { font-style: normal; font-size: 44px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.pf-sc em { font-style: normal; font-size: 34px; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .pf-sc em.r { color: #A6051A; }
 .pf-sc u { text-decoration: none; font-size: 24px; opacity: .45; }
 .pf-f { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; color: var(--sub); border-top: 2px dashed #cfcfcf; padding: 7px 0 2px; }
@@ -737,7 +738,4 @@ a.bk2c:active { filter: brightness(.97); }
 .pf-bs i { position: absolute; width: 8px; height: 8px; border: 1.5px solid currentColor; transform: rotate(45deg); opacity: .4; }
 .pf-bs i.on { background: currentColor; opacity: 1; }
 .pf-bs .b2 { left: 9px; top: 0; } .pf-bs .b3 { left: 1px; top: 8px; } .pf-bs .b1 { left: 17px; top: 8px; }
-.pf-a { display: flex; justify-content: space-between; border-top: 2px dashed #cfcfcf; margin-top: 6px; padding-top: 6px; }
-.pf-a button { border: 0; background: none; padding: 4px 2px; font-size: 13px; font-weight: 800; color: var(--navy); }
-.pf-a button[data-pf="unpin"] { color: var(--sub); font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .pf-ball, .pf-ball.pulse::after { animation: none; } }
