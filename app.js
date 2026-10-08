@@ -1553,6 +1553,63 @@
     document.addEventListener('click', (e) => { if (Date.now() < mute) { e.preventDefault(); e.stopPropagation(); } }, true); // 滑鼠拖曳放開時不要誤觸點擊
   }
 
+  /* ================= 下拉更新（比分頁） ================= */
+  // 在比分頁最上方往下拉：MLB 標誌隨拉動旋轉，標題欄提示「下拉更新／放開更新」，放開後重新載入；更新期間標誌持續轉動。
+  function initPull(refresh) {
+    const THRESH = 56;                    // 內容被拉下的距離（已套用阻力）超過這個值，放開才會更新
+    const ic = $('#ballIc');
+    let t0 = null, busy = false, saved = '';
+    const note = (txt) => { const u = $('#updated'); if (u) { if (txt) u.textContent = txt; else if (saved) u.textContent = saved; } };
+    const reset = (anim) => {
+      view.style.transition = anim ? 'transform .26s cubic-bezier(.22,.8,.3,1)' : 'none';
+      view.style.transform = '';
+      if (ic && !busy) { ic.style.transform = ''; }
+      setTimeout(() => { if (!t0) view.style.removeProperty('transition'); }, 300);
+    };
+    document.addEventListener('touchstart', (e) => {
+      t0 = null;
+      if (busy || route$ !== 'scores' || e.touches.length !== 1 || window.scrollY > 0) return;
+      if (e.target.closest('.top, .tabbar, .fsheet, .cal, .scroll')) return;
+      const t = e.touches[0];
+      t0 = { x: t.clientX, y: t.clientY, lock: 0, pull: 0 };
+    }, { passive: true });
+    document.addEventListener('touchmove', (e) => {
+      if (!t0) return;
+      const t = e.touches[0], dx = t.clientX - t0.x, dy = t.clientY - t0.y;
+      if (!t0.lock) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        if (dy <= 0 || Math.abs(dx) > Math.abs(dy) || window.scrollY > 0) { t0 = null; return; }
+        t0.lock = 1;
+        const u = $('#updated'); saved = u ? u.textContent : '';
+      }
+      const pull = Math.min(110, dy * 0.5);
+      t0.pull = pull;
+      view.style.transition = 'none';
+      view.style.transform = `translate3d(0,${pull}px,0)`;
+      if (ic) ic.style.transform = `rotate(${Math.round(Math.min(1, pull / THRESH) * 360)}deg)`;
+      note(pull >= THRESH ? '放開更新' : '下拉更新');
+    }, { passive: true });
+    const end = async () => {
+      const s = t0; t0 = null;
+      if (!s || !s.lock) return;
+      if (s.pull >= THRESH) {
+        busy = true;
+        reset(true);
+        if (ic) { ic.style.transform = ''; ic.classList.add('spin'); }
+        note('更新中…');
+        try { await refresh(); } catch (e) { /* 失敗由橫幅顯示 */ }
+        if (ic) { ic.classList.remove('spin'); ic.classList.remove('pulse'); }
+        busy = false;
+        const u = $('#updated'); if (u && u.textContent === '更新中…') u.textContent = saved;
+      } else {
+        reset(true);
+        note(saved);
+      }
+    };
+    document.addEventListener('touchend', end);
+    document.addEventListener('touchcancel', end);
+  }
+
   function boot() {
     view = $('#view');
     applyLang();
@@ -1593,6 +1650,7 @@
     });
     $('#title').onclick = manualRefresh;
     $('#ballIc').onclick = manualRefresh;
+    initPull(manualRefresh);
 
     view.addEventListener('click', (e) => {
       if (e.target.closest('#favOpen')) { openFavSheet(); return; }

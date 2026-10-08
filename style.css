@@ -782,3 +782,8 @@ i.sk { font-style: normal; height: 12px; }
 .tc.inpo .wm { color: #dbe4ef; }
 .tc.rib.inpo .wm { color: #c9d9ec; }
 .game.skel .gf .sk { height: 10px; margin-top: 4px; }
+
+/* ---------- 下拉更新：標誌旋轉 ---------- */
+#ballIc.spin { animation: ballspin .8s linear infinite; }
+@keyframes ballspin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { #ballIc.spin { animation: none; opacity: .6; } }
