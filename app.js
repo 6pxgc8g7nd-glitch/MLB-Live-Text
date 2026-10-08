@@ -1059,6 +1059,15 @@
       applyLang();
       if (G && G.data) { G.sig = ''; renderGame(); }
     };
+    const manualRefresh = () => {
+      if (!poller) return;
+      cache.clear();
+      const u = $('#updated'); if (u) u.textContent = '更新中…';
+      const ic = $('#ballIc'); if (ic) { ic.classList.remove('pulse'); void ic.offsetWidth; ic.classList.add('pulse'); }
+      poller.kick();
+    };
+    $('#title').onclick = manualRefresh;
+    $('#ballIc').onclick = manualRefresh;
     $('#gameRow').onclick = () => {
       location.hash = '#/scores';
     };
