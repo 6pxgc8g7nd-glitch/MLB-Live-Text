@@ -281,7 +281,6 @@
   function renderGames(games) {
     const box = $('#games');
     if (!box) return;
-    setGames(games);
     if (!games.length) {
       box.innerHTML = '<div class="empty">這一天沒有比賽</div>';
       return;
@@ -727,16 +726,28 @@
   }
 
   /* ================= 外框、主題、路由 ================= */
-  function setGames(games) {
-    const live = games.filter((g) => gameState(g.status, g.linescore, g.gameDate).k === 'live').length;
-    const p = $('#livePill');
-    p.hidden = !live;
-    p.textContent = `● ${live} LIVE`;
+  /* 標題欄日期：三張小票（前一天 / 目前日期 / 後一天） */
+  function segLabel(d, offset) {
+    const t = twDate();
+    const dl = dayLabel(d);
+    const md = (dl.match(/\d+\/\d+/) || [''])[0], wk = (dl.match(/週./) || [''])[0];
+    let name = wk;
+    if (d === t) name = '今天';
+    else if (d === shiftDate(t, -1)) name = '昨天';
+    else if (d === shiftDate(t, 1)) name = '明天';
+    return { small: offset === 0 ? `${md} ${wk}`.trim() : md, name };
   }
-
-  /* 日期：左右箭頭切換前後一天；單擊日期回到今天；長按（約 0.5 秒）開啟日期選擇器 */
-  function bindDateNav() {
-    const btn = $('#dateBtn'), pick = $('#datePick');
+  function renderSegs() {
+    [['#segL', -1], ['#segC', 0], ['#segR', 1]].forEach(([sel, off]) => {
+      const d = shiftDate(S.date, off), l = segLabel(d, off), el = $(sel);
+      el.querySelector('small').textContent = l.small;
+      el.querySelector('b').textContent = l.name;
+      el.classList.toggle('today', off === 0 && d === twDate());
+    });
+  }
+  /* 左右兩張：前後一天；中間：單擊回到今天、長按（約 0.5 秒）開啟日期選擇器 */
+  function bindSegs() {
+    const c = $('#segC'), pick = $('#datePick');
     let timer = null, longDone = false;
     const clear = () => { clearTimeout(timer); timer = null; };
     const go = (date) => {
@@ -745,18 +756,18 @@
       S.follow = date === twDate();
       route();
     };
-    $('#prevDay').addEventListener('click', () => go(shiftDate(S.date, -1)));
-    $('#nextDay').addEventListener('click', () => go(shiftDate(S.date, 1)));
+    $('#segL').addEventListener('click', () => go(shiftDate(S.date, -1)));
+    $('#segR').addEventListener('click', () => go(shiftDate(S.date, 1)));
     const openPicker = () => {
       longDone = true;
       if (route$ !== 'scores') return;
       pick.value = S.date;
       try { if (pick.showPicker) pick.showPicker(); else pick.click(); } catch (e) { try { pick.click(); } catch (e2) { /* 略過 */ } }
     };
-    btn.addEventListener('pointerdown', () => { longDone = false; clear(); timer = setTimeout(openPicker, 500); });
-    ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => btn.addEventListener(ev, clear));
-    btn.addEventListener('contextmenu', (e) => e.preventDefault());
-    btn.addEventListener('click', () => {
+    c.addEventListener('pointerdown', () => { longDone = false; clear(); timer = setTimeout(openPicker, 500); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => c.addEventListener(ev, clear));
+    c.addEventListener('contextmenu', (e) => e.preventDefault());
+    c.addEventListener('click', () => {
       if (longDone) { longDone = false; return; }
       go(twDate());
     });
@@ -771,14 +782,8 @@
     $('#ballIc').hidden = isGame;
     $('#langBtn').hidden = !isGame;
     document.body.classList.toggle('ingame', isGame);
-    const isScores = tab === 'scores';
-    const day = isScores ? S.date : twDate();
-    const dl = dayLabel(day);
-    const md = dl.match(/\d+\/\d+/), wk = dl.match(/週./);
-    $('#dB').textContent = md ? md[0] : '';
-    $('#dS').textContent = (wk ? wk[0] : '') + (day === twDate() ? '・今天' : isScores ? '・點一下回今天' : '');
-    $('#prevDay').style.visibility = $('#nextDay').style.visibility = isScores ? 'visible' : 'hidden';
-    $('#livePill').hidden = true;
+    document.body.classList.toggle('nodates', tab !== 'scores');
+    if (tab === 'scores') renderSegs();
     $$('.tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.tab === tab));
     document.title = isGame ? 'MLB 文字轉播' : title;
     $('#updated').textContent = '';
@@ -810,7 +815,7 @@
   function boot() {
     view = $('#view');
     applyLang();
-    bindDateNav();
+    bindSegs();
 
     $('#langBtn').onclick = () => {
       S.lang = S.lang === 'zh' ? 'en' : 'zh';
@@ -833,7 +838,11 @@
       }
       const b = e.target.closest('button');
       if (!b) return;
-      if (b.dataset.t) {
+      if (b.id === 'prevDay' || b.id === 'nextDay') {
+        S.date = shiftDate(S.date, b.id === 'prevDay' ? -1 : 1);
+        S.follow = S.date === twDate();
+        route();
+      } else if (b.dataset.t) {
         S.gtab = b.dataset.t;
         store.set('gtab', S.gtab);
         renderBody();

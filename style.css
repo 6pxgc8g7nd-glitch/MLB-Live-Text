@@ -21,21 +21,16 @@ a { color: inherit; text-decoration: none; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ---------- 頂欄 ---------- */
-:root { --th: 104px; }
-body.ingame { --th: 56px; }
+:root { --th: 114px; }
+body.ingame, body.nodates { --th: 56px; }
 .top {
   position: sticky; top: 0; z-index: 20; padding-top: env(safe-area-inset-top);
   filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .3));
 }
 .top::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: env(safe-area-inset-top); background: var(--navy); }
 .top-in {
-  height: var(--th); background: var(--navy); color: #fff; --c: calc(100% - 48px);
-  -webkit-mask: radial-gradient(circle 8px at 0 var(--c), #0000 98%, #000) left / 51% 100% no-repeat,
-                radial-gradient(circle 8px at 100% var(--c), #0000 98%, #000) right / 51% 100% no-repeat;
-          mask: radial-gradient(circle 8px at 0 var(--c), #0000 98%, #000) left / 51% 100% no-repeat,
-                radial-gradient(circle 8px at 100% var(--c), #0000 98%, #000) right / 51% 100% no-repeat;
+  height: var(--th); background: var(--navy); color: #fff; border-radius: 0 0 14px 14px;
 }
-body.ingame .top-in { -webkit-mask: none; mask: none; border-radius: 0 0 14px 14px; }
 .r1 { display: flex; align-items: center; gap: 8px; height: 56px; padding: 0 12px; }
 .r1 h1 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: .5px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bb { width: 22px; height: 22px; flex: none; }
@@ -47,24 +42,27 @@ body.ingame .top-in { -webkit-mask: none; mask: none; border-radius: 0 0 14px 14
 .top .btn:active { background: rgba(255, 255, 255, .26); }
 .top .btn[hidden], .bb[hidden] { display: none; }
 .r2 {
-  position: relative; margin: 0 6px; height: 48px; border-top: 2px dashed rgba(255, 255, 255, .4);
-  display: grid; grid-template-columns: 1fr 150px 1fr; align-items: stretch; padding: 3px 0;
+  position: relative; margin: 0 8px; border-top: 2px dashed rgba(255, 255, 255, .4); padding: 8px 0 8px;
+  display: flex; gap: 6px;
 }
-body.ingame .r2 { display: none; }
-.r2 button { border: 0; outline: 0; background: transparent; color: #fff; padding: 0; -webkit-appearance: none; appearance: none; }
-.arw { font-size: 30px; font-weight: 700; line-height: 1; border-radius: 10px; }
-.arw:active, .dctr:active { opacity: .55; }
-.dctr {
-  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; border-radius: 0;
+body.ingame .r2, body.nodates .r2 { display: none; }
+.dseg {
+  flex: 1; border: 0; background-color: transparent; padding: 5px 0 6px; text-align: center; line-height: 1.2; color: rgba(255, 255, 255, .92); border-radius: 8px;
+  background: radial-gradient(circle 5px at 0 50%, #0000 98%, rgba(255, 255, 255, .16)) left / 52% 100% no-repeat,
+              radial-gradient(circle 5px at 100% 50%, #0000 98%, rgba(255, 255, 255, .16)) right / 52% 100% no-repeat;
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation;
 }
-.dctr::before, .dctr::after { content: ''; position: absolute; top: 4px; bottom: 4px; width: 1px; background: rgba(255, 255, 255, .3); }
-.dctr::before { left: 0; }
-.dctr::after { right: 0; }
-.dctr b { font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums; }
-.dctr span { font-size: 11px; letter-spacing: 1px; color: rgba(255, 255, 255, .75); }
+.dseg small { display: block; font-size: 10px; color: rgba(255, 255, 255, .7); font-variant-numeric: tabular-nums; }
+.dseg b { font-size: 15px; font-weight: 800; }
+.dseg:active { opacity: .6; }
+.dseg.on {
+  color: var(--navy);
+  background: radial-gradient(circle 5px at 0 50%, #0000 98%, #fff) left / 52% 100% no-repeat,
+              radial-gradient(circle 5px at 100% 50%, #0000 98%, #fff) right / 52% 100% no-repeat;
+}
+.dseg.on small { color: var(--sub); }
+.dseg.on.today b::after { content: ' ●'; color: var(--emph); font-size: 9px; vertical-align: 2px; }
 #datePick { position: absolute; left: 50%; top: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-.lvp { background: var(--emph); color: #fff; font-size: 11px; font-weight: 800; padding: 2px 9px; border-radius: 999px; letter-spacing: .5px; white-space: nowrap; }
 .banner { position: sticky; top: calc(var(--th) + env(safe-area-inset-top)); z-index: 19; margin: 0; padding: 8px 12px; background: var(--emph); color: #fff; font-size: 13px; text-align: center; }
 
 main { max-width: 720px; margin: 0 auto; padding: 12px; }
