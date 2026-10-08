@@ -1110,7 +1110,7 @@
   /* 單一系列賽縮圖：標籤＋上下兩隊（隊徽＋勝場） */
   function bk2Chip(si, d) {
     if (!si) {
-      return `<div class="bk2c emp"><span class="bk2n">待定</span><div class="bk2t"><i class="bk2l q">?</i></div><div class="bk2tr"></div><div class="bk2t"><i class="bk2l q">?</i></div></div>`;
+      return `<div class="bk2c emp"><span class="bk2n">待定</span><div class="bk2tr"></div><div class="bk2t"><i class="bk2l q">?</i></div><div class="bk2t"><i class="bk2l q">?</i></div></div>`;
     }
     const cls = `bk2c${si.live ? ' live' : ''}${si.done ? ' done' : ''}${si.teamIds.some((id) => S.favs.includes(id)) ? ' fav' : ''}`;
     const row = (t) => {
@@ -1120,7 +1120,7 @@
       return `<div class="bk2t${st}">${real ? logo(t, 'bk2l') : '<i class="bk2l q">?</i>'}<em>${shown}</em></div>`;
     };
     const tip = `${BK_ROUND[si.type] || ''} ${isRealTeam(si.H) ? teamAbbr(si.H) : '待定'} vs ${isRealTeam(si.A) ? teamAbbr(si.A) : '待定'}`;
-    const inner = `<span class="bk2n">${BK_ROUND[si.type] || ''}</span>${row(si.H)}<div class="bk2tr"></div>${row(si.A)}`;
+    const inner = `<span class="bk2n">${BK_ROUND[si.type] || ''}</span><div class="bk2tr"></div>${row(si.H)}${row(si.A)}`;
     return si.target
       ? `<a class="${cls}" title="${esc(tip)}" href="#/game/${si.target}">${inner}</a>`
       : `<div class="${cls}" title="${esc(tip)}">${inner}</div>`;

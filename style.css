@@ -629,6 +629,7 @@ a.bk-card:active { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .2)) brightness(.
 .bk2c.emp { opacity: .6; }
 a.bk2c:active { filter: brightness(.97); }
 .bk2n { display: block; font-size: 9.5px; font-weight: 800; color: var(--sub); text-align: center; padding: 3px 0 1px; letter-spacing: .5px; white-space: nowrap; color: var(--c); }
+.bk2tr + .bk2t { margin-top: 2px; }
 .bk2t { display: flex; align-items: center; justify-content: space-between; height: 28px; }
 .bk2tr { position: relative; margin: 0 -6px; border-top: 1.5px dashed #cfcfcf; }
 .bk2tr::before, .bk2tr::after { content: ''; position: absolute; top: -5px; width: 9px; height: 9px; border-radius: 50%; background: var(--bg); }
