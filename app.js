@@ -299,7 +299,7 @@
       if ((ap && ap.fullName) || (hp && hp.fullName)) foot = `<div class="g-foot pp">${pcol(ap)}${pcol(hp)}</div>`;
     } else if (st.k === 'final' && g.decisions && g.decisions.winner) {
       const d = g.decisions;
-      const it = (cls, lbl, p) => (p ? `<span><em class="${cls}">${lbl}</em>${esc(p.fullName)}</span>` : '');
+      const it = (cls, lbl, p) => (p ? `<span title="${esc(p.fullName)}"><em class="${cls}">${lbl}</em><i class="pn">${esc(shortName(p.fullName))}</i></span>` : '');
       foot = `<div class="g-foot dc">${it('w', '勝', d.winner)}${it('l', '敗', d.loser)}${it('s', '救', d.save)}</div>`;
     }
     const side = (t, win) => `
@@ -309,7 +309,7 @@
       </div>`;
     const subTxt = st.k === 'final' ? st.txt.replace('比賽結束', '') : st.k === 'other' && st.txt !== '延賽' && st.txt !== '取消' ? st.txt : st.k === 'other' ? '' : st.txt;
     const mid = '<div class="g-mid">' + (showScore
-      ? `<div class="big">${dash(a.score ?? 0)}<i class="cn"></i>${dash(h.score ?? 0)}</div>`
+      ? `<div class="big">${scN(a.score ?? 0, aWin, hWin)}<i class="cn"></i>${scN(h.score ?? 0, hWin, aWin)}</div>`
       : '<div class="big vs">VS</div>') + (subTxt ? `<div class="msub">${esc(subTxt)}</div>` : '') + '</div>';
     if (!foot) foot = `<div class="g-foot">${st.k === 'live' ? '進入文字轉播 ›' : st.k === 'final' ? '查看比賽紀錄 ›' : '尚無預定先發資訊'}</div>`;
     const corner = { live: '● 進行', upcoming: '○ 未賽', final: '■ 終了' }[st.k] || (st.txt === '取消' ? '△ 取消' : st.txt === '延賽' ? '△ 延賽' : '△ 暫停');
@@ -344,13 +344,31 @@
     loadPitStats(games);
   }
 
+  // 球員名縮寫：名字只留第一個字母＋姓（Edgardo Henriquez → E. Henriquez）；去掉 Jr./Sr./II 等後綴；已是縮寫（J.T. Realmuto）或單一名字則照舊
+  function shortName(full) {
+    const parts = String(full || '').replace(/\s+(Jr\.?|Sr\.?|II|III|IV)$/i, '').trim().split(/\s+/);
+    if (parts.length < 2) return parts[0] || '';
+    const first = parts[0];
+    return `${/\./.test(first) ? first : Array.from(first)[0] + '.'} ${parts.slice(1).join(' ')}`;
+  }
+
+  // 已結束的比賽：贏的比分維持深色、輸的淡化（進行中不套用）
+  const scN = (v, win, lose) => (win || lose ? `<span class="sc ${win ? 'w' : 'l'}">${dash(v)}</span>` : dash(v));
+
+  /* 載入中的骨架畫面：票券／排名列的灰色外形（不動畫），換頁占位也共用 */
+  const skelTicket = () => '<div class="game skel" aria-hidden="true"><span class="gt sk"></span><div class="ser"><i class="sk w40"></i></div><div class="g-body"><div class="sk-tm"><i class="sk c"></i><i class="sk w50"></i></div><div class="sk-mid"><i class="sk w70"></i></div><div class="sk-tm"><i class="sk c"></i><i class="sk w50"></i></div></div><div class="tear"></div><div class="gf"><i class="sk w50"></i></div></div>';
+  const skelRows = (n) => `<div class="tcs skel" aria-hidden="true">${Array.from({ length: n }, () => '<div class="tc"><i class="sk c"></i><div class="sk-col"><i class="sk w60"></i><i class="sk w40"></i></div><i class="sk w15 sk-r"></i></div>').join('')}</div>`;
+  const skelPage = (name) => (name === 'standings'
+    ? '<div class="chips stt sk-chips" aria-hidden="true"><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i></div><h2 class="grp"><i class="sk w30 sk-h"></i></h2>' + skelRows(5)
+    : name === 'settings' ? skelRows(4) : '<h2 class="grp"><i class="sk w30 sk-h"></i></h2>' + skelTicket() + skelTicket());
+
   function showScores() {
     route$ = 'scores';
     setHeader('MLB Live Text', false, 'scores');
     const my = token;
     let anyLive = false;
     view.innerHTML = `
-      <div id="games"><div class="loading">載入中…</div></div>`;
+      <div id="games"><div class="loading skelbox">${skelTicket()}${skelTicket()}${skelTicket()}</div></div>`;
     poller = createPoller(
       async () => {
         const games = await loadSchedule(S.date);
@@ -856,7 +874,7 @@
         <div class="seg" id="gTabs"><button data-t="text">文字轉播</button><button data-t="box">數據</button></div>
         <div class="tr"></div>
         <div id="gChips"></div>
-      </div><button class="fbt" id="gFold" aria-label="收合或展開工具列"><svg viewBox="0 0 16 10" aria-hidden="true"><path d="M2 8l6-6 6 6"/></svg></button></div>
+      </div><button class="fbt" id="gFold" aria-label="收合或展開工具列"><span class="fl lc">收合</span><span class="fl lm">更多</span><svg viewBox="0 0 16 10" aria-hidden="true"><path d="M2 8l6-6 6 6"/></svg></button></div>
       <div id="gBody"></div>
       <button id="newChip" class="fab" hidden></button>`;
     window.scrollTo(0, 0);
@@ -883,12 +901,12 @@
     const s = t.records && (t.records.splitRecords || []).find((x) => x.type === 'lastTen');
     return s ? `${s.wins}-${s.losses}` : '–';
   };
-  function standRow(t, rank) {
+  function standRow(t, rank, po) {
     const c = t.clinchIndicator && CLINCH[t.clinchIndicator];
     const gb = t.gamesBack;
     const lead = gb === '-' || gb === '0' || gb === '0.0' || gb == null;
     const fav = t.team && S.favs.includes(t.team.id);
-    return `<div class="tc${t.clinchIndicator ? ' po' : ''}${fav ? ' rib' : ''}"><span class="wm">${esc(rank)}</span>${logo(t.team, 'tcl')}
+    return `<div class="tc${t.clinchIndicator ? ' po' : ''}${fav ? ' rib' : ''}${po ? ' inpo' : ''}"><span class="wm">${esc(rank)}</span>${logo(t.team, 'tcl')}
       <div><div class="tn">${esc(teamName(t.team))}${c ? `<i class="cl" title="${c}">${esc(t.clinchIndicator)}</i>` : ''}</div>
       <div class="ts">${dash(t.wins)}-${dash(t.losses)} ・ ${dash(t.winningPercentage)}</div></div>
       <div class="tg">${lead ? '領先' : '落後'}${lead ? '' : `<b>${esc(gb)}</b>`}</div></div>`;
@@ -917,7 +935,13 @@
           .filter((x) => x.league && x.league.id === lg)
           .flatMap((x) => x.teamRecords || [])
           .sort((a, b) => Number(a.leagueRank) - Number(b.leagueRank));
-        out += `<h2 class="grp">${LEAGUE[lg]}</h2>` + standTable('聯盟排名', teams.map((t) => standRow(t, t.leagueRank || '')).join(''));
+        // 季後賽線：3 個分區冠軍＋3 張外卡。資料沒有這些欄位時，退而用第 6 名之後
+        const inPO = (t) => t.divisionLeader === true || t.divisionLeader === 'true' || (t.wildCardRank != null && t.wildCardRank !== '' && Number(t.wildCardRank) <= 3);
+        const hasInfo = teams.some((t) => t.divisionLeader != null || t.wildCardRank != null);
+        let cut = 6;
+        if (hasInfo) { cut = 0; teams.forEach((t, i) => { if (inPO(t)) cut = i + 1; }); }
+        const rows = teams.map((t, i) => standRow(t, t.leagueRank || '', i < cut) + (i + 1 === cut && cut < teams.length ? '<div class="cutline"><span>季後賽線</span></div>' : '')).join('');
+        out += `<h2 class="grp">${LEAGUE[lg]}</h2>` + standTable('聯盟排名', rows);
       }
     }
     const used = Object.keys(CLINCH).filter((k) => recs.some((r) => (r.teamRecords || []).some((t) => t.clinchIndicator === k)));
@@ -969,7 +993,7 @@
     const foot = live && liveG ? '進入文字轉播 ›' : `G${gNo} / ${n}　・　${n} 戰 ${need} 勝`;
     const inner = `<span class="gt">${corner}</span>
         <div class="ser">${name}${abbrTxt(g0) ? '　' + abbrTxt(g0) : ''}</div>
-        <div class="g-body">${side(A)}<div class="g-mid"><div class="big">${wins[A.id]}<i class="cn"></i>${wins[H.id]}</div><div class="msub">${sub}</div></div>${side(H)}</div>
+        <div class="g-body">${side(A)}<div class="g-mid"><div class="big">${scN(wins[A.id], done && lead && lead.id === A.id, done && lead && lead.id !== A.id)}<i class="cn"></i>${scN(wins[H.id], done && lead && lead.id === H.id, done && lead && lead.id !== H.id)}</div><div class="msub">${sub}</div></div>${side(H)}</div>
         <div class="tear"></div><div class="g-foot">${foot}</div>`;
     const favCls = [A, H].some((t) => S.favs.includes(t.id)) ? ' fav' : '';
     return { k, html: live && liveG
@@ -1076,7 +1100,7 @@
   /* 單一系列賽縮圖：標籤＋上下兩隊（隊徽＋勝場） */
   function bk2Chip(si, d) {
     if (!si) {
-      return `<div class="bk2c emp"><span class="bk2n">待定</span><div class="bk2t"><i class="bk2l q">?</i></div><div class="bk2tr"></div><div class="bk2t"><i class="bk2l q">?</i></div></div>`;
+      return `<div class="bk2c emp"><span class="bk2n">待定</span><div class="bk2tr"></div><div class="bk2t"><i class="bk2l q">?</i></div><div class="bk2t"><i class="bk2l q">?</i></div></div>`;
     }
     const cls = `bk2c${si.live ? ' live' : ''}${si.done ? ' done' : ''}${si.teamIds.some((id) => S.favs.includes(id)) ? ' fav' : ''}`;
     const row = (t) => {
@@ -1086,7 +1110,7 @@
       return `<div class="bk2t${st}">${real ? logo(t, 'bk2l') : '<i class="bk2l q">?</i>'}<em>${shown}</em></div>`;
     };
     const tip = `${BK_ROUND[si.type] || ''} ${isRealTeam(si.H) ? teamAbbr(si.H) : '待定'} vs ${isRealTeam(si.A) ? teamAbbr(si.A) : '待定'}`;
-    const inner = `<span class="bk2n">${BK_ROUND[si.type] || ''}</span>${row(si.H)}<div class="bk2tr"></div>${row(si.A)}`;
+    const inner = `<span class="bk2n">${BK_ROUND[si.type] || ''}</span><div class="bk2tr"></div>${row(si.H)}${row(si.A)}`;
     return si.target
       ? `<a class="${cls}" title="${esc(tip)}" href="#/game/${si.target}">${inner}</a>`
       : `<div class="${cls}" title="${esc(tip)}">${inner}</div>`;
@@ -1116,6 +1140,9 @@
     }
     const ws = infos.find((x) => x.type === 'W') || null;
     const hasWC = ['AL', 'NL'].some((lg) => lgs[lg].wcCol.some(Boolean));
+    const adv = (x) => !!x && x.teamIds.some((id) => S.favs.includes(id)) && (!x.done || (x.winner && S.favs.includes(x.winner.id)));
+    const hl = (on) => (on ? 'var(--navy)' : 'var(--ln)');
+    const joinSty = (span, a, b) => `style="grid-column:${span};--la:${hl(adv(a))};--lb:${hl(adv(b))};--ld:${hl(adv(a) || adv(b))}"`;
     const cell = (x, span) => `<div class="bk2-c" style="grid-column:${span}">${bk2Chip(x)}</div>`;
     let step = 0;
     const dl = () => `style="--d:${(step++ * 0.18).toFixed(2)}s"`;
@@ -1124,13 +1151,13 @@
     if (hasWC) {
       const w = [lgs.AL.wcCol[0], lgs.AL.wcCol[1], lgs.NL.wcCol[0], lgs.NL.wcCol[1]];
       out += `<div class="bk2-row" ${dl()}>${w.map((x, i) => (x ? cell(x, `${i * 2 + 1} / span 2`) : '')).join('')}</div>
-      <div class="bk2-row bk2-stem" ${dl()}>${w.map((x, i) => (x ? `<div class="bk2-s" style="grid-column:${i * 2 + 1} / span 2"></div>` : '')).join('')}</div>`;
+      <div class="bk2-row bk2-stem" ${dl()}>${w.map((x, i) => (x ? `<div class="bk2-s" style="grid-column:${i * 2 + 1} / span 2;--ls:${hl(adv(x))}"></div>` : '')).join('')}</div>`;
     }
     const dsCells = [lgs.AL.ds[0], lgs.AL.ds[1], lgs.NL.ds[0], lgs.NL.ds[1]];
     out += `<div class="bk2-row" ${dl()}>${dsCells.map((x, i) => cell(x, `${i * 2 + 1} / span 2`)).join('')}</div>
-      <div class="bk2-row bk2-join" ${dl()}><div class="bk2-j" style="grid-column:1 / span 4"></div><div class="bk2-j" style="grid-column:5 / span 4"></div></div>
+      <div class="bk2-row bk2-join" ${dl()}><div class="bk2-j" ${joinSty('1 / span 4', lgs.AL.ds[0], lgs.AL.ds[1])}></div><div class="bk2-j" ${joinSty('5 / span 4', lgs.NL.ds[0], lgs.NL.ds[1])}></div></div>
       <div class="bk2-row" ${dl()}>${cell(lgs.AL.cs, '2 / span 2')}${cell(lgs.NL.cs, '6 / span 2')}</div>
-      <div class="bk2-row bk2-join" ${dl()}><div class="bk2-j" style="grid-column:1 / span 8"></div></div>
+      <div class="bk2-row bk2-join" ${dl()}><div class="bk2-j" ${joinSty('1 / span 8', lgs.AL.cs, lgs.NL.cs)}></div></div>
       <div class="bk2-row bk2-wsr" ${dl()}>${cell(ws, '4 / span 2')}</div>
     </div>`;
     const other = infos.filter((x) => x.lg === '' && x.type !== 'W');
@@ -1214,7 +1241,7 @@
     view.innerHTML = `
       <div class="chips stt">
         <button data-sv="division">分區</button><button data-sv="league">聯盟</button><button data-sv="post">季後賽</button><button data-sv="bracket">對戰樹</button>
-      </div><div id="stand"><div class="loading">載入中…</div></div>`;
+      </div><div id="stand"><div class="loading skelbox">${skelRows(6)}</div></div>`;
     const bk = { sig: '' };
     const paint = () => {
       $$('[data-sv]').forEach((b) => b.classList.toggle('on', b.dataset.sv === S.standView));
@@ -1376,10 +1403,10 @@
     const hrfx = document.getElementById('hrfx'); if (hrfx) hrfx.remove(); // 換頁時立刻結束全壘打動畫
     $('#banner').hidden = true;
     const [name, arg] = location.hash.replace(/^#\/?/, '').split('/');
-    if (name === 'game' && /^\d+$/.test(arg || '')) return showGame(arg);
-    if (name === 'standings') return showStandings();
-    if (name === 'settings') return showSettings();
-    return showScores();
+    if (name === 'game' && /^\d+$/.test(arg || '')) { showGame(arg); return; }
+    if (name === 'standings') showStandings();
+    else if (name === 'settings') showSettings();
+    else showScores();
   }
 
   function rollover() {
@@ -1390,24 +1417,201 @@
     }
   }
 
+
+  let toastT = 0;
+  const toast = (txt, hold) => {
+    let t = document.getElementById('toast');
+    if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
+    t.textContent = txt; t.classList.add('show');
+    clearTimeout(toastT);
+    if (hold !== true) toastT = setTimeout(() => t.classList.remove('show'), 1400);
+  };
+
+  /* ================= 主頁左右滑動切換（疊層視差） ================= */
+  // 比分／排名／設定可左右滑動切換。往左滑：下一頁從右側蓋上，目前頁退後變暗；往右滑：目前頁向右滑出，前一頁從退後位置回到原位。
+  // 下一頁的內容在切換完成後才載入，滑動途中先顯示該頁的骨架畫面。
+  function initSwipe() {
+    const ORDER = ['scores', 'standings', 'settings'];
+    const RET = 0.28, DUR = 340, EASE = 'cubic-bezier(.22,.8,.3,1)';
+    const html = document.documentElement;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let d = null, busy = false, mute = 0;
+    const W = () => innerWidth;
+    const topEdge = () => { const t = $('.top'); return t ? Math.round(t.getBoundingClientRect().bottom) : 0; };
+    const mkLayer = (cls, key) => {
+      const el = document.createElement('div');
+      el.className = 'sw-layer ' + cls;
+      el.style.top = topEdge() + 'px';
+      el.innerHTML = `<main class="sw-ph" aria-hidden="true">${skelPage(key)}</main>`;
+      document.body.appendChild(el);
+      return el;
+    };
+    const tr = (el, on) => { el.style.transition = on ? `transform ${DUR}ms ${EASE}, filter ${DUR}ms ease` : 'none'; };
+    const pose = (el, x, dim) => { el.style.transform = `translate3d(${x}px,0,0)`; el.style.filter = dim ? `brightness(${(1 - dim).toFixed(3)})` : ''; };
+    const prep = () => {
+      html.classList.add('sw-on');
+      Object.assign(view.style, { position: 'relative', zIndex: '1', minHeight: Math.max(0, innerHeight - topEdge()) + 'px', willChange: 'transform' });
+    };
+    const unprep = () => {
+      html.classList.remove('sw-on');
+      ['transform', 'filter', 'transition', 'position', 'z-index', 'min-height', 'will-change', 'background', 'box-shadow'].forEach((p) => view.style.removeProperty(p));
+    };
+    const dropLayer = () => { if (d && d.layer) { d.layer.remove(); d.layer = null; } };
+    const setup = (dir) => {
+      dropLayer();
+      d.dir = dir;
+      const ni = d.i - dir;
+      if (ni >= 0 && ni < ORDER.length) d.layer = mkLayer(dir < 0 ? 'in' : 'under', ORDER[ni]);
+      view.style.background = dir > 0 && d.layer ? 'var(--bg)' : '';
+      view.style.boxShadow = dir > 0 && d.layer ? '-10px 0 20px rgba(0,0,0,.22)' : '';
+    };
+    const apply = () => {
+      const w = W(), dx = d.dx, pr = Math.min(1, Math.abs(dx) / w);
+      tr(view, false);
+      if (!d.layer) { pose(view, dx * 0.2, 0); return; } // 到頭了：只做橡皮筋
+      tr(d.layer, false);
+      if (d.dir < 0) { pose(d.layer, w + dx, 0); pose(view, dx * RET, pr * 0.25); }
+      else { pose(view, dx, 0); pose(d.layer, -RET * w * (1 - pr), (1 - pr) * 0.25); }
+    };
+    function finish(s, commit) {
+      busy = true;
+      const w = W(), dir = s.dir, ni = s.i - dir, dx = s.dx, pr = Math.min(1, Math.abs(dx) / w);
+      const later = (fn, ms) => setTimeout(fn, reduce ? 0 : ms);
+      const go = () => { window.scrollTo(0, 0); location.hash = '#/' + ORDER[ni]; };
+      if (!commit) {
+        tr(view, true); pose(view, 0, 0);
+        if (s.layer) { tr(s.layer, true); if (dir < 0) pose(s.layer, w, 0); else pose(s.layer, -RET * w, 0.25); }
+        later(() => { if (s.layer) s.layer.remove(); unprep(); busy = false; }, DUR + 30);
+        return;
+      }
+      if (dir < 0) { // 往左：新頁蓋上
+        tr(s.layer, true); pose(s.layer, 0, 0); tr(view, true); pose(view, -RET * w, 0.25);
+        later(() => { unprep(); go(); setTimeout(() => { s.layer.remove(); busy = false; }, 90); }, DUR + 30);
+        return;
+      }
+      // 往右：目前頁面複製成一層繼續滑出，真正的新頁面在底下由退後位置回到原位
+      const r = view.getBoundingClientRect();
+      const ghost = document.createElement('div');
+      ghost.className = 'sw-layer sw-ghost';
+      ghost.style.top = r.top + 'px'; ghost.style.height = r.height + 'px'; ghost.style.bottom = 'auto';
+      const clone = view.cloneNode(true);
+      clone.removeAttribute('id'); clone.removeAttribute('style');
+      clone.querySelectorAll('[id]').forEach((n) => n.removeAttribute('id'));
+      ghost.appendChild(clone);
+      pose(ghost, dx, 0);
+      document.body.appendChild(ghost);
+      if (s.layer) s.layer.remove();
+      unprep(); prep();
+      view.style.minHeight = '';
+      tr(view, false); pose(view, -RET * w * (1 - pr), (1 - pr) * 0.25);
+      go();
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        tr(ghost, true); pose(ghost, w, 0); tr(view, true); pose(view, 0, 0);
+        later(() => { ghost.remove(); unprep(); busy = false; }, DUR + 30);
+      }));
+    }
+
+    document.addEventListener('pointerdown', (e) => {
+      if (busy || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      const i = ORDER.indexOf(route$);
+      if (i < 0 || e.clientX < 24) return; // 螢幕最左緣留給系統的返回手勢
+      if (e.target.closest('.top, .tabbar, .fsheet, .cal, .scroll, input, select, textarea')) return;
+      d = { id: e.pointerId, x: e.clientX, y: e.clientY, i, lock: 0, dx: 0, v: 0, lx: e.clientX, lt: e.timeStamp, dir: 0, layer: null };
+    });
+    document.addEventListener('pointermove', (e) => {
+      if (!d || d.id !== e.pointerId) return;
+      const dx = e.clientX - d.x, dy = e.clientY - d.y;
+      if (!d.lock) {
+        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+        if (Math.abs(dx) < Math.abs(dy) * 1.3) { d = null; return; } // 以直向捲動為主
+        d.lock = 1; prep();
+      }
+      const dir = dx < 0 ? -1 : 1;
+      if (dir !== d.dir) setup(dir);
+      d.dx = dx;
+      const dt = e.timeStamp - d.lt;
+      if (dt > 0) d.v = 0.8 * d.v + 0.2 * ((e.clientX - d.lx) / dt);
+      d.lx = e.clientX; d.lt = e.timeStamp;
+      apply();
+    });
+    const end = (e) => {
+      if (!d || d.id !== e.pointerId) return;
+      const s = d; d = null;
+      if (!s.lock) return;
+      mute = Date.now() + 350;
+      const pr = Math.abs(s.dx) / W(), ni = s.i - s.dir;
+      const fast = Math.abs(s.v) > 0.5 && Math.sign(s.v) === s.dir;
+      finish(s, !!s.layer && ni >= 0 && ni < ORDER.length && e.type === 'pointerup' && (pr > 0.35 || (fast && pr > 0.06)));
+    };
+    document.addEventListener('dragstart', (e) => { if (d) e.preventDefault(); }); // 滑鼠拖曳比賽卡片（連結）時不要啟動瀏覽器的拖放
+    document.addEventListener('pointerup', end);
+    document.addEventListener('pointercancel', end);
+    document.addEventListener('click', (e) => { if (Date.now() < mute) { e.preventDefault(); e.stopPropagation(); } }, true); // 滑鼠拖曳放開時不要誤觸點擊
+  }
+
+  /* ================= 下拉更新（比分頁） ================= */
+  // 在比分頁最上方往下拉：標題欄提示「下拉更新／放開更新」，放開後重新載入。
+  function initPull(refresh) {
+    const THRESH = 56;                    // 內容被拉下的距離（已套用阻力）超過這個值，放開才會更新
+    let t0 = null, busy = false, saved = '';
+    const note = (txt) => { const u = $('#updated'); if (u) { if (txt) u.textContent = txt; else if (saved) u.textContent = saved; } };
+    const reset = (anim) => {
+      view.style.transition = anim ? 'transform .26s cubic-bezier(.22,.8,.3,1)' : 'none';
+      view.style.transform = '';
+      setTimeout(() => { if (!t0) view.style.removeProperty('transition'); }, 300);
+    };
+    document.addEventListener('touchstart', (e) => {
+      t0 = null;
+      if (busy || route$ !== 'scores' || e.touches.length !== 1 || window.scrollY > 0) return;
+      if (e.target.closest('.top, .tabbar, .fsheet, .cal, .scroll')) return;
+      const t = e.touches[0];
+      t0 = { x: t.clientX, y: t.clientY, lock: 0, pull: 0 };
+    }, { passive: true });
+    document.addEventListener('touchmove', (e) => {
+      if (!t0) return;
+      const t = e.touches[0], dx = t.clientX - t0.x, dy = t.clientY - t0.y;
+      if (!t0.lock) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        if (dy <= 0 || Math.abs(dx) > Math.abs(dy) || window.scrollY > 0) { t0 = null; return; }
+        t0.lock = 1;
+        const u = $('#updated'); saved = u ? u.textContent : '';
+      }
+      const pull = Math.min(110, dy * 0.5);
+      t0.pull = pull;
+      view.style.transition = 'none';
+      view.style.transform = `translate3d(0,${pull}px,0)`;
+      note(pull >= THRESH ? '放開更新' : '下拉更新');
+    }, { passive: true });
+    const end = async () => {
+      const s = t0; t0 = null;
+      if (!s || !s.lock) return;
+      if (s.pull >= THRESH) {
+        busy = true;
+        reset(true);
+        note('更新中…');
+        try { await refresh(); } catch (e) { /* 失敗由橫幅顯示 */ }
+        busy = false;
+        const u = $('#updated'); if (u && u.textContent === '更新中…') u.textContent = saved;
+      } else {
+        reset(true);
+        note(saved);
+      }
+    };
+    document.addEventListener('touchend', end);
+    document.addEventListener('touchcancel', end);
+  }
+
   function boot() {
     view = $('#view');
     applyLang();
     bindSegs();
+    initSwipe();
 
     $('#langBtn').onclick = () => {
       S.lang = S.lang === 'zh' ? 'en' : 'zh';
       store.set('lang', S.lang);
       applyLang();
       if (G && G.data) { G.sig = ''; renderGame(); }
-    };
-    let toastT = 0;
-    const toast = (txt, hold) => {
-      let t = document.getElementById('toast');
-      if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
-      t.textContent = txt; t.classList.add('show');
-      clearTimeout(toastT);
-      if (hold !== true) toastT = setTimeout(() => t.classList.remove('show'), 1400);
     };
     const manualRefresh = async () => {
       if (route$ !== 'scores') return;
@@ -1437,17 +1641,11 @@
     });
     $('#title').onclick = manualRefresh;
     $('#ballIc').onclick = manualRefresh;
+    initPull(manualRefresh);
 
     view.addEventListener('click', (e) => {
       if (e.target.closest('#favOpen')) { openFavSheet(); return; }
       if (e.target.closest('#gFold')) { S.gFold = !S.gFold; store.set('gFold', S.gFold); $('#gCtl').classList.toggle('fold', S.gFold); return; }
-      const st = e.target.closest('[data-set]');
-      if (st) {
-        const k = st.dataset.set;
-        S[k] = !S[k];
-        store.set(k, S[k]);
-        return;
-      }
       const sv2 = e.target.closest('[data-sv2]');
       if (sv2) {
         S.standDef = sv2.dataset.sv2; store.set('standView', S.standDef);
@@ -1456,7 +1654,7 @@
       }
       if (e.target.closest('#retryBtn')) {
         const eb = e.target.closest('.errbox');
-        if (eb) { eb.className = 'loading'; eb.textContent = '載入中…'; }
+        if (eb) { eb.className = 'loading skelbox'; eb.innerHTML = route$ === 'standings' ? skelRows(6) : skelTicket() + skelTicket() + skelTicket(); }
         if (poller) poller.kick();
         return;
       }
