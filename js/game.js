@@ -282,11 +282,10 @@ function todayStat(d, id, group) {
   const teams = (d.liveData && d.liveData.boxscore && d.liveData.boxscore.teams) || {};
   for (const side of ['away', 'home']) {
     const pl = teams[side] && teams[side].players && teams[side].players['ID' + id];
-    if (pl) return { stat: (pl.stats && pl.stats[group]) || {} };
+    if (pl) return { stat: (pl.stats && pl.stats[group]) || {}, season: (pl.seasonStats && pl.seasonStats[group]) || {} };
   }
   return null;
 }
-// 只放今天的成績：數據裡的 seasonStats 在季後賽是季後賽累計，容易誤會成整季打擊率（整季數據看球員小卡）
 const batToday = (t) => {
   if (!t) return '';
   const s = t.stat;
@@ -306,6 +305,16 @@ const pitToday = (t) => {
   if (n != null) bits.push(`用球數 <b>${esc(n)}</b>`);
   if (s.strikeOuts != null) bits.push(`${s.strikeOuts} 三振`);
   return bits.join(' ・ ');
+};
+
+// 右側的大數字：打者放打擊率、投手放防禦率。數據裡的 seasonStats 在季後賽是季後賽累計，
+// 所以標籤依比賽類型標示（整季數據點名字看球員小卡）；沒有數字（例如 -.--）就不顯示
+const SEASON_LBL = { R: '本季', S: '春訓', F: '季後賽', D: '季後賽', L: '季後賽', W: '季後賽' };
+const seasonNum = (d, t, key, label) => {
+  const v = t && t.season && t.season[key];
+  if (v == null || !/\d/.test(String(v))) return '';
+  const type = d.gameData && d.gameData.game && d.gameData.game.type;
+  return `<div class="lv-av"><b>${esc(v)}</b><small>${SEASON_LBL[type] || ''}${SEASON_LBL[type] ? ' ' : ''}${label}</small></div>`;
 };
 
 export function liveHTML(d) {
@@ -335,8 +344,8 @@ export function liveHTML(d) {
   const subs = (cur.playEvents || []).filter(isSubEvent).map((e) => subHTML(e, zh)).join('');
   const zone = pitchZone(cur, zh);
   return `<div class="lv-mu">
-      <div class="lv-p"><i>打</i><div>${pLink(bat, 'b', pit)}<small>${batToday(todayStat(d, bat.id, 'batting'))}</small></div></div>
-      <div class="lv-p"><i>投</i><div>${pLink(pit, 'p', bat)}<small>${pitToday(todayStat(d, pit.id, 'pitching'))}</small></div></div>
+      ${(() => { const t = todayStat(d, bat.id, 'batting'); return `<div class="lv-p"><i>打</i><div class="lv-n">${pLink(bat, 'b', pit)}<small>${batToday(t)}</small></div>${seasonNum(d, t, 'avg', 'AVG')}</div>`; })()}
+      ${(() => { const t = todayStat(d, pit.id, 'pitching'); return `<div class="lv-p"><i>投</i><div class="lv-n">${pLink(pit, 'p', bat)}<small>${pitToday(t)}</small></div>${seasonNum(d, t, 'era', 'ERA')}</div>`; })()}
     </div>
     ${subs}
     <div class="lv-pz">${zone || '<p class="lv-none">等待第一球</p>'}</div>

@@ -859,7 +859,10 @@ body.replaying .rp-go { display: none; }
 .lv-p { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; font-size: 16px; font-weight: 700; }
 .lv-p + .lv-p { border-top: 1px dashed var(--line); }
 .lv-p i { flex: none; margin-top: 2px; font-style: normal; font-size: 11px; font-weight: 800; color: #fff; background: var(--navy); border-radius: 5px; padding: 1px 5px; }
+.lv-n { flex: 1; min-width: 0; }
 .lv-p small { display: block; margin-top: 2px; font-size: 12.5px; font-weight: 500; color: var(--sub); }
+.lv-av { flex: none; margin-left: auto; text-align: right; font-weight: 800; color: var(--navy); font-size: 22px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.lv-p .lv-av small { margin-top: 2px; font-size: 10px; font-weight: 500; }
 .lv-p small b { color: var(--navy); font-weight: 800; }
 .lv-pz { padding: 12px 14px; }
 .lv-pz .pz { display: flex; margin: 0; padding: 0; border: 0; }
