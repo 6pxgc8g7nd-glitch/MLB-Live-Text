@@ -308,13 +308,13 @@ const pitToday = (t) => {
 };
 
 // 右側的大數字：打者放打擊率、投手放防禦率。數據裡的 seasonStats 在季後賽是季後賽累計，
-// 所以標籤依比賽類型標示（整季數據點名字看球員小卡）；沒有數字（例如 -.--）就不顯示
+// 所以標籤依比賽類型標示（整季數據點名字看球員小卡）；沒有數字（例如還沒投球的 -.--）就顯示灰色的「–」，不留空白
 const SEASON_LBL = { R: '本季', S: '春訓', F: '季後賽', D: '季後賽', L: '季後賽', W: '季後賽' };
 const seasonNum = (d, t, key, label) => {
   const v = t && t.season && t.season[key];
-  if (v == null || !/\d/.test(String(v))) return '';
+  const ok = v != null && /\d/.test(String(v));
   const type = d.gameData && d.gameData.game && d.gameData.game.type;
-  return `<div class="lv-av"><b>${esc(v)}</b><small>${SEASON_LBL[type] || ''}${SEASON_LBL[type] ? ' ' : ''}${label}</small></div>`;
+  return `<div class="lv-av${ok ? '' : ' na'}"><b>${ok ? esc(v) : '–'}</b><small>${SEASON_LBL[type] || ''}${SEASON_LBL[type] ? ' ' : ''}${label}</small></div>`;
 };
 
 /* ---- 半局回顧：半局之間（還沒有新打席）的 LIVE 分頁顯示剛結束的那個半局 ---- */

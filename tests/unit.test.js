@@ -280,10 +280,16 @@ assert.ok(withBat(10).includes('今日 3 打數 2 安打 ・ 1 打點'), '打者
 assert.ok(withBat(99, { atBats: 0, plateAppearances: 0 }).includes('今日首打席'));
 assert.ok(withBat(10).includes('class="lv-av"') && withBat(10).includes('<b>.301</b>'), '右側大數字：打者打擊率');
 assert.ok(lv.includes('<b>3.10</b>') && lv.includes('ERA'), '右側大數字：投手防禦率');
-assert.strictEqual((withBat(99, { atBats: 0 }).match(/class="lv-av"/g) || []).length, 1, '打者沒有打擊率就不顯示，只剩投手的防禦率');
+const noBat = withBat(99, { atBats: 0 });
+assert.strictEqual((noBat.match(/class="lv-av"/g) || []).length, 1, '投手的防禦率照常顯示');
+assert.ok(noBat.includes('class="lv-av na"><b>–</b><small>AVG</small>'), '打者沒有打擊率：顯示灰色「–」與標籤，不留空白');
 const withType = (type, era) => { const f = JSON.parse(JSON.stringify(lvFeed)); f.gameData.game = { type }; f.liveData.boxscore.teams.away.players.ID20.seasonStats.pitching.era = era; return liveHTML(f); };
 assert.ok(withType('D', '3.10').includes('季後賽 ERA'), '季後賽標示季後賽');
 assert.ok(withType('R', '3.10').includes('本季 ERA'), '例行賽標示本季');
-assert.ok(!withType('R', '-.--').includes('ERA'), '防禦率沒有數字（-.--）就不顯示');
+assert.ok(withType('R', '-.--').includes('class="lv-av na"><b>–</b><small>本季 ERA</small>'), '防禦率沒有數字（-.--）：顯示「–」與標籤');
+assert.ok(withType('R', null).includes('<b>–</b><small>本季 ERA</small>'), '沒有這項資料：同樣顯示「–」');
+const noPit = JSON.parse(JSON.stringify(lvFeed)); noPit.liveData.plays.allPlays[1].matchup.pitcher = { id: 777, fullName: 'New Arm' };
+assert.ok(liveHTML(noPit).includes('<b>–</b><small>ERA</small>'), '投手不在數據裡（剛上場）：顯示「–」');
+assert.ok(!withType('R', '-.--').includes('-.--'), '不把 MLB 的 -.-- 原樣丟給畫面');
 
 console.log('all tests passed');

@@ -95,7 +95,7 @@ players = {
     'ID4': bat(4, 'Brayan Rocchio', 'SS', '400', 2, 1, 1, 0, 1, 0, '.251'),
     'ID5': bat(5, 'Pinch Hitter', 'PH', '401', 1, 0, 0, 0, 0, 1, '.210'),
     'ID1007': {'person': {'id': 1007, 'fullName': 'Brayan Rocchio'}, 'stats': {'batting': {'atBats': 3, 'hits': 1, 'strikeOuts': 1, 'plateAppearances': 3}}, 'seasonStats': {'batting': {'avg': '.251'}}},
-    'ID2012': {'person': {'id': 2012, 'fullName': 'Grant Taylor'}, 'stats': {'pitching': {'inningsPitched': '0.2', 'strikeOuts': 1, 'pitchesThrown': 14}}, 'seasonStats': {'pitching': {'era': '3.45'}}},
+    'ID2012': {'person': {'id': 2012, 'fullName': 'Grant Taylor'}, 'stats': {'pitching': {'inningsPitched': '0.2', 'strikeOuts': 1, 'pitchesThrown': 14}}, 'seasonStats': {'pitching': {'era': '-.--'}}},  # 剛上場還沒投球：MLB 給 -.--，畫面顯示「–」
     'ID9': {'person': {'fullName': 'Joey Cantillo'}, 'stats': {'pitching': {'inningsPitched': '5.2', 'hits': 4, 'runs': 2, 'earnedRuns': 2, 'baseOnBalls': 1, 'strikeOuts': 7, 'pitchesThrown': 88}}, 'seasonStats': {'pitching': {'era': '3.45'}}},
     'ID10': {'person': {'fullName': 'Cade Smith'}, 'stats': {'pitching': {'inningsPitched': '1.0', 'hits': 0, 'runs': 0, 'earnedRuns': 0, 'baseOnBalls': 0, 'strikeOuts': 2, 'pitchesThrown': 14}}, 'seasonStats': {'pitching': {'era': '2.80'}}},
 }

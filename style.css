@@ -863,6 +863,7 @@ body.replaying .rp-go { display: none; }
 .lv-p small { display: block; margin-top: 2px; font-size: 12.5px; font-weight: 500; color: var(--sub); }
 .lv-av { flex: none; margin-left: auto; text-align: right; font-weight: 800; color: var(--navy); font-size: 22px; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .lv-p .lv-av small { margin-top: 2px; font-size: 10px; font-weight: 500; }
+.lv-av.na b { color: var(--sub); font-weight: 600; }
 .lv-p small b { color: var(--navy); font-weight: 800; }
 .lv-pz { padding: 12px 14px; }
 .lv-pz .pz { display: flex; margin: 0; padding: 0; border: 0; }
