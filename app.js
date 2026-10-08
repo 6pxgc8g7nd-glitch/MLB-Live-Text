@@ -923,6 +923,145 @@
     return out || '<div class="empty">目前沒有季後賽資料</div>';
   }
 
+  /* ---- 季後賽對戰樹 ----
+   * 欄位：外卡(F) → 分區(D) → 聯盟冠軍(L)，每聯盟一棵，最後是世界大賽(W)。
+   * 未決定的隊伍在 API 裡是假隊伍（id 很大、名稱像 "LAD/SD" 或 "Higher Seed League Champion"），一律顯示「待定」。 */
+  const isRealTeam = (t) => !!(t && TEAMS[t.id]);
+  const bkMD = new Intl.DateTimeFormat('zh-TW', { timeZone: TZ, month: 'numeric', day: 'numeric' });
+  const BK_ROUND = { F: '外卡賽', D: '分區賽', L: '聯盟冠軍賽', W: '世界大賽' };
+
+  function bkInfo(s) {
+    const games = ((s && s.games) || []).filter((g) => g && g.teams && g.teams.away && g.teams.home)
+      .sort((x, y) => Date.parse(x.gameDate) - Date.parse(y.gameDate));
+    const g0 = games[0];
+    if (!g0) return null;
+    const sid = (s.series && s.series.id) || '';
+    const m = /^([FDLW])_(\d+)$/.exec(sid);
+    const type = (m && m[1]) || g0.gameType || '';
+    const num = m ? Number(m[2]) : (s.series && s.series.sortNumber) || 0;
+    const desc = g0.seriesDescription || '';
+    const lg = type === 'W' ? 'WS' : /^AL /i.test(desc) ? 'AL' : /^NL /i.test(desc) ? 'NL' : '';
+    // 一場比賽主場是高種子，所以高種子排上面
+    const H = g0.teams.home.team || {}, A = g0.teams.away.team || {};
+    const wins = { [H.id]: 0, [A.id]: 0 };
+    let played = false, live = false, liveG = null, lastFinal = null;
+    games.forEach((g) => {
+      const k = gameState(g.status, g.linescore, g.gameDate).k;
+      if (k === 'live') { live = true; liveG = liveG || g; }
+      if (k === 'final') { played = true; lastFinal = g; }
+      ['away', 'home'].forEach((sd) => {
+        const t = g.teams[sd];
+        if (k === 'final' && t && t.isWinner && t.team && wins[t.team.id] != null) wins[t.team.id]++;
+      });
+    });
+    const n = g0.gamesInSeries || games.length;
+    const need = Math.ceil(n / 2);
+    const real = isRealTeam(H) && isRealTeam(A);
+    const done = real && (wins[H.id] >= need || wins[A.id] >= need);
+    const winner = done ? (wins[H.id] >= need ? H : A) : null;
+    const next = games.find((g) => gameState(g.status, g.linescore, g.gameDate).k === 'upcoming');
+    const target = liveG || (real && (lastFinal && !next ? lastFinal : next || lastFinal)) || null;
+    return {
+      type, num, lg, H, A, wins, n, need, real, played, live, done, winner, g0,
+      target: real && target ? target.gamePk : null,
+      teamIds: [H, A].filter(isRealTeam).map((t) => t.id),
+    };
+  }
+
+  function bkRow(t, si, w) {
+    const real = isRealTeam(t);
+    let nm = '待定', sub = '';
+    if (real) nm = teamAbbr(t);
+    else {
+      const raw = (t && (t.name || t.teamName)) || '';
+      if (/^[A-Z]{2,3}(\/[A-Z]{2,3})+$/.test(raw)) sub = raw.split('/').join(' / ');
+      else if (/higher/i.test(raw)) sub = '高種子冠軍';
+      else if (/lower/i.test(raw)) sub = '低種子冠軍';
+    }
+    const state = si.done && real ? (si.winner.id === t.id ? ' w' : ' l') : '';
+    const shown = real && (si.played || si.live) ? w : '';
+    return `<div class="bk-t${state}${real ? '' : ' tbd'}">${real ? logo(t, 'bkl') : '<i class="bkl q">?</i>'}<span class="bk-n"><b>${esc(nm)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span><em>${shown}</em></div>`;
+  }
+
+  function bkCard(si, big) {
+    const hi = Math.max(si.wins[si.H.id] || 0, si.wins[si.A.id] || 0);
+    const lo = Math.min(si.wins[si.H.id] || 0, si.wins[si.A.id] || 0);
+    const lead = hi === lo ? null : (si.wins[si.H.id] || 0) > (si.wins[si.A.id] || 0) ? si.H : si.A;
+    let st = '待定', cls = '';
+    if (si.done) { st = `${teamAbbr(si.winner)} 晉級`; cls = ' d'; }
+    else if (si.live) { st = si.played && lead ? `● ${teamAbbr(lead)} ${hi}-${lo}` : si.played ? `● 戰成 ${hi}-${lo}` : '● 進行中'; cls = ' l'; }
+    else if (si.real && si.played) st = lead ? `${teamAbbr(lead)} 領先 ${hi}-${lo}` : `戰成 ${hi}-${lo}`;
+    else if (si.real) st = `${bkMD.format(new Date(si.g0.gameDate))} 開打`;
+    const head = `<div class="bk-h"><span>${BK_ROUND[si.type] || ''}</span><small>${si.n}戰${si.need}勝</small></div>`;
+    const body = `${bkRow(si.H, si, si.wins[si.H.id])}${bkRow(si.A, si, si.wins[si.A.id])}<div class="bk-s${cls}">${esc(st)}</div>`;
+    const c = `bk-card${big ? ' big' : ''}${si.live ? ' live' : ''}${si.done ? ' done' : ''}`;
+    return si.target
+      ? `<a class="${c}" href="#/game/${si.target}">${head}${body}</a>`
+      : `<div class="${c}">${head}${body}</div>`;
+  }
+
+  function bracketHTML(d) {
+    const infos = ((d && d.series) || []).map((s) => { try { return bkInfo(s); } catch (e) { return null; } }).filter(Boolean);
+    if (!infos.length) return '<div class="empty">目前沒有季後賽資料</div>';
+    const pick = (lg, type) => infos.filter((x) => x.lg === lg && x.type === type).sort((a, b) => a.num - b.num);
+    let out = '';
+    for (const lg of ['AL', 'NL']) {
+      const wc = pick(lg, 'F'), ds = pick(lg, 'D'), cs = pick(lg, 'L');
+      if (!wc.length && !ds.length && !cs.length) continue;
+      // 外卡贏家去打哪個分區系列賽：先看有沒有同一支球隊；還沒決定就用賽制固定的對位（第 1 個外卡打第 2 個分區賽）
+      let wcCol = wc.slice();
+      if (ds.length && wc.length) {
+        const left = wc.slice();
+        const col = ds.map((x, i) => {
+          let k = left.findIndex((w) => w.teamIds.some((id) => x.teamIds.includes(id)));
+          if (k < 0) { const want = wc[wc.length - 1 - i]; k = left.indexOf(want); }
+          if (k < 0) k = left.length ? 0 : -1;
+          return k < 0 ? null : left.splice(k, 1)[0];
+        });
+        wcCol = col.concat(left);
+      }
+      const cols = [];
+      if (wc.length) cols.push({ t: 'F', items: wcCol, link: ds.length ? 'r' : '' });
+      if (ds.length) cols.push({ t: 'D', items: ds, link: cs.length ? 'm' : '' });
+      if (cs.length) cols.push({ t: 'L', items: cs, link: ds.length ? 'l' : '' });
+      const focus = Math.max(0, cols.findIndex((c) => c.items.some((x) => x && x.real && !x.done)));
+      const live = cols.some((c) => c.items.some((x) => x && x.live));
+      const colHTML = cols.map((c) => {
+        const cells = c.items.map((x, i) => {
+          if (!x) return '<div class="bk-cell"></div>';
+          let k = '';
+          if (c.link === 'r') k = ' lr';
+          else if (c.link === 'm') k = c.items.length > 1 ? (i % 2 === 0 ? ' mt' : ' mb') : ' lr';
+          else if (c.link === 'l') k = ' ll';
+          return `<div class="bk-cell${k}">${bkCard(x)}</div>`;
+        }).join('');
+        return `<div class="bk-col"><div class="bk-rh">${BK_ROUND[c.t]}</div><div class="bk-cells">${cells}</div></div>`;
+      }).join('');
+      out += `<h2 class="grp">${LEAGUE[lg === 'AL' ? 103 : 104]}${live ? '<small class="bk-live">● 進行中</small>' : ''}</h2>
+        <div class="bk-scroll" data-focus="${focus}"><div class="bk-tree">${colHTML}</div></div>`;
+    }
+    const ws = infos.find((x) => x.type === 'W');
+    if (ws) out += `<h2 class="grp">世界大賽</h2><div class="bk-ws">${bkCard(ws, true)}</div>`;
+    const other = infos.filter((x) => x.lg === '' && x.type !== 'W');
+    if (other.length) out += `<h2 class="grp">其他系列賽</h2><div class="bk-ws">${other.map((x) => bkCard(x)).join('')}</div>`;
+    return out + '<p class="note">左右滑動可查看各輪；點系列賽卡片進入比賽。</p>';
+  }
+
+  /* 重畫時保留橫向捲動位置；第一次進入則捲到目前進行到的那一輪 */
+  function paintBracket(box, d, st) {
+    const html = bracketHTML(d);
+    if (html === st.sig && box.querySelector('.bk-tree')) return;
+    const keep = $$('.bk-scroll', box).map((e) => e.scrollLeft);
+    const first = !st.sig;
+    box.innerHTML = html;
+    st.sig = html;
+    $$('.bk-scroll', box).forEach((e, i) => {
+      if (!first && keep[i] != null) { e.scrollLeft = keep[i]; return; }
+      const col = e.querySelectorAll('.bk-col')[Number(e.dataset.focus) || 0];
+      if (col) e.scrollLeft = Math.max(0, col.offsetLeft - 12);
+    });
+  }
+
   const favSumHTML = () => (S.favs.length
     ? S.favs.slice(0, 4).map((id) => logo({ id }, 'fsl')).join('') + (S.favs.length > 4 ? `<em>+${S.favs.length - 4}</em>` : '')
     : '<em>尚未選擇</em>');
@@ -991,12 +1130,16 @@
     let data = null;
     view.innerHTML = `
       <div class="chips">
-        <button data-sv="division">分區</button><button data-sv="league">聯盟</button><button data-sv="post">季後賽</button>
+        <button data-sv="division">分區</button><button data-sv="league">聯盟</button><button data-sv="post">季後賽</button><button data-sv="bracket">對戰樹</button>
       </div><div id="stand"><div class="loading">載入中…</div></div>`;
+    const bk = { sig: '' };
     const paint = () => {
       $$('[data-sv]').forEach((b) => b.classList.toggle('on', b.dataset.sv === S.standView));
+      if (S.standView !== 'bracket') bk.sig = '';
       if (S.standView === 'post') {
         if (post) $('#stand').innerHTML = postHTML(post);
+      } else if (S.standView === 'bracket') {
+        if (post) paintBracket($('#stand'), post, bk);
       } else if (data) $('#stand').innerHTML = standingsHTML(data);
     };
     let post = null;
@@ -1014,7 +1157,7 @@
         if (my !== token) return;
         paint();
       },
-      () => (S.standView === 'post' ? 60000 : 300000)
+      () => (S.standView === 'post' || S.standView === 'bracket' ? 60000 : 300000)
     );
     poller.start();
   }
@@ -1276,7 +1419,7 @@
         renderBody();
       } else if (b.dataset.sv) {
         S.standView = b.dataset.sv;
-        if (S.standView !== 'post') store.set('standView', S.standView);
+        if (S.standView !== 'post' && S.standView !== 'bracket') store.set('standView', S.standView);
         if (G && G.repaint) G.repaint();
       } else if (b.id === 'boxMore') {
         S.boxMore = !S.boxMore;
@@ -1324,7 +1467,7 @@
 
   /* 測試鉤子：node 下可直接驗證純函式，不影響瀏覽器 */
   if (typeof globalThis.__MLB_TEST__ === 'object') {
-    Object.assign(globalThis.__MLB_TEST__, { twDate, shiftDate, gameState, cardHTML, evZh, seriesZh, standingsHTML, boxHTML, headHTML, textHTML, S, setG: (g) => { G = g; } });
+    Object.assign(globalThis.__MLB_TEST__, { twDate, shiftDate, gameState, cardHTML, evZh, seriesZh, standingsHTML, bracketHTML, boxHTML, headHTML, textHTML, S, setG: (g) => { G = g; } });
   } else {
     boot();
   }
