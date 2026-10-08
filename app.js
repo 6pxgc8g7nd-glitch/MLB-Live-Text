@@ -211,7 +211,6 @@
     gFold: store.get('gFold', false),
     testMode: store.get('testMode', false),
     favs: store.get('favs', []),
-    fabPos: store.get('fabPos', null), // 懸浮按鈕位置 { s: 'l'|'r', y: 0~1 }
     testStart: store.get('testStart', Date.now()),
   };
   let view = null;
@@ -1389,13 +1388,10 @@
     const hrfx = document.getElementById('hrfx'); if (hrfx) hrfx.remove(); // 換頁時立刻結束全壘打動畫
     $('#banner').hidden = true;
     const [name, arg] = location.hash.replace(/^#\/?/, '').split('/');
-    pfClose();
-    if (name === 'game' && /^\d+$/.test(arg || '')) { showGame(arg); pfRender(); return; }
+    if (name === 'game' && /^\d+$/.test(arg || '')) { showGame(arg); return; }
     if (name === 'standings') showStandings();
     else if (name === 'settings') showSettings();
     else showScores();
-    pfRender();
-    if (Date.now() - PF.last > 10000) pfFetch(); // 關注球隊可能剛更改，換頁時順便重新檢查
   }
 
   function rollover() {
@@ -1415,145 +1411,6 @@
     clearTimeout(toastT);
     if (hold !== true) toastT = setTimeout(() => t.classList.remove('show'), 1400);
   };
-
-  /* ================= 關注球隊比賽中・懸浮按鈕 ================= */
-  // 只要有關注的球隊正在比賽就自動出現；沒有進行中的比賽時隱藏
-  const PF = { el: null, games: [], prev: new Map(), timer: 0, last: 0, drag: null, busy: false };
-  const PF_SIZE = 52;
-  const pfSafeB = () => Math.max(0, (parseFloat(getComputedStyle(document.body).paddingBottom) || 0) - 92);
-  // 上緣以「比分」頁的標題列高度（114px＋安全區）為準，各頁固定，切換頁面時白球不會上下跳動
-  const pfRange = () => { const top = $('.top'); const minTop = Math.round(114 + (top ? parseFloat(getComputedStyle(top).paddingTop) || 0 : 0) + 12); return [minTop, Math.max(minTop, innerHeight - PF_SIZE - 96 - pfSafeB())]; };
-  const pfCurPk = () => { const m = /^#\/game\/(\d+)/.exec(location.hash); return m ? m[1] : null; };
-  const pfList = () => PF.games.filter((g) => String(g.pk) !== pfCurPk());
-
-  function pfClose() { const c = PF.el && $('.pf-card', PF.el); if (c) c.hidden = true; }
-  function pfPulse() {
-    const b = PF.el && $('.pf-ball', PF.el);
-    if (!b) return;
-    b.classList.remove('pulse'); void b.offsetWidth; b.classList.add('pulse');
-  }
-  async function pfFetch() {
-    if (PF.busy) return; // 避免同時多個請求造成計時器重複
-    PF.busy = true;
-    clearTimeout(PF.timer);
-    PF.last = Date.now();
-    let next = 8000;
-    if (!S.favs.length) { PF.games = []; PF.prev.clear(); pfRender(); PF.busy = false; PF.timer = setTimeout(pfFetch, 60000); return; }
-    if (!document.hidden) {
-      try {
-        const today = twDate();
-        const d = await api(`/api/v1/schedule?sportId=1&startDate=${shiftDate(today, -1)}&endDate=${today}&hydrate=linescore&teamId=${S.favs.join(',')}`);
-        const seen = new Set(), out = [];
-        let soon = false;
-        for (const day of d.dates || []) for (const g of day.games || []) {
-          if (seen.has(g.gamePk)) continue; seen.add(g.gamePk);
-          const A = g.teams && g.teams.away && g.teams.away.team, H = g.teams && g.teams.home && g.teams.home.team;
-          if (!A || !H || !(S.favs.includes(A.id) || S.favs.includes(H.id))) continue;
-          const ls = g.linescore || {}, st = gameState(g.status, ls, g.gameDate);
-          if (st.k === 'upcoming' && Date.parse(g.gameDate) - Date.now() < 20 * 60000) soon = true; // 快開賽（或已過開賽時間）：加密檢查
-          if (st.k !== 'live') continue;
-          const t = ls.teams || {}, o = ls.offense || {};
-          out.push({
-            pk: g.gamePk, aw: teamAbbr(A), hm: teamAbbr(H),
-            ar: (t.away && t.away.runs) || 0, hr: (t.home && t.home.runs) || 0,
-            half: `${ls.currentInning || 0}-${ls.inningState || ''}`,
-            inn: ls.currentInning ? `${ls.currentInning}局${HALF[ls.inningState] || ''}` : '',
-            outs: ls.outs || 0, balls: ls.balls || 0, strikes: ls.strikes || 0,
-            bases: [o.first, o.second, o.third].map((x) => (x ? 1 : 0)),
-          });
-        }
-        let changed = false;
-        for (const g of out) {
-          const p = PF.prev.get(g.pk);
-          if (p && (p.ar !== g.ar || p.hr !== g.hr || p.half !== g.half)) changed = true;
-        }
-        PF.prev = new Map(out.map((g) => [g.pk, g]));
-        PF.games = out;
-        if (changed) pfPulse();
-        pfRender();
-        // 進行中或快開賽：每 8 秒檢查，開打與結束時白球才不會延遲太久；其餘時間放慢
-        next = out.length || soon ? 8000 : 30000;
-      } catch (e) { /* 網路失敗：下次再試 */ }
-    }
-    PF.busy = false;
-    PF.timer = setTimeout(pfFetch, next);
-  }
-  function pfCardHTML() {
-    const list = pfList(), one = list.length === 1;
-    const dia = (on, c) => `<i class="${c}${on ? ' on' : ''}"></i>`;
-    return list.map((p) => `<div class="pf-g${one ? ' one' : ''}" data-pk="${p.pk}">
-      <div class="pf-h"><span class="pf-lv">● LIVE</span><span>${esc(p.inn)}</span></div>
-      <div class="pf-sc"><b>${esc(p.aw)}</b><em>${p.ar}</em><u class="cn"></u><em class="r">${p.hr}</em><b>${esc(p.hm)}</b></div>
-      <div class="pf-f"><span class="pf-bs">${dia(p.bases[1], 'b2')}${dia(p.bases[2], 'b3')}${dia(p.bases[0], 'b1')}</span><span>${p.outs}出局　${p.balls}-${p.strikes}</span><span class="pf-go">進入轉播 ›</span></div>
-    </div>`).join('');
-  }
-  function pfPlace() {
-    const el = PF.el; if (!el) return;
-    const ball = $('.pf-ball', el), card = $('.pf-card', el);
-    const W = innerWidth, H = innerHeight, [minTop, maxTop] = pfRange();
-    const pos = S.fabPos || { s: 'r', y: 0.12 }; // 預設在畫面右上方
-    const moved = PF.drag && PF.drag.moved;
-    const x = moved ? PF.drag.x : (pos.s === 'l' ? 10 : W - PF_SIZE - 10);
-    const y = moved ? PF.drag.y : minTop + pos.y * (maxTop - minTop);
-    ball.style.left = x + 'px'; ball.style.top = Math.min(maxTop, Math.max(minTop, y)) + 'px';
-    if (!card.hidden) {
-      const cw = Math.min(250, W - 16);
-      card.style.width = cw + 'px';
-      card.style.left = Math.min(W - cw - 8, Math.max(8, x + PF_SIZE - cw)) + 'px';
-      const bt = parseFloat(ball.style.top);
-      if (bt > H / 2) { card.style.top = 'auto'; card.style.bottom = (H - bt + 10) + 'px'; }
-      else { card.style.bottom = 'auto'; card.style.top = (bt + PF_SIZE + 10) + 'px'; }
-    }
-  }
-  function pfRender() {
-    if (!PF.el) return;
-    const show = pfList().length > 0 && !/^#\/settings/.test(location.hash); // 設定頁不顯示
-    PF.el.hidden = !show;
-    if (!show) { pfClose(); return; }
-    const card = $('.pf-card', PF.el);
-    if (!card.hidden) card.innerHTML = pfCardHTML();
-    pfPlace();
-  }
-  function pfInit() {
-    const el = document.createElement('div');
-    el.className = 'pfab'; el.hidden = true;
-    el.innerHTML = `<div class="pf-card" hidden></div><button class="pf-ball" aria-label="關注球隊正在比賽"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M12 7Q19 20 12 33M28 7Q21 20 28 33"/></svg></button>`;
-    document.body.appendChild(el); PF.el = el;
-    const ball = $('.pf-ball', el), card = $('.pf-card', el);
-    ball.addEventListener('pointerdown', (e) => {
-      ball.setPointerCapture(e.pointerId);
-      const r = ball.getBoundingClientRect();
-      PF.drag = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: r.left, oy: r.top, x: r.left, y: r.top, moved: false };
-    });
-    ball.addEventListener('pointermove', (e) => {
-      const d = PF.drag; if (!d || d.id !== e.pointerId) return;
-      const dx = e.clientX - d.sx, dy = e.clientY - d.sy;
-      if (!d.moved && Math.hypot(dx, dy) < 6) return;
-      if (!d.moved) { d.moved = true; card.hidden = true; ball.classList.add('drag'); }
-      d.x = d.ox + dx; d.y = d.oy + dy; pfPlace();
-    });
-    const end = (e) => {
-      const d = PF.drag; if (!d || d.id !== e.pointerId) return;
-      PF.drag = null; ball.classList.remove('drag');
-      if (d.moved) { // 放開後吸附到左或右側，記住位置
-        const [minTop, maxTop] = pfRange();
-        S.fabPos = { s: d.x + PF_SIZE / 2 < innerWidth / 2 ? 'l' : 'r', y: Math.min(1, Math.max(0, (d.y - minTop) / (maxTop - minTop || 1))) };
-        store.set('fabPos', S.fabPos); pfPlace();
-      } else if (e.type === 'pointerup') {
-        card.hidden = !card.hidden;
-        if (!card.hidden) { card.innerHTML = pfCardHTML(); pfFetch(); }
-        pfPlace();
-      }
-    };
-    ball.addEventListener('pointerup', end); ball.addEventListener('pointercancel', end);
-    card.addEventListener('click', (e) => {
-      const g = e.target.closest('.pf-g'); if (!g) return;
-      pfClose(); location.hash = '#/game/' + g.dataset.pk;
-    });
-    document.addEventListener('pointerdown', (e) => { if (!card.hidden && !el.contains(e.target)) card.hidden = true; });
-    addEventListener('resize', pfPlace);
-    pfFetch();
-  }
 
   function boot() {
     view = $('#view');
@@ -1709,7 +1566,7 @@
 
     addEventListener('hashchange', route);
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) { rollover(); if (poller) poller.kick(); pfFetch(); }
+      if (!document.hidden) { rollover(); if (poller) poller.kick(); }
     });
     addEventListener('online', () => poller && poller.kick());
     addEventListener('pageshow', () => poller && poller.kick());
@@ -1718,7 +1575,6 @@
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
     }
-    pfInit();
     route();
   }
 
