@@ -250,6 +250,12 @@ assert.ok(!lv.includes('lv-sit') && !lv.includes('class="bases"'), '局數／壘
 assert.ok(lv.includes('data-player="30"') && lv.includes('data-player="20"'), '打者與投手可開小卡');
 assert.ok(lv.includes('用球數 <b>77</b>') && lv.includes('今日 5.0 局'), '投手今日用球數');
 assert.ok(lv.includes('滑球') && lv.includes('class="pz"'), '本打席的每一球');
+assert.ok(lv.includes('class="play live open"') && lv.includes('進行中'), '進行中的打席用文字轉播的卡片樣式，固定展開');
+assert.ok(lv.includes('class="pd"') && lv.includes('上一球') && !lv.includes('決勝球'), '每一球的圓點與「上一球」摘要（進行中不叫決勝球）');
+const noPitch = JSON.parse(JSON.stringify(lvFeed)); noPitch.liveData.plays.allPlays[1].playEvents = [];
+assert.ok(liveHTML(noPitch).includes('等待第一球'), '還沒投球：卡片裡提示等待第一球');
+const withSub = JSON.parse(JSON.stringify(lvFeed)); withSub.liveData.plays.allPlays[1].playEvents.push({ isSubstitution: true, details: { description: 'Pitching Change: A replaces B.' } });
+assert.strictEqual((liveHTML(withSub).match(/class="chg pc"/g) || []).length, 1, '換投手只顯示一次（在卡片裡）');
 assert.ok(!lv.includes('Deck Guy') && !lv.includes('上一打席'), '下一棒與上一打席的卡片已移除');
 // 半局之間：回顧剛結束的半局（局數表的得分／安打／殘壘、每個打席的結果、投手與用球數）
 const mid = (state, extra) => { const f = JSON.parse(JSON.stringify(lvFeed)); f.liveData.linescore.inningState = state; f.liveData.linescore.innings[0].away = { runs: 2, hits: 1, leftOnBase: 0 }; f.liveData.plays.allPlays = f.liveData.plays.allPlays.filter((p) => p.about.isComplete !== false); if (extra) extra(f); return f; };

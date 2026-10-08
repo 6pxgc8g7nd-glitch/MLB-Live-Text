@@ -854,7 +854,7 @@ body.replaying .rp-go { display: none; }
 .lv-tab::before { content: '●'; margin-right: 4px; font-size: 10px; color: var(--emph); vertical-align: 1px; }
 .seg button.lv-tab.on::before { color: #ff6b7d; }
 .lv > * + * { margin-top: 8px; }
-.lv-mu, .lv-pz, .lv-wait, .lv-rc { background: var(--card); border-radius: 14px; box-shadow: var(--shadow); }
+.lv-mu, .lv-wait, .lv-rc { background: var(--card); border-radius: 14px; box-shadow: var(--shadow); }
 .lv-mu { padding: 4px 14px; }
 .lv-p { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; font-size: 16px; font-weight: 700; }
 .lv-p + .lv-p { border-top: 1px dashed var(--line); }
@@ -865,9 +865,6 @@ body.replaying .rp-go { display: none; }
 .lv-p .lv-av small { margin-top: 2px; font-size: 10px; font-weight: 500; }
 .lv-av.na b { color: var(--sub); font-weight: 600; }
 .lv-p small b { color: var(--navy); font-weight: 800; }
-.lv-pz { padding: 12px 14px; }
-.lv-pz .pz { display: flex; margin: 0; padding: 0; border: 0; }
-.lv-none { margin: 0; color: var(--sub); font-size: 13px; text-align: center; }
 .lv-wait { padding: 18px 14px; text-align: center; }
 .lv-wait b { display: block; font-size: 18px; }
 .lv-wait span { color: var(--sub); font-size: 13px; }

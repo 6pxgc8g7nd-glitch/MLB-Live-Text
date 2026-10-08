@@ -111,7 +111,7 @@ export function pitchZone(p, zh) {
     ? `<svg class="zone" viewBox="0 0 120 150" aria-hidden="true"><rect x="0" y="0" width="120" height="150" rx="8" class="zbg"/><rect x="${zl.toFixed(1)}" y="${zt.toFixed(1)}" width="${(zr - zl).toFixed(1)}" height="${(zb - zt).toFixed(1)}" class="zbox"/>${dots}</svg>` : '';
   return `<div class="pz">${svg}<ul class="pl2">${rows}</ul></div>`;
 }
-export function pitchLine(p, zh) {
+export function pitchLine(p, zh, live) {
   const ps = (p.playEvents || []).filter((e) => e && e.isPitch);
   if (!ps.length) return '';
   const last = ps[ps.length - 1];
@@ -119,7 +119,7 @@ export function pitchLine(p, zh) {
   const name = ty ? (zh ? PITCH_ZH[ty.code] || ty.description : ty.description) : '';
   const spd = last.pitchData && last.pitchData.startSpeed;
   const bits = [`${ps.length} ${zh ? '球' : 'pitches'}`];
-  if (name) bits.push(`${zh ? '決勝球' : 'Last'} <b>${esc(name)}</b>${spd ? ' ' + Math.round(spd * 10) / 10 + ' mph' : ''}`);
+  if (name) bits.push(`${zh ? (live ? '上一球' : '決勝球') : (live ? 'Last pitch' : 'Last')} <b>${esc(name)}</b>${spd ? ' ' + Math.round(spd * 10) / 10 + ' mph' : ''}`);
   return `<div class="pitch">${bits.join(' · ')}</div>`;
 }
 export function subHTML(e, zh) {
@@ -152,7 +152,7 @@ export function playCat(p, done) {
   return { cls: '', label: '' };
 }
 
-export function playHTML(p, gd) {
+export function playHTML(p, gd, opt = {}) {
   const r = p.result || {}, ab = p.about || {}, m = p.matchup || {};
   const pit = (m.pitcher && m.pitcher.fullName) || '';
   const done = ab.isComplete !== false;
@@ -172,7 +172,7 @@ export function playHTML(p, gd) {
 
   const subEvs = (p.playEvents || []).filter(isSubEvent);
   const subs = subEvs.map((e) => subHTML(e, zh)).join('');
-  const pitchRow = done ? pitchLine(p, zh) : '';
+  const pitchRow = done ? pitchLine(p, zh) : opt.live ? pitchLine(p, zh, true) : '';
 
   let hit = '';
   const hdEv = [...(p.playEvents || [])].reverse().find((e) => e && e.hitData);
@@ -191,13 +191,13 @@ export function playHTML(p, gd) {
   const meta = zh && done ? [pit ? `投手 ${pLink(m.pitcher, 'p', m.batter)}` : '', outs].filter(Boolean).join(' · ') : '';
   const cat = playCat(p, done);
   // 進行中的打席自動展開（除非手動收起）；已結束的一律收起（除非手動展開）
-  const isOpen = done ? G.open.has(ab.atBatIndex) : !(G.shut && G.shut.has(ab.atBatIndex));
+  const isOpen = opt.live ? true : done ? G.open.has(ab.atBatIndex) : !(G.shut && G.shut.has(ab.atBatIndex));
   const cls = ['play', cat.cls, isOpen ? 'open' : ''].filter(Boolean).join(' ');
   const en = zh && done && r.description ? `<div class="en">${esc(r.description)}</div>` : '';
   const top = cat.label || score
     ? `<div class="p-top">${cat.label ? `<span class="tag">${cat.label}</span>` : '<span></span>'}${score}</div>` : '';
   return `<div class="${cls}" data-k="${ab.atBatIndex}">
-    ${top}<div class="p-body">${body}</div>${pitchDots(p)}${pitchRow}${hit}${subs}${meta ? `<div class="p-meta">${meta}</div>` : ''}${en}${pitchZone(p, zh)}</div>`;
+    ${top}<div class="p-body">${body}</div>${pitchDots(p)}${pitchRow}${hit}${subs}${meta ? `<div class="p-meta">${meta}</div>` : ''}${en}${pitchZone(p, zh)}${opt.live && !pitchDots(p) ? `<div class="p-meta">${zh ? '等待第一球' : 'Waiting for the first pitch'}</div>` : ''}</div>`;
 }
 
 export function textHTML(d) {
@@ -387,19 +387,15 @@ export function liveHTML(d) {
   const cur = plays.currentPlay && plays.currentPlay.about && plays.currentPlay.about.isComplete === false
     ? plays.currentPlay
     : all.slice().reverse().find((p) => p.about && p.about.isComplete === false);
-  const zh = S.lang === 'zh';
   const half = ls.inningState === 'Top' || ls.inningState === 'Bottom';
   if (!cur || !half) return recapHTML(d, recapTarget(ls), half); // 半局之間：回顧剛結束的半局
   const m = cur.matchup || {};
   const bat = m.batter || {}, pit = m.pitcher || {};
-  const subs = (cur.playEvents || []).filter(isSubEvent).map((e) => subHTML(e, zh)).join('');
-  const zone = pitchZone(cur, zh);
   return `<div class="lv-mu">
       ${(() => { const t = todayStat(d, bat.id, 'batting'); return `<div class="lv-p"><i>打</i><div class="lv-n">${pLink(bat, 'b', pit)}<small>${batToday(t)}</small></div>${seasonNum(d, t, 'avg', 'AVG')}</div>`; })()}
       ${(() => { const t = todayStat(d, pit.id, 'pitching'); return `<div class="lv-p"><i>投</i><div class="lv-n">${pLink(pit, 'p', bat)}<small>${pitToday(t)}</small></div>${seasonNum(d, t, 'era', 'ERA')}</div>`; })()}
     </div>
-    ${subs}
-    <div class="lv-pz">${zone || '<p class="lv-none">等待第一球</p>'}</div>`;
+    ${playHTML(cur, d.gameData || {}, { live: true })}`;
 }
 
 export function boxHTML(d, side) {

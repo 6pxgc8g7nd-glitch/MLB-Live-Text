@@ -92,7 +92,7 @@ function boot() {
       return;
     }
     const play = e.target.closest('.play');
-    if (play && G && G.open) {
+    if (play && G && G.open && !play.closest('#lv')) { // LIVE 分頁的打席卡固定展開
       const k = Number(play.dataset.k);
       const nowOpen = !play.classList.contains('open');
       if (play.classList.contains('live')) { if (nowOpen) G.shut.delete(k); else G.shut.add(k); } // 進行中：記錄「手動收起」

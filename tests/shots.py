@@ -77,7 +77,9 @@ plays = [
           {'isPitch': True, 'details': {'type': {'code': 'FF', 'description': 'Four-Seam Fastball'}, 'isStrike': True, 'call': {'description': 'Foul'}}, 'count': {'balls': 1, 'strikes': 2}, 'pitchData': {'startSpeed': 95.8, 'coordinates': {'pX': 0.6, 'pZ': 3.3}}},
           {'isPitch': True, 'details': {'type': {'code': 'FF', 'description': 'Four-Seam Fastball'}, 'isInPlay': True, 'call': {'description': 'In play, run(s)'}}, 'count': {'balls': 1, 'strikes': 2}, 'pitchData': {'startSpeed': 96.34, 'coordinates': {'pX': -0.2, 'pZ': 2.4}}, 'hitData': {'launchSpeed': 108.4, 'launchAngle': 29, 'totalDistance': 421}}]),
     P(6, 6, 'top', 'Flyout', 'Patrick Bailey flies out to center fielder Tristan Peters.', 'Patrick Bailey', 'Grant Taylor', outs=1),
-    P(7, 6, 'top', 'Strikeout', '', 'Brayan Rocchio', 'Grant Taylor', done=False, outs=1),
+    P(7, 6, 'top', 'Strikeout', '', 'Brayan Rocchio', 'Grant Taylor', done=False, outs=1,
+      pe=[{'isPitch': True, 'details': {'type': {'code': 'SL', 'description': 'Slider'}, 'isBall': True, 'call': {'description': 'Ball'}}, 'count': {'balls': 1, 'strikes': 0}, 'pitchData': {'startSpeed': 85.2, 'strikeZoneTop': 3.4, 'strikeZoneBottom': 1.6, 'coordinates': {'pX': -1.1, 'pZ': 1.2}}},
+          {'isPitch': True, 'details': {'type': {'code': 'FF', 'description': 'Four-Seam Fastball'}, 'isStrike': True, 'call': {'description': 'Called Strike'}}, 'count': {'balls': 1, 'strikes': 1}, 'pitchData': {'startSpeed': 95.1, 'coordinates': {'pX': 0.1, 'pZ': 2.6}}}]),
 ]
 for i in range(8, 40):
     plays.insert(0, P(i - 60, 1 + (i % 4), 'top' if i % 2 else 'bottom', 'Groundout', 'Filler grounds out.', 'Filler %d' % i, 'Pitcher', outs=1))
