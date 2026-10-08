@@ -50,8 +50,8 @@ body.ingame, body.nodates { --th: 56px; }
 body.ingame .r2, body.nodates .r2 { display: none; }
 .dseg {
   flex: 1; border: 0; background-color: transparent; padding: 5px 0 6px; text-align: center; line-height: 1.2; color: rgba(255, 255, 255, .92); border-radius: 8px;
-  background: radial-gradient(circle 5px at 0 50%, #0000 98%, rgba(255, 255, 255, .16)) left / 52% 100% no-repeat,
-              radial-gradient(circle 5px at 100% 50%, #0000 98%, rgba(255, 255, 255, .16)) right / 52% 100% no-repeat;
+  background: radial-gradient(circle 5px at 0 50%, #0000 98%, rgba(255, 255, 255, .16)) left / 50% 100% no-repeat,
+              radial-gradient(circle 5px at 100% 50%, #0000 98%, rgba(255, 255, 255, .16)) right / 50% 100% no-repeat;
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation;
 }
 .dseg small { display: block; font-size: 10px; color: rgba(255, 255, 255, .7); font-variant-numeric: tabular-nums; }
@@ -59,8 +59,8 @@ body.ingame .r2, body.nodates .r2 { display: none; }
 .dseg:active { opacity: .6; }
 .dseg.on {
   color: var(--navy);
-  background: radial-gradient(circle 5px at 0 50%, #0000 98%, #fff) left / 52% 100% no-repeat,
-              radial-gradient(circle 5px at 100% 50%, #0000 98%, #fff) right / 52% 100% no-repeat;
+  background: radial-gradient(circle 5px at 0 50%, #0000 98%, #fff) left / 50% 100% no-repeat,
+              radial-gradient(circle 5px at 100% 50%, #0000 98%, #fff) right / 50% 100% no-repeat;
 }
 .dseg.on small { color: var(--sub); }
 .dseg.on.today b::after { content: ' ●'; color: var(--emph); font-size: 9px; vertical-align: 2px; }
@@ -252,3 +252,15 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .box tbody th { max-width: 118px; overflow: hidden; text-overflow: ellipsis; }
 .box td.k { font-weight: 800; color: var(--text); }
 .tgl { display: block; margin: 8px 0 0 auto; height: 32px; padding: 0 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); color: var(--accent); font-size: 12px; font-weight: 700; }
+
+#segL b, #segR b { font-size: 26px; line-height: 1; font-weight: 700; }
+#segL, #segR { display: flex; align-items: center; justify-content: center; }
+#segL small, #segR small { display: none; }
+#segC small { display: none; }
+
+.dseg, .dseg.on {
+  background: rgba(255, 255, 255, .16);
+  -webkit-mask: radial-gradient(circle 5px at 0 50%, #0000 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 5px at 100% 50%, #0000 98%, #000) right / 51% 100% no-repeat;
+  mask: radial-gradient(circle 5px at 0 50%, #0000 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 5px at 100% 50%, #0000 98%, #000) right / 51% 100% no-repeat;
+}
+.dseg.on { background: #fff; }

@@ -728,14 +728,11 @@
   /* ================= 外框、主題、路由 ================= */
   /* 標題欄日期：三張小票（前一天 / 目前日期 / 後一天） */
   function segLabel(d, offset) {
-    const t = twDate();
     const dl = dayLabel(d);
     const md = (dl.match(/\d+\/\d+/) || [''])[0], wk = (dl.match(/週./) || [''])[0];
-    let name = wk;
-    if (d === t) name = '今天';
-    else if (d === shiftDate(t, -1)) name = '昨天';
-    else if (d === shiftDate(t, 1)) name = '明天';
-    return { small: offset === 0 ? `${md} ${wk}`.trim() : md, name };
+    if (offset < 0) return { small: '', name: '‹' };
+    if (offset > 0) return { small: '', name: '›' };
+    return d === twDate() ? { small: '', name: 'Today' } : { small: '', name: `${md} ${wk}`.trim() };
   }
   function renderSegs() {
     [['#segL', -1], ['#segC', 0], ['#segR', 1]].forEach(([sel, off]) => {
@@ -744,6 +741,7 @@
       el.querySelector('b').textContent = l.name;
       el.classList.toggle('today', off === 0 && d === twDate());
     });
+    $('#segL').setAttribute('aria-label', '前一天'); $('#segR').setAttribute('aria-label', '後一天');
   }
   /* 左右兩張：前後一天；中間：單擊回到今天、長按（約 0.5 秒）開啟日期選擇器 */
   function bindSegs() {
