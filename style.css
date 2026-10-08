@@ -17,6 +17,8 @@ body {
   margin: 0; background: var(--bg); color: var(--text);
   font: 15px/1.5 system-ui, -apple-system, 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
   padding-bottom: calc(92px + env(safe-area-inset-bottom));
+  /* 內容很短的頁面（如設定）也要比視窗略高，避免 iOS 主畫面 App 把固定在底部的導覽列算在較短的視窗裡而浮高 */
+  min-height: calc(100vh + 2px);
 }
 button { font: inherit; color: inherit; cursor: pointer; }
 a { color: inherit; text-decoration: none; }
