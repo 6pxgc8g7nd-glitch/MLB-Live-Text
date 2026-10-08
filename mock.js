@@ -134,7 +134,7 @@
       const scoring = runs > 0;
       plays.push({
         about: { atBatIndex: k, inning: S.inning, halfInning: S.half, isComplete: true, isScoringPlay: scoring },
-        result: { event: ev, description: describe(ev, name, 1 + Math.floor(rec.h + k % 20)) + (runs > 1 ? ` ${runs} runs score.` : ''), rbi: runs || undefined, awayScore: S.score.away, homeScore: S.score.home },
+        result: { event: ev, eventType: ev === 'Home Run' ? 'home_run' : '', description: describe(ev, name, 1 + Math.floor(rec.h + k % 20)) + (runs > 1 ? ` ${runs} runs score.` : ''), rbi: runs || undefined, awayScore: S.score.away, homeScore: S.score.home },
         matchup: { batter: { id: bid(bs, i), fullName: name }, pitcher: { id: pid(ds), fullName: PITCHER[ds] } },
         count: { outs: S.outs },
         playEvents: pitches,
