@@ -406,8 +406,6 @@
       `<div class="h-team ${cls}">${logo(t, 'hl')}<div class="ab">${esc(teamAbbr(t) || fb)}</div><div class="zn">${esc(teamName(t))}</div></div>`;
     return `
       <div class="hero">
-        <div class="h-top"><span class="pill ${st.k}">${esc(st.txt)}</span>
-          <span>${esc(fmtTime(gd.datetime && gd.datetime.dateTime))}（台灣時間）${venue ? ' · ' + esc(venue) : ''}</span></div>
         ${lsHTML}
         ${extra}
       </div>`;
