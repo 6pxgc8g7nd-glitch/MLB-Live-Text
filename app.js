@@ -1475,7 +1475,7 @@
     const el = PF.el; if (!el) return;
     const ball = $('.pf-ball', el), card = $('.pf-card', el);
     const W = innerWidth, H = innerHeight, [minTop, maxTop] = pfRange();
-    const pos = S.fabPos || { s: 'r', y: 0 }; // 預設在畫面右上方
+    const pos = S.fabPos || { s: 'r', y: 0.12 }; // 預設在畫面右上方
     const moved = PF.drag && PF.drag.moved;
     const x = moved ? PF.drag.x : (pos.s === 'l' ? 10 : W - PF_SIZE - 10);
     const y = moved ? PF.drag.y : minTop + pos.y * (maxTop - minTop);
