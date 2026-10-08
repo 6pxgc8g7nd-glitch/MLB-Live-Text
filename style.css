@@ -751,3 +751,8 @@ a.bk2c:active { filter: brightness(.97); }
 .gstrip .gn .cn { color: var(--sub); margin: 0 .24em; opacity: .85; }
 .ptk .psb .cn { color: var(--sub); margin: 0 .22em; opacity: .85; }
 .pf-sc .cn { color: var(--sub); font-size: 34px; margin: 0 .1em; opacity: .85; }
+
+/* 季後賽卡片沿用比分頁的比賽卡片版型 */
+.game .pq { width: 44px; height: 44px; border-radius: 50%; background: var(--chip); color: #9aa; font-weight: 900; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
+.game .g-tm .rc { font-size: 12px; opacity: 1; }
+.game .g-tm.lose img, .game .g-tm.lose .pq { opacity: .4; }

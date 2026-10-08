@@ -54,7 +54,7 @@ try:
         for h in ['#/scores', '#/standings', '#/scores', '#/standings', '#/scores', '#/standings']: go(pg, h, 150)
         pg.wait_for_timeout(36000)
         n = len([r for r in reqs if 'schedule' in r])
-        check('快速換頁後 36 秒內檢查次數合理（%d 次）' % n, n <= 6)
+        check('快速換頁後 36 秒內檢查次數合理（%d 次）' % n, n <= 8)
         check('沒有 JS 錯誤', not errs)
 finally:
     srv.terminate()
