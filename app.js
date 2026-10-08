@@ -1224,7 +1224,6 @@
   function segLabel(d, offset) {
     const dl = dayLabel(d);
     const md = (dl.match(/\d+\/\d+/) || [''])[0]; let wk = (dl.match(/週(.)/) || ['', ''])[1];
-    if (wk) wk = '星期' + wk;
     if (offset < 0) return { small: '', name: '‹' };
     if (offset > 0) return { small: '', name: '›' };
     return d === twDate() ? { small: '', name: 'Today' } : { small: '', name: `${md} ${wk}`.trim() };
