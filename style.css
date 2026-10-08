@@ -179,10 +179,13 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .tkw { margin: 12px 0 8px; filter: drop-shadow(0 2px 5px rgba(0,0,0,.12)); }
 .tk { background: var(--card); border-radius: 12px; padding: 6px 10px 2px; }
 .tk .seg { margin: 0; padding: 0; border: 0; box-shadow: none; background: none; border-radius: 0; }
-.tk .seg button { height: 40px; border-radius: 0; }
-.tk .seg button.on { background: none; color: var(--navy); border-bottom: 3px solid var(--navy); }
+.tk .seg { gap: 4px; padding: 0 0 6px; }
+.tk .seg button { height: 36px; border-radius: 9px; }
 .tk .tr { border-top: 1.5px dashed #c4c4c4; margin: 0 -10px; }
-.tk .chips { margin: 8px 0; }
+.tk .chips { margin: 8px 0; gap: 4px; align-items: center; flex-wrap: nowrap; }
+.tk .chips button { height: 30px; padding: 0 8px; border: 0; border-radius: 0; background: none; font-size: 14px; }
+.tk .chips button.on { background: none; color: var(--navy); border-bottom: 2px solid var(--navy); }
+.tk .chips .af, .tk .chips .af.on { border: 0; background: none; color: var(--sub); padding: 0 0 0 8px; border-bottom: 0; }
 .seg button { flex: 1; height: 38px; border: 0; border-radius: 9px; background: transparent; color: var(--sub); font-weight: 700; }
 .seg button.on { background: var(--navy); color: #fff; }
 
