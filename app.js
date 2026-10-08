@@ -323,7 +323,7 @@
 
   function showScores() {
     route$ = 'scores';
-    setHeader('MLB 比分', false, 'scores');
+    setHeader('MLB Live Text', false, 'scores');
     const my = token;
     let anyLive = false;
     view.innerHTML = `
