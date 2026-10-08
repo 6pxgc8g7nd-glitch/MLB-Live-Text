@@ -23,13 +23,6 @@ export const pLink = (person, role, opp) => {
   return `<span class="pl-n"${pAttrs(person, role, opp)}>${nm}</span>`;
 };
 
-// 展開的打席底部：打者、投手兩顆大按鈕（手機上名字太小不好點）
-export const pButtons = (bat, pit) => {
-  const b = (who, role, opp, lbl) => (who && who.id && who.fullName
-    ? `<span class="pw"${pAttrs(who, role, opp)}><i>${lbl}</i><b>${esc(who.fullName)}</b><em>›</em></span>` : '');
-  const html = b(bat, 'b', pit, '打') + b(pit, 'p', bat, '投');
-  return html ? `<div class="p-who">${html}</div>` : '';
-};
 
 // 季中被交易的球員會有多筆 split（各隊＋合計），優先取沒有 team 的合計那筆
 export function pickStat(stats, type, group) {

@@ -5,7 +5,7 @@ import { api, createPoller } from './api.js';
 import { S, view, poller, token, G, setRoute, setPoller, setG } from './state.js';
 import { gameState, seriesLbl } from './scores.js';
 import { setHeader } from './shell.js';
-import { pLink, pAttrs, pButtons } from './player.js';
+import { pLink, pAttrs } from './player.js';
 import { wpPoints, wpHTML, bindWp } from './winprob.js';
 import { loadLiveFeed } from './livefeed.js';
 
@@ -200,7 +200,7 @@ export function playHTML(p, gd) {
   const top = cat.label || score
     ? `<div class="p-top">${cat.label ? `<span class="tag">${cat.label}</span>` : '<span></span>'}${score}</div>` : '';
   return `<div class="${cls}" data-k="${ab.atBatIndex}">
-    ${top}<div class="p-body">${body}</div>${pitchDots(p)}${pitchRow}${hit}${subs}${meta ? `<div class="p-meta">${meta}</div>` : ''}${en}${pitchZone(p, zh)}${pButtons(m.batter, m.pitcher)}</div>`;
+    ${top}<div class="p-body">${body}</div>${pitchDots(p)}${pitchRow}${hit}${subs}${meta ? `<div class="p-meta">${meta}</div>` : ''}${en}${pitchZone(p, zh)}</div>`;
 }
 
 export function textHTML(d) {

@@ -204,7 +204,7 @@ with sync_playwright() as p:
             pg.hover('.wp-c', position={'x': 200, 'y': 60}); pg.wait_for_timeout(200)
             print('wp:', pg.evaluate("[(document.querySelector('.wp-now')||{}).textContent, (document.querySelector('.wp-tip')||{}).innerText]"))
         if name == 'pcard':
-            pg.click('#plays .play.open .pw'); pg.wait_for_timeout(700)  # 展開打席底部的大按鈕
+            pg.click('#plays .pl-n'); pg.wait_for_timeout(700)  # 點轉播裡的球員名字
             print('pcard:', pg.evaluate("(document.querySelector('#pcdBody')||{}).innerText").replace('\n', ' | ')[:120])
             pg.click('#pcard .pcd-sw'); pg.wait_for_timeout(700)  # 卡片內換成對手
             print('pcard switched, vs header:', pg.evaluate("(document.querySelector('#pcdBody .pcd-sec:last-child h4')||{}).innerText"))
