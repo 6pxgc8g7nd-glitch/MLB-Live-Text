@@ -1000,66 +1000,77 @@
       : `<div class="${c}">${head}${body}</div>`;
   }
 
-  function bracketHTML(d) {
+  /* 單一系列賽縮圖：標籤＋上下兩隊（隊徽＋勝場） */
+  function bk2Chip(si, d) {
+    if (!si) {
+      return `<div class="bk2c emp"><span class="bk2n">待定</span><div class="bk2t"><i class="bk2l q">?</i></div><div class="bk2t"><i class="bk2l q">?</i></div></div>`;
+    }
+    const cls = `bk2c${si.live ? ' live' : ''}${si.done ? ' done' : ''}${si.teamIds.some((id) => S.favs.includes(id)) ? ' fav' : ''}`;
+    const row = (t) => {
+      const real = isRealTeam(t);
+      const st = si.done && real ? (si.winner.id === t.id ? ' w' : ' l') : '';
+      const shown = real && (si.played || si.live) ? si.wins[t.id] : '';
+      return `<div class="bk2t${st}">${real ? logo(t, 'bk2l') : '<i class="bk2l q">?</i>'}<em>${shown}</em></div>`;
+    };
+    const tip = `${BK_ROUND[si.type] || ''} ${isRealTeam(si.H) ? teamAbbr(si.H) : '待定'} vs ${isRealTeam(si.A) ? teamAbbr(si.A) : '待定'}`;
+    const inner = `<span class="bk2n">${BK_ROUND[si.type] || ''}</span>${row(si.H)}${row(si.A)}`;
+    return si.target
+      ? `<a class="${cls}" title="${esc(tip)}" href="#/game/${si.target}">${inner}</a>`
+      : `<div class="${cls}" title="${esc(tip)}">${inner}</div>`;
+  }
+
+  function bracketHTML(d, first) {
     const infos = ((d && d.series) || []).map((s) => { try { return bkInfo(s); } catch (e) { return null; } }).filter(Boolean);
     if (!infos.length) return '<div class="empty">目前沒有季後賽資料</div>';
     const pick = (lg, type) => infos.filter((x) => x.lg === lg && x.type === type).sort((a, b) => a.num - b.num);
-    let out = '';
+    const lgs = {};
     for (const lg of ['AL', 'NL']) {
       const wc = pick(lg, 'F'), ds = pick(lg, 'D'), cs = pick(lg, 'L');
-      if (!wc.length && !ds.length && !cs.length) continue;
-      // 外卡贏家去打哪個分區系列賽：先看有沒有同一支球隊；還沒決定就用賽制固定的對位（第 1 個外卡打第 2 個分區賽）
-      let wcCol = wc.slice();
-      if (ds.length && wc.length) {
+      // 外卡贏家去打哪個分區系列賽：先看有沒有同一支球隊；還沒決定就用賽制固定的對位
+      let wcCol = [null, null];
+      if (wc.length) {
         const left = wc.slice();
-        const col = ds.map((x, i) => {
-          let k = left.findIndex((w) => w.teamIds.some((id) => x.teamIds.includes(id)));
+        const n = Math.max(ds.length, 2);
+        wcCol = Array.from({ length: n }, (_, i) => {
+          const x = ds[i];
+          let k = x ? left.findIndex((w) => w.teamIds.some((id) => x.teamIds.includes(id))) : -1;
           if (k < 0) { const want = wc[wc.length - 1 - i]; k = left.indexOf(want); }
           if (k < 0) k = left.length ? 0 : -1;
           return k < 0 ? null : left.splice(k, 1)[0];
         });
-        wcCol = col.concat(left);
       }
-      const cols = [];
-      if (wc.length) cols.push({ t: 'F', items: wcCol, link: ds.length ? 'r' : '' });
-      if (ds.length) cols.push({ t: 'D', items: ds, link: cs.length ? 'm' : '' });
-      if (cs.length) cols.push({ t: 'L', items: cs, link: ds.length ? 'l' : '' });
-      const focus = Math.max(0, cols.findIndex((c) => c.items.some((x) => x && x.real && !x.done)));
-      const live = cols.some((c) => c.items.some((x) => x && x.live));
-      const colHTML = cols.map((c) => {
-        const cells = c.items.map((x, i) => {
-          if (!x) return '<div class="bk-cell"></div>';
-          let k = '';
-          if (c.link === 'r') k = ' lr';
-          else if (c.link === 'm') k = c.items.length > 1 ? (i % 2 === 0 ? ' mt' : ' mb') : ' lr';
-          else if (c.link === 'l') k = ' ll';
-          return `<div class="bk-cell${k}">${bkCard(x)}</div>`;
-        }).join('');
-        return `<div class="bk-col"><div class="bk-rh">${BK_ROUND[c.t]}</div><div class="bk-cells">${cells}</div></div>`;
-      }).join('');
-      out += `<h2 class="grp">${LEAGUE[lg === 'AL' ? 103 : 104]}${live ? '<small class="bk-live">● 進行中</small>' : ''}</h2>
-        <div class="bk-scroll" data-focus="${focus}"><div class="bk-tree">${colHTML}</div></div>`;
+      lgs[lg] = { wcCol, ds: [ds[0] || null, ds[1] || null], cs: cs[0] || null };
     }
-    const ws = infos.find((x) => x.type === 'W');
-    if (ws) out += `<h2 class="grp">世界大賽</h2><div class="bk-ws">${bkCard(ws, true)}</div>`;
+    const ws = infos.find((x) => x.type === 'W') || null;
+    const hasWC = ['AL', 'NL'].some((lg) => lgs[lg].wcCol.some(Boolean));
+    const cell = (x, span) => `<div class="bk2-c" style="grid-column:${span}">${bk2Chip(x)}</div>`;
+    let step = 0;
+    const dl = () => `style="--d:${(step++ * 0.18).toFixed(2)}s"`;
+    let out = `<div class="bk2${first ? ' first' : ''}">
+      <div class="bk2-lg"><span>美國聯盟</span><span>國家聯盟</span></div>`;
+    if (hasWC) {
+      const w = [lgs.AL.wcCol[0], lgs.AL.wcCol[1], lgs.NL.wcCol[0], lgs.NL.wcCol[1]];
+      out += `<div class="bk2-row" ${dl()}>${w.map((x, i) => (x ? cell(x, `${i * 2 + 1} / span 2`) : '')).join('')}</div>
+      <div class="bk2-row bk2-stem" ${dl()}>${w.map((x, i) => (x ? `<div class="bk2-s" style="grid-column:${i * 2 + 1} / span 2"></div>` : '')).join('')}</div>`;
+    }
+    const dsCells = [lgs.AL.ds[0], lgs.AL.ds[1], lgs.NL.ds[0], lgs.NL.ds[1]];
+    out += `<div class="bk2-row" ${dl()}>${dsCells.map((x, i) => cell(x, `${i * 2 + 1} / span 2`)).join('')}</div>
+      <div class="bk2-row bk2-join" ${dl()}><div class="bk2-j" style="grid-column:1 / span 4"></div><div class="bk2-j" style="grid-column:5 / span 4"></div></div>
+      <div class="bk2-row" ${dl()}>${cell(lgs.AL.cs, '2 / span 2')}${cell(lgs.NL.cs, '6 / span 2')}</div>
+      <div class="bk2-row bk2-join" ${dl()}><div class="bk2-j" style="grid-column:1 / span 8"></div></div>
+      <div class="bk2-row bk2-wsr" ${dl()}>${cell(ws, '4 / span 2')}</div>
+    </div>`;
     const other = infos.filter((x) => x.lg === '' && x.type !== 'W');
     if (other.length) out += `<h2 class="grp">其他系列賽</h2><div class="bk-ws">${other.map((x) => bkCard(x)).join('')}</div>`;
-    return out + '<p class="note">左右滑動可查看各輪；點系列賽卡片進入比賽。</p>';
+    return out + '<p class="note">點系列賽縮圖可進入比賽。</p>';
   }
 
-  /* 重畫時保留橫向捲動位置；第一次進入則捲到目前進行到的那一輪 */
   function paintBracket(box, d, st) {
-    const html = bracketHTML(d);
-    if (html === st.sig && box.querySelector('.bk-tree')) return;
-    const keep = $$('.bk-scroll', box).map((e) => e.scrollLeft);
-    const first = !st.sig;
+    const html = bracketHTML(d, !st.sig);
+    const sigNow = bracketHTML(d, false);
+    if (sigNow === st.sig && box.querySelector('.bk2')) return;
     box.innerHTML = html;
-    st.sig = html;
-    $$('.bk-scroll', box).forEach((e, i) => {
-      if (!first && keep[i] != null) { e.scrollLeft = keep[i]; return; }
-      const col = e.querySelectorAll('.bk-col')[Number(e.dataset.focus) || 0];
-      if (col) e.scrollLeft = Math.max(0, col.offsetLeft - 12);
-    });
+    st.sig = sigNow;
   }
 
   const favSumHTML = () => (S.favs.length

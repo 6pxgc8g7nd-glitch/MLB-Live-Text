@@ -599,3 +599,37 @@ a.bk-card:active { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .2)) brightness(.
 .game.fav { --card: #fff6e0; }
 .tc.rib { background: linear-gradient(90deg, #fff6dc, #fffaf0); }
 .ptk.fav { background: linear-gradient(#fffaf0, #fff6e0); }
+.bk2 { --ln: #8d9cac; margin-top: 4px; }
+.bk2-lg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 4px 0 10px; font-size: 12px; font-weight: 900; color: var(--navy); }
+.bk2-lg span { border-left: 4px solid var(--navy); padding-left: 8px; }
+.bk2-row { display: grid; grid-template-columns: repeat(8, 1fr); }
+.bk2-c { padding: 0 4px; min-width: 0; }
+.bk2c { display: block; background: var(--card); border-radius: 10px; box-shadow: var(--shadow); border-top: 3px solid var(--navy); padding: 0 6px 3px; color: inherit; }
+.bk2c.live { border-top-color: var(--emph); }
+.bk2c.done { border-top-color: #7a8896; }
+.bk2c.fav { background: linear-gradient(#fffaf0, #fff6e0); }
+.bk2c.emp { opacity: .6; }
+a.bk2c:active { filter: brightness(.97); }
+.bk2n { display: block; font-size: 9.5px; font-weight: 800; color: var(--sub); text-align: center; padding: 3px 0 1px; letter-spacing: .5px; white-space: nowrap; }
+.bk2t { display: flex; align-items: center; justify-content: space-between; height: 28px; }
+.bk2t + .bk2t { border-top: 1px solid #eceff3; }
+.bk2t .bk2l { width: 22px; height: 22px; object-fit: contain; margin: 0; flex: none; }
+.bk2t .bk2l.q { display: grid; place-items: center; border-radius: 50%; background: var(--chip); color: #9aa; font-style: normal; font-size: 11px; font-weight: 900; }
+.bk2t em { font-style: normal; font-size: 18px; font-weight: 900; color: var(--navy); font-variant-numeric: tabular-nums; }
+.bk2c.live .bk2t em { color: var(--emph); }
+.bk2t.l { opacity: .4; }
+.bk2-stem { height: 14px; }
+.bk2-s { background: linear-gradient(var(--ln), var(--ln)) 50% 0 / 2px 100% no-repeat; }
+.bk2-join { height: 26px; }
+.bk2-j { background:
+  linear-gradient(var(--ln), var(--ln)) 25% 0 / 2px 50% no-repeat,
+  linear-gradient(var(--ln), var(--ln)) 75% 0 / 2px 50% no-repeat,
+  linear-gradient(var(--ln), var(--ln)) 50% 50% / 50% 2px no-repeat,
+  linear-gradient(var(--ln), var(--ln)) 50% 100% / 2px 50% no-repeat; }
+.bk2-wsr .bk2c { border-top-width: 4px; }
+.bk2.first .bk2-row { animation: bk2in .5s ease both; animation-delay: var(--d); }
+.bk2.first .bk2-join, .bk2.first .bk2-stem { animation-name: bk2draw; }
+@keyframes bk2in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes bk2draw { from { opacity: 0; clip-path: inset(0 0 100% 0); } to { opacity: 1; clip-path: inset(0); } }
+@media (prefers-reduced-motion: reduce) { .bk2.first .bk2-row { animation: none; } }
+
