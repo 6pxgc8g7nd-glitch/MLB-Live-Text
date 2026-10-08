@@ -634,4 +634,7 @@ a.bk2c:active { filter: brightness(.97); }
 @keyframes bk2in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes bk2draw { from { opacity: 0; clip-path: inset(0 0 100% 0); } to { opacity: 1; clip-path: inset(0); } }
 @media (prefers-reduced-motion: reduce) { .bk2.first .bk2-row { animation: none; } }
-
+.srow.stack { flex-wrap: wrap; }
+.srow.stack > .sch { width: 100%; margin-left: 0; }
+.srow.stack .sch button { flex: 1; padding: 6px 4px; }
+.fsum { white-space: nowrap; }

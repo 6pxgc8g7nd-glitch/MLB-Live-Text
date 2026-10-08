@@ -204,7 +204,8 @@
     lang: store.get('lang', 'zh'),
     date: twDate(),
     follow: true, // true = 跟著「今天」，台灣 0:00 自動換日
-    standView: store.get('standView', 'division'),
+    standDef: ['division', 'league', 'post', 'bracket'].includes(store.get('standView', 'division')) ? store.get('standView', 'division') : 'division',
+    standView: 'division',
     gtab: store.get('gtab', 'text'),
     autoFollow: store.get('autoFollow', false),
     testMode: store.get('testMode', false),
@@ -1119,8 +1120,8 @@
     setHeader('設定', false, 'settings');
     view.innerHTML = `
       <div class="set">
-        <div class="srow"><div><b>排名預設檢視</b><small>進入排名頁時先看哪一種</small></div>
-          <div class="sch"><button data-sv2="division" class="${S.standView === 'division' ? 'on' : ''}">分區</button><button data-sv2="league" class="${S.standView === 'league' ? 'on' : ''}">聯盟</button></div></div>
+        <div class="srow stack"><div><b>排名預設檢視</b><small>進入排名頁時先看哪一種</small></div>
+          <div class="sch">${[['division', '分區'], ['league', '聯盟'], ['post', '季後賽'], ['bracket', '對戰樹']].map(([k, n]) => `<button data-sv2="${k}" class="${S.standDef === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
         <button class="srow srbtn" id="favOpen"><div><b>我的最愛球隊</b><small>選擇後，比分、排名與季後賽頁會標示這些球隊</small></div><span class="fsum" id="favSum">${favSumHTML()}</span><span class="chev">›</span></button>
         <div class="srow"><div><b>測試模式</b><small>用模擬比賽測試轉播功能（比分頁會多出三場「測試模式」比賽，不影響真實資料）</small></div><button class="sw${S.testMode ? ' on' : ''}" data-set="testMode" role="switch" aria-checked="${S.testMode}"><i></i></button></div>
         ${S.testMode ? '<div class="srow"><div><b>重新開始模擬</b><small>把進行中的模擬比賽重置回第 1 局</small></div><button class="sact" id="testRestart">重新開始</button></div>' : ''}
@@ -1136,6 +1137,7 @@
 
   function showStandings() {
     route$ = 'standings';
+    S.standView = S.standDef;
     setHeader('MLB 排名', false, 'standings');
     const my = token;
     let data = null;
@@ -1374,7 +1376,7 @@
       }
       const sv2 = e.target.closest('[data-sv2]');
       if (sv2) {
-        S.standView = sv2.dataset.sv2; store.set('standView', S.standView);
+        S.standDef = sv2.dataset.sv2; store.set('standView', S.standDef);
         $$('[data-sv2]').forEach((b) => b.classList.toggle('on', b === sv2));
         return;
       }
@@ -1430,7 +1432,6 @@
         renderBody();
       } else if (b.dataset.sv) {
         S.standView = b.dataset.sv;
-        if (S.standView !== 'post' && S.standView !== 'bracket') store.set('standView', S.standView);
         if (G && G.repaint) G.repaint();
       } else if (b.id === 'boxMore') {
         S.boxMore = !S.boxMore;
