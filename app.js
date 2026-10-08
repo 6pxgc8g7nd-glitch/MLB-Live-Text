@@ -64,6 +64,7 @@
     146: 'MIA', 147: 'NYY', 158: 'MIL',
   };
   const teamName = (t) => (t && TEAMS[t.id]) || (t && t.name) || '—'; // 查不到就用 API 的英文名
+  const logo = (t, c) => (t && t.id ? `<img class="tl ${c || ''}" src="logos/${t.id}.svg" alt="" loading="lazy" onerror="this.remove()">` : '');
   const teamAbbr = (t) => (t && ABBR[t.id]) || (t && (t.abbreviation || t.teamName)) || '';
 
   const DIVS = { 201: '美聯東區', 202: '美聯中區', 200: '美聯西區', 204: '國聯東區', 205: '國聯中區', 203: '國聯西區' };
@@ -260,7 +261,7 @@
     }
     const side = (t, win) => `
       <div class="g-tm${win ? ' win' : ''}${st.k === 'final' && !win ? ' lose' : ''}">
-        <div class="ab">${esc(teamAbbr(t.team))}</div>
+        ${logo(t.team)}<div class="ab">${esc(teamAbbr(t.team))}</div>
         <div class="zn">${esc(teamName(t.team))}</div>
         <div class="rc">${esc(rec(t))}</div>
       </div>`;
@@ -373,7 +374,7 @@
     const dimA = st.k === 'final' && aRuns < hRuns, dimH = st.k === 'final' && hRuns < aRuns;
     const num = (v, dim) => `<b class="${dim ? 'dim' : ''}">${showN ? dash(v != null ? v : 0) : '–'}</b>`;
     const teamBlk = (cls, t, fb) =>
-      `<div class="h-team ${cls}"><div class="ab">${esc(teamAbbr(t) || fb)}</div><div class="zn">${esc(teamName(t))}</div></div>`;
+      `<div class="h-team ${cls}">${logo(t, 'hl')}<div class="ab">${esc(teamAbbr(t) || fb)}</div><div class="zn">${esc(teamName(t))}</div></div>`;
     return `
       <div class="hero">
         <div class="h-top"><span class="pill ${st.k}">${esc(st.txt)}</span>

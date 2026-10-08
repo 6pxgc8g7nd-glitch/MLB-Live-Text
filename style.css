@@ -35,7 +35,7 @@ body.ingame, body.nodates { --th: 56px; }
 }
 .r1 { display: flex; align-items: center; gap: 8px; height: 56px; padding: 0 12px; }
 .r1 h1 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: .5px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bb { width: 22px; height: 22px; flex: none; }
+.bb { height: 24px; width: auto; flex: none; }
 .upd { font-size: 11px; color: rgba(255, 255, 255, .7); font-variant-numeric: tabular-nums; }
 .top .btn {
   min-width: 36px; height: 36px; padding: 0 10px; border: 1px solid rgba(255, 255, 255, .3); border-radius: 10px;
@@ -264,3 +264,7 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
   mask: radial-gradient(circle 5px at 0 50%, #0000 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 5px at 100% 50%, #0000 98%, #000) right / 51% 100% no-repeat;
 }
 .dseg.on { background: #fff; }
+
+.tl { display: block; width: 44px; height: 44px; object-fit: contain; margin: 0 auto 2px; }
+.h-team .tl.hl { width: 46px; height: 46px; padding: 4px; background: #fff; border-radius: 50%; margin: 0 0 4px; }
+.h-team.home .tl.hl { margin-left: auto; }
