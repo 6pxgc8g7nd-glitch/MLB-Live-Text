@@ -807,14 +807,16 @@
   };
   function standRow(t, rank) {
     const c = t.clinchIndicator && CLINCH[t.clinchIndicator];
-    return `<tr class="${t.clinchIndicator ? 'po' : ''}"><th><span class="rk">${rank}</span>${esc(teamName(t.team))}${c ? `<i class="cl" title="${c}">${esc(t.clinchIndicator)}</i>` : ''}</th>
-      <td>${dash(t.wins)}-${dash(t.losses)}</td><td>${dash(t.winningPercentage)}</td><td>${dash(t.gamesBack)}</td>
-      <td>${l10(t)}</td><td>${dash(t.streak && t.streak.streakCode)}</td></tr>`;
+    const gb = t.gamesBack;
+    const lead = gb === '-' || gb === '0' || gb === '0.0' || gb == null;
+    return `<div class="tc${t.clinchIndicator ? ' po' : ''}"><span class="wm">${esc(rank)}</span>${logo(t.team, 'tcl')}
+      <div><div class="tn">${esc(teamName(t.team))}${c ? `<i class="cl" title="${c}">${esc(t.clinchIndicator)}</i>` : ''}</div>
+      <div class="ts">${dash(t.wins)}-${dash(t.losses)} ・ ${dash(t.winningPercentage)}</div></div>
+      <div class="tg">${lead ? '領先' : '落後'}${lead ? '' : `<b>${esc(gb)}</b>`}</div></div>`;
   }
   const standTable = (title, rows) => `
     <h3 class="inn">${esc(title)}</h3>
-    <div class="scroll"><table class="box stand"><thead><tr><th>球隊</th><th>戰績</th><th>勝率</th><th>勝差</th><th>近10</th><th>連</th></tr></thead>
-    <tbody>${rows}</tbody></table></div>`;
+    <div class="tcs">${rows}</div>`;
 
   function standingsHTML(d) {
     const recs = d.records || [];
