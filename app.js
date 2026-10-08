@@ -192,7 +192,7 @@
         timer = setTimeout(() => p.run(), wait);
       },
       start() { stopped = false; p.run(); },
-      kick() { if (!stopped && !busy) p.run(); },
+      kick() { return (!stopped && !busy) ? p.run() : Promise.resolve(); },
       stop() { stopped = true; clearTimeout(timer); },
     };
     return p;
@@ -1172,12 +1172,23 @@
       applyLang();
       if (G && G.data) { G.sig = ''; renderGame(); }
     };
-    const manualRefresh = () => {
-      if (!poller) return;
-      cache.clear();
-      const u = $('#updated'); if (u) u.textContent = '更新中…';
+    let toastT = 0;
+    const toast = (txt, hold) => {
+      let t = document.getElementById('toast');
+      if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
+      t.textContent = txt; t.classList.add('show');
+      clearTimeout(toastT);
+      if (hold !== true) toastT = setTimeout(() => t.classList.remove('show'), 1400);
+    };
+    const manualRefresh = async () => {
       const ic = $('#ballIc'); if (ic) { ic.classList.remove('pulse'); void ic.offsetWidth; ic.classList.add('pulse'); }
-      poller.kick();
+      if (!poller) { toast('此頁沒有需要更新的資料'); return; }
+      cache.clear();
+      toast('更新中…', true);
+      const u = $('#updated'); if (u) u.textContent = '更新中…';
+      try { await poller.kick(); } catch (e) { /* 失敗由橫幅顯示 */ }
+      const failed = !$('#banner').hidden || document.querySelector('#view .errbox');
+      toast(failed ? '更新失敗，請稍後再試' : '已更新');
     };
     $('#title').onclick = manualRefresh;
     $('#ballIc').onclick = manualRefresh;
