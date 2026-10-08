@@ -298,4 +298,67 @@ const noPit = JSON.parse(JSON.stringify(lvFeed)); noPit.liveData.plays.allPlays[
 assert.ok(liveHTML(noPit).includes('<b>–</b><small>ERA</small>'), '投手不在數據裡（剛上場）：顯示「–」');
 assert.ok(!withType('R', '-.--').includes('-.--'), '不把 MLB 的 -.-- 原樣丟給畫面');
 
+// LIVE 分頁：打者／投手資訊在打席卡裡，沒有另外的卡、也沒有重複的「打擊中…」
+assert.ok(lv.includes('class="lv-who"') && !lv.includes('lv-mu') && !lv.includes('打擊中'), '打者／投手兩列放進打席卡，取代「打擊中」那行');
+assert.strictEqual((lv.match(/class="play live open"/g) || []).length, 1, 'LIVE 只有一張打席卡');
+
+// 半局回顧：依內容變化（標籤、事件、精簡模式）
+const rcFeed = (plays, innings, { state = 'Middle', cur = 1, players = {} } = {}) => ({
+  gameData: { teams: { away: { id: 114 }, home: { id: 145 } }, players, status: { abstractGameState: 'Live', detailedState: 'In Progress' } },
+  liveData: { linescore: { currentInning: cur, inningState: state, innings }, plays: { allPlays: plays } },
+});
+const pl = (idx, inn, top, ev, x = {}) => ({
+  about: { atBatIndex: idx, inning: inn, isTopInning: top, halfInning: top ? 'top' : 'bottom', isComplete: true, isScoringPlay: !!x.score },
+  result: { event: ev, rbi: x.rbi, awayScore: x.a, homeScore: x.h },
+  matchup: { batter: { id: 100 + idx, fullName: 'B' + idx }, pitcher: { id: 900, fullName: 'Pit' } }, playEvents: x.pe || [],
+});
+const inn0 = [{ away: { runs: 0, hits: 0, leftOnBase: 0 }, home: {} }];
+const quiet3 = liveHTML(rcFeed([pl(0, 1, true, 'Groundout'), pl(1, 1, true, 'Flyout'), pl(2, 1, true, 'Lineout')], inn0));
+assert.ok(quiet3.includes('lv-rc quiet') && quiet3.includes('三上三下') && !quiet3.includes('rc-g') && !quiet3.includes('rc-r'), '三上三下：精簡版，不放得分／安打／殘壘三格');
+const kkk = liveHTML(rcFeed([pl(0, 1, true, 'Strikeout'), pl(1, 1, true, 'Strikeout'), pl(2, 1, true, 'Strikeout')], inn0));
+assert.ok(kkk.includes('三者三振') && kkk.includes('三上三下'), '三者三振');
+const lead = (before, plays2, ex) => liveHTML(rcFeed([...before, ...plays2], [{ away: {}, home: { runs: before.length ? 1 : 0 } }, { away: { runs: 2, hits: 2, leftOnBase: 1 }, home: {} }], { cur: 2, ...ex }));
+const hrB = pl(0, 1, false, 'Home Run', { score: true, rbi: 1, a: 0, h: 1 });
+assert.ok(lead([hrB], [pl(1, 2, true, 'Single'), pl(2, 2, true, 'Home Run', { score: true, rbi: 2, a: 2, h: 1 })]).includes('反超比數'), '原本落後、這局超前：反超比數');
+assert.ok(lead([hrB], [pl(1, 2, true, 'Home Run', { score: true, rbi: 1, a: 1, h: 1 })]).includes('追平比數'), '追平');
+assert.ok(lead([], [pl(1, 2, true, 'Home Run', { score: true, rbi: 2, a: 2, h: 0 })]).includes('取得領先'), '原本平手、得分後領先：取得領先');
+const ahead = pl(0, 1, true, 'Home Run', { score: true, rbi: 1, a: 1, h: 0 });
+assert.ok(lead([ahead], [pl(1, 2, true, 'Double', { score: true, rbi: 1, a: 2, h: 0 })]).includes('擴大領先'), '擴大領先');
+assert.ok(lead([hrB, pl(2, 1, false, 'Home Run', { score: true, rbi: 1, a: 0, h: 2 })], [pl(3, 2, true, 'Single', { score: true, rbi: 1, a: 1, h: 2 })]).includes('追近比數'), '追近比數');
+assert.ok(lead([], [pl(1, 2, true, 'Home Run', { score: true, rbi: 4, a: 4, h: 0 })]).includes('滿貫砲'), '全壘打依分數標示陽春砲／兩分砲／三分砲／滿貫砲');
+const busy = liveHTML(rcFeed([
+  pl(0, 1, true, 'Walk', { pe: [
+    { isPitch: true, details: { call: { description: 'Ball' }, isBall: true }, reviewDetails: { isOverturned: true, challengeTeamId: 114, reviewType: 'MJ' } },
+    { isPitch: false, details: { eventType: 'batter_timeout', event: 'Batter Timeout', description: 'Batter Timeout.' } },
+    { isPitch: false, details: { eventType: 'game_advisory', event: 'Game Advisory', description: 'Status Change' } },
+    { isPitch: false, details: { eventType: 'pitching_substitution', event: 'Pitching Substitution', description: 'Pitching Change: New Guy replaces Old Guy.' }, isSubstitution: true },
+    { isPitch: false, details: { eventType: 'mound_visit', event: 'Mound Visit', description: 'Mound Visit.' } },
+  ] }),
+  pl(1, 1, true, 'Single', { pe: [
+    { isPitch: false, details: { eventType: 'stolen_base_2b', event: 'Stolen Base 2B', description: 'Runner R steals (1) 2nd base.' }, player: { id: 5 } },
+    { isPitch: false, details: { eventType: 'wild_pitch', event: 'Wild Pitch', description: 'Wild pitch by pitcher Pit. Runner R to 3rd.' }, player: { id: 5 } },
+  ] }),
+  pl(2, 1, true, 'Groundout'),
+], [{ away: { runs: 0, hits: 1, leftOnBase: 2 }, home: {} }], { players: { ID5: { fullName: 'Runner R' } } }));
+assert.ok(busy.includes('Runner R') && busy.includes('盜二壘成功') && busy.includes('class="chg pc"') && busy.includes('New Guy'), '盜壘與換投手穿插在打席之間');
+assert.ok(busy.includes('暴投') && busy.includes('Wild pitch by pitcher Pit'), '暴投附英文說明');
+assert.ok(busy.includes('CLE 提出好壞球挑戰') && busy.includes('判決推翻') && busy.includes('投手丘會議'), '挑戰與投手丘會議');
+assert.ok(!busy.includes('Batter Timeout') && !busy.includes('Status Change'), '打者暫停、比賽通知不放');
+assert.strictEqual((busy.match(/投手丘會議/g) || []).length, 2, '投手丘會議：一列加一個標籤，不重複印');
+const mvs = liveHTML(rcFeed([pl(0, 1, true, 'Groundout', { pe: [1, 2, 3].map(() => ({ isPitch: false, details: { eventType: 'mound_visit', event: 'Mound Visit' } })) }), pl(1, 1, true, 'Flyout'), pl(2, 1, true, 'Lineout')], inn0));
+assert.ok(mvs.includes('投手丘會議 ×3') && (mvs.match(/<li class="ac">/g) || []).length === 1, '一個半局多次投手丘會議：只放一列並標次數');
+assert.ok(busy.includes('<span>盜壘</span>') && busy.includes('<span>換投</span>') && busy.includes('<span>挑戰</span>') && busy.includes('<span>暴投</span>'), '重點標籤');
+assert.ok((busy.match(/<span>/g) || []).length > 0 && busy.indexOf('Runner R') < busy.indexOf('B1'), '事件排在發生它的打席之前');
+const longInn = liveHTML(rcFeed([
+  pl(0, 1, true, 'Single'), pl(1, 1, true, 'Groundout'), pl(2, 1, true, 'Flyout'), pl(3, 1, true, 'Grounded Into DP'),
+  pl(4, 1, true, 'Strikeout'), pl(5, 1, true, 'Walk'), pl(6, 1, true, 'Lineout'),
+], [{ away: { runs: 0, hits: 1, leftOnBase: 3 }, home: {} }]));
+assert.ok(longInn.includes('另有 4 個出局的打席') && longInn.includes('B0') && longInn.includes('B5') && longInn.includes('B3') && !longInn.includes('>B1<'), '打席太多：出局收成一行，安打、保送、雙殺保留');
+assert.ok(longInn.includes('雙殺') && longInn.includes('殘壘 3 人'), '雙殺、殘壘標籤');
+const errs = liveHTML(rcFeed([pl(0, 1, true, 'Field Error'), pl(1, 1, true, 'Walk'), pl(2, 1, true, 'Walk'), pl(3, 1, true, 'Groundout')], [{ away: { runs: 0, hits: 0, leftOnBase: 2 }, home: {} }]));
+assert.ok(errs.includes('<span>失誤</span>') && errs.includes('保送 ×2') && errs.includes('殘壘 2 人'), '失誤、保送、殘壘標籤');
+T.S.lang = 'en';
+assert.ok(liveHTML(rcFeed([pl(0, 1, true, 'Single', { pe: [{ isPitch: false, details: { eventType: 'stolen_base_2b', event: 'Stolen Base 2B', description: 'Runner R steals (1) 2nd base.' }, player: { id: 5 } }] })], inn0, { players: { ID5: { fullName: 'Runner R' } } })).includes('Runner R steals (1) 2nd base.'), '英文模式用原文');
+T.S.lang = 'zh';
+
 console.log('all tests passed');

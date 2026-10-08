@@ -854,9 +854,9 @@ body.replaying .rp-go { display: none; }
 .lv-tab::before { content: '●'; margin-right: 4px; font-size: 10px; color: var(--emph); vertical-align: 1px; }
 .seg button.lv-tab.on::before { color: #ff6b7d; }
 .lv > * + * { margin-top: 8px; }
-.lv-mu, .lv-wait, .lv-rc { background: var(--card); border-radius: 14px; box-shadow: var(--shadow); }
-.lv-mu { padding: 4px 14px; }
-.lv-p { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; font-size: 16px; font-weight: 700; }
+.lv-wait, .lv-rc { background: var(--card); border-radius: 14px; box-shadow: var(--shadow); }
+.lv-who { margin: 2px 0 0; }
+.lv-p { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; font-size: 16px; font-weight: 700; }
 .lv-p + .lv-p { border-top: 1px dashed var(--line); }
 .lv-p i { flex: none; margin-top: 2px; font-style: normal; font-size: 11px; font-weight: 800; color: #fff; background: var(--navy); border-radius: 5px; padding: 1px 5px; }
 .lv-n { flex: 1; min-width: 0; }
@@ -888,3 +888,19 @@ body.replaying .rp-go { display: none; }
 .rc-l li.hot > span { color: var(--emph-text); }
 .rc-l em { margin-left: 6px; font-style: normal; font-size: 12px; font-weight: 800; }
 .rc-p { margin: 8px 0 0; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 12.5px; color: var(--sub); }
+
+/* 半局回顧：依內容變化的部分 */
+.rc-t { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.rc-t span { padding: 3px 10px; border-radius: 999px; background: var(--bg); color: var(--navy); font-size: 12.5px; font-weight: 800; }
+.rc-t span.hot { background: var(--hl); color: var(--emph-text); }
+.lv-rc.quiet { padding-bottom: 10px; }
+.lv-rc.quiet .rc-l li { padding: 5px 0; font-size: 13px; }
+.lv-rc.quiet .rc-p { margin-top: 4px; padding-top: 6px; }
+.rc-l li.ac, .rc-l li.ev { color: var(--sub); }
+.rc-l li.ac { flex-wrap: wrap; font-size: 13px; }
+.rc-l li.ac > div { font-weight: 600; }
+.rc-l li.ac > span { color: var(--navy); }
+.rc-l li.ac > small { flex-basis: 100%; font-size: 12px; font-weight: 400; color: var(--sub); }
+.rc-l li.ev { display: block; padding: 0; border-top: 0; }
+.rc-l li.ev .chg { margin: 4px 0; }
+.rc-l li.more { display: block; padding: 6px 0; font-size: 12px; color: var(--sub); text-align: center; }

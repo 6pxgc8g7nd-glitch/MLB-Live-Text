@@ -170,6 +170,7 @@ export function playHTML(p, gd, opt = {}) {
     body = esc(r.description || r.event || '');
   }
 
+  if (opt.live && opt.body) body = opt.body; // LIVE 分頁：打者／投手兩列（含今日成績）取代「打擊中…」
   const subEvs = (p.playEvents || []).filter(isSubEvent);
   const subs = subEvs.map((e) => subHTML(e, zh)).join('');
   const pitchRow = done ? pitchLine(p, zh) : opt.live ? pitchLine(p, zh, true) : '';
@@ -330,6 +331,74 @@ export function recapTarget(ls) {
 }
 const isTopHalf = (ab) => (ab.isTopInning != null ? !!ab.isTopInning : /top/i.test(ab.halfInning || ''));
 
+const nameOf = (d, id) => { const x = d.gameData && d.gameData.players && d.gameData.players['ID' + id]; return (x && x.fullName) || ''; };
+
+// 半局裡值得一提的非打席事件；打者暫停、比賽通知、投手踩板、牽制嘗試太吵，不放
+const actionKind = (t) => {
+  if (/^stolen_base/.test(t)) return 'sb';
+  if (/caught_stealing/.test(t)) return 'cs';
+  if (/^pickoff_[123]b$/.test(t)) return 'po';
+  return { wild_pitch: 'wp', passed_ball: 'pb', balk: 'bk', defensive_indiff: 'di', pitching_substitution: 'pc',
+    offensive_substitution: 'os', defensive_substitution: 'ds', defensive_switch: 'ds', mound_visit: 'mv' }[t] || '';
+};
+const ACT_ZH = { wp: '暴投', pb: '捕逸', bk: '投手犯規', di: '守方未防守進壘', mv: '投手丘會議' };
+const ACT_EN = { wp: 'Wild pitch', pb: 'Passed ball', bk: 'Balk', di: 'Defensive indifference', mv: 'Mound visit' };
+const ACT_CHIP = { sb: '盜壘', cs: '盜壘失敗', po: '牽制出局', wp: '暴投', pb: '捕逸', bk: '投手犯規', di: '守方未防守進壘', pc: '換投', os: '代打／代跑', ds: '守備調動', mv: '投手丘會議' };
+
+function reviewRow(rv, gd) {
+  const t = gd.teams || {};
+  const team = t.away && t.away.id === rv.challengeTeamId ? t.away : t.home && t.home.id === rv.challengeTeamId ? t.home : null;
+  const res = rv.inProgress ? '審查中' : rv.isOverturned ? '判決推翻' : '維持原判';
+  return `<li class="ac"><div>${esc(team ? teamAbbr(team) : '')} 提出${rv.reviewType === 'MJ' ? '好壞球' : ''}挑戰</div><span>${res}</span></li>`;
+}
+
+// 依時間順序整理這個半局：每個打席前面先放它進行中發生的事件（盜壘、牽制、換人…），再放打席結果
+function halfRows(d, ps, zh) {
+  const gd = d.gameData || {};
+  const rows = [], kinds = [], reviews = [];
+  // 投手丘會議常常一個半局好幾次，只放一列（在第一次出現的位置）並標次數
+  const mvN = ps.reduce((n, p) => n + (p.playEvents || []).filter((e) => e && !e.isPitch && e.details && e.details.eventType === 'mound_visit').length, 0);
+  let mvDone = false;
+  ps.forEach((p) => {
+    let reviewed = false;
+    (p.playEvents || []).forEach((e) => {
+      if (!e) return;
+      if (e.reviewDetails) { reviewed = true; reviews.push(e.reviewDetails); rows.push({ html: reviewRow(e.reviewDetails, gd), ev: true }); }
+      if (e.isPitch) return;
+      const det = e.details || {};
+      const k = actionKind(det.eventType || '');
+      if (!k) return;
+      kinds.push(k);
+      if (k === 'pc' || k === 'os' || k === 'ds') { rows.push({ html: `<li class="ev">${subHTML(e, zh)}</li>`, ev: true }); return; }
+      if (k === 'mv') {
+        if (!mvDone) { mvDone = true; rows.push({ html: `<li class="ac"><div>${zh ? ACT_ZH.mv : ACT_EN.mv}${mvN > 1 ? ` ×${mvN}` : ''}</div></li>`, ev: true }); }
+        return;
+      }
+      const who = e.player && e.player.id ? { id: e.player.id, fullName: nameOf(d, e.player.id) } : null;
+      const left = who && who.fullName ? pLink(who, 'b') : '';
+      const label = k === 'sb' || k === 'cs' || k === 'po' ? (zh ? evZh(det.event) : det.description || det.event || '') : zh ? ACT_ZH[k] : ACT_EN[k];
+      // 暴投、捕逸等的英文說明講得出誰得分、誰進壘，放在下面一行
+      const note = (k === 'wp' || k === 'pb' || k === 'bk' || k === 'di') && det.description ? `<small>${esc(det.description)}</small>` : '';
+      rows.push({ html: `<li class="ac"><div>${left}</div><span>${esc(label)}</span>${note}</li>`, ev: true });
+    });
+    if (!reviewed && p.reviewDetails) { reviews.push(p.reviewDetails); rows.push({ html: reviewRow(p.reviewDetails, gd), ev: true }); }
+    const m = p.matchup || {}, r = p.result || {};
+    const cat = playCat(p, true).cls;
+    const dp = /Double Play|Triple Play|Grounded Into DP/.test(r.event || '');
+    const res = zh ? evZh(r.event) : (r.event || '');
+    rows.push({
+      html: `<li${cat === 'hr' || cat === 'score' ? ' class="hot"' : ''}><div>${pLink(m.batter, 'b', m.pitcher)}</div><span>${esc(res)}${r.rbi ? `<em>${r.rbi}分打點</em>` : ''}</span></li>`,
+      ab: true, out: cat === 'out' && !dp,
+    });
+  });
+  return { rows, kinds, reviews };
+}
+
+const scoreOf = (list) => {
+  const r = (list.slice().reverse().find((p) => p.result && p.result.awayScore != null && p.result.homeScore != null) || {}).result;
+  return r ? { a: r.awayScore, h: r.homeScore } : null;
+};
+
 export function recapHTML(d, tgt, waiting) {
   const ls = (d.liveData && d.liveData.linescore) || {};
   const gd = d.gameData || {};
@@ -339,26 +408,57 @@ export function recapHTML(d, tgt, waiting) {
     const st = ls.currentInning ? `${ls.currentInning}局${HALF[ls.inningState] || ''}` : '比賽即將開始';
     return `<div class="lv-wait"><b>${esc(st)}</b><span>等待第一個打席</span></div>`;
   }
-  const all = (d.liveData && d.liveData.plays && d.liveData.plays.allPlays) || [];
-  const ps = all.filter((p) => p.about && p.about.inning === tgt.inning && isTopHalf(p.about) === tgt.top && p.about.isComplete !== false);
+  const all = ((d.liveData && d.liveData.plays && d.liveData.plays.allPlays) || []).filter((p) => p.about && p.about.isComplete !== false);
+  const inHalf = (p) => p.about.inning === tgt.inning && isTopHalf(p.about) === tgt.top;
+  const ps = all.filter(inHalf);
   const aT = gd.teams && gd.teams.away, hT = gd.teams && gd.teams.home;
   const bat = teamAbbr(tgt.top ? aT : hT);
   const inn = (ls.innings || [])[tgt.inning - 1];
   const line = (inn && inn[tgt.top ? 'away' : 'home']) || {};
   // 半局結束時的比數：取到這個半局為止、最近一個有記錄比數的打席（沒得分的打席不一定帶比數）
-  const upto = all.filter((p) => p.about && p.about.isComplete !== false && (p.about.inning < tgt.inning || (p.about.inning === tgt.inning && (!tgt.top || isTopHalf(p.about)))));
-  const lr = (upto.slice().reverse().find((p) => p.result && p.result.awayScore != null && p.result.homeScore != null) || {}).result;
-  const score = lr
-    ? `<span class="rc-s">${esc(teamAbbr(aT))} ${lr.awayScore} – ${lr.homeScore} ${esc(teamAbbr(hT))}</span>` : '';
-  const runs = Number(line.runs) || 0;
+  const after = scoreOf(all.filter((p) => p.about.inning < tgt.inning || (p.about.inning === tgt.inning && (!tgt.top || isTopHalf(p.about)))));
+  const before = scoreOf(all.filter((p) => p.about.inning < tgt.inning || (p.about.inning === tgt.inning && !tgt.top && isTopHalf(p.about)))) || { a: 0, h: 0 };
+  const score = after ? `<span class="rc-s">${esc(teamAbbr(aT))} ${after.a} – ${after.h} ${esc(teamAbbr(hT))}</span>` : '';
+  const runs = Number(line.runs) || 0, hits = Number(line.hits) || 0, lob = Number(line.leftOnBase) || 0;
+  const { rows, kinds, reviews } = halfRows(d, ps, zh);
+
+  // ---- 這個半局的重點標籤：依實際發生的事決定，不是固定格式 ----
+  const chips = [];
+  const hot = (t) => chips.push({ t, hot: true });
+  const tag = (t) => chips.push({ t });
+  const cnt = (re) => ps.filter((p) => re.test((p.result && p.result.event) || '')).length;
+  const diff = (x) => (tgt.top ? x.a - x.h : x.h - x.a);
+  if (runs > 0 && after) {
+    const b = diff(before), a = diff(after);
+    hot(a > 0 && b < 0 ? '反超比數' : a > 0 && b === 0 ? '取得領先' : a === 0 && b < 0 ? '追平比數' : b > 0 ? '擴大領先' : '追近比數');
+  }
+  const hrs = ps.filter((p) => p.result && p.result.event === 'Home Run');
+  if (hrs.length === 1) hot(['', '陽春砲', '兩分砲', '三分砲', '滿貫砲'][Math.min(hrs[0].result.rbi || 1, 4)]);
+  else if (hrs.length > 1) hot(`全壘打 ×${hrs.length}`);
+  const tp = cnt(/Triple Play/), dp = cnt(/Double Play|Grounded Into DP/) - tp;
+  if (tp) tag('三殺');
+  if (dp) tag(dp > 1 ? `雙殺 ×${dp}` : '雙殺');
+  const ks = cnt(/Strikeout/);
+  const allOut = ps.length > 0 && ps.every((p) => playCat(p, true).cls === 'out');
+  const quiet = allOut && !kinds.length && !reviews.length && runs === 0 && hits === 0;
+  if (quiet && ps.length === 3) tag('三上三下');
+  if (ks === 3 && ps.length === 3) tag('三者三振');
+  else if (ks >= 2) tag(`三振 ×${ks}`);
+  const er = cnt(/Error/);
+  if (er) tag(er > 1 ? `失誤 ×${er}` : '失誤');
+  const wk = cnt(/Walk|Hit By Pitch/);
+  if (wk >= 2) tag(`保送 ×${wk}`);
+  Object.keys(ACT_CHIP).forEach((k) => { const n = kinds.filter((x) => x === k).length; if (n) tag(n > 1 ? `${ACT_CHIP[k]} ×${n}` : ACT_CHIP[k]); });
+  if (reviews.length) tag(reviews.length > 1 ? `挑戰 ×${reviews.length}` : '挑戰');
+  if (runs === 0 && lob >= 2) tag(`殘壘 ${lob} 人`);
+  const chipHTML = chips.slice(0, 5).map((c) => `<span${c.hot ? ' class="hot"' : ''}>${esc(c.t)}</span>`).join('');
+
+  // 打席很多的半局只留重點：出局的打席收成一行
+  let shown = rows, hidden = 0;
+  if (ps.length > 6) { shown = rows.filter((r) => !r.out); hidden = rows.length - shown.length; }
+  const list = shown.map((r) => r.html).join('') + (hidden ? `<li class="more">另有 ${hidden} 個出局的打席</li>` : '');
   const cells = [['得分', line.runs], ['安打', line.hits], ['殘壘', line.leftOnBase]].filter(([, v]) => v != null)
     .map(([k, v]) => `<div><b>${esc(v)}</b><small>${k}</small></div>`).join('');
-  const rows = ps.map((p) => {
-    const m = p.matchup || {}, r = p.result || {};
-    const cls = playCat(p, true).cls;
-    const res = zh ? evZh(r.event) : (r.event || '');
-    return `<li${cls === 'hr' || cls === 'score' ? ' class="hot"' : ''}><div>${pLink(m.batter, 'b', m.pitcher)}</div><span>${esc(res)}${r.rbi ? `<em>${r.rbi}分打點</em>` : ''}</span></li>`;
-  }).join('');
   // 這個半局的投手與用球數（依出場順序）
   const pit = new Map();
   ps.forEach((p) => {
@@ -369,13 +469,14 @@ export function recapHTML(d, tgt, waiting) {
     pit.set(x.fullName, cur);
   });
   const pits = [...pit.values()].map((o) => `${pLink(o.who, 'p')}${o.n ? `（${o.n} 球）` : ''}`).join('、');
-  if (!rows && !cells) {
+  if (!rows.length && !cells) {
     return `<div class="lv-wait"><b>${esc(`${tgt.inning}局${tgt.top ? '上' : '下'}`)}</b><span>${status}</span></div>`;
   }
-  return `<div class="lv-rc">
+  return `<div class="lv-rc${quiet ? ' quiet' : ''}">
     <div class="rc-h"><div><b>${tgt.inning}局${tgt.top ? '上' : '下'} 回顧</b><small>${esc(bat)} 進攻・${status}</small></div>${runs > 0 ? `<span class="rc-r">+${runs}</span>` : ''}${score}</div>
-    ${cells ? `<div class="rc-g">${cells}</div>` : ''}
-    ${rows ? `<ul class="rc-l">${rows}</ul>` : ''}
+    ${chipHTML ? `<div class="rc-t">${chipHTML}</div>` : ''}
+    ${cells && !quiet ? `<div class="rc-g">${cells}</div>` : ''}
+    ${list ? `<ul class="rc-l">${list}</ul>` : ''}
     ${pits ? `<p class="rc-p">投手　${pits}</p>` : ''}
   </div>`;
 }
@@ -391,11 +492,12 @@ export function liveHTML(d) {
   if (!cur || !half) return recapHTML(d, recapTarget(ls), half); // 半局之間：回顧剛結束的半局
   const m = cur.matchup || {};
   const bat = m.batter || {}, pit = m.pitcher || {};
-  return `<div class="lv-mu">
-      ${(() => { const t = todayStat(d, bat.id, 'batting'); return `<div class="lv-p"><i>打</i><div class="lv-n">${pLink(bat, 'b', pit)}<small>${batToday(t)}</small></div>${seasonNum(d, t, 'avg', 'AVG')}</div>`; })()}
-      ${(() => { const t = todayStat(d, pit.id, 'pitching'); return `<div class="lv-p"><i>投</i><div class="lv-n">${pLink(pit, 'p', bat)}<small>${pitToday(t)}</small></div>${seasonNum(d, t, 'era', 'ERA')}</div>`; })()}
-    </div>
-    ${playHTML(cur, d.gameData || {}, { live: true })}`;
+  const bt = todayStat(d, bat.id, 'batting'), pt = todayStat(d, pit.id, 'pitching');
+  const who = `<div class="lv-who">
+      <div class="lv-p"><i>打</i><div class="lv-n">${pLink(bat, 'b', pit)}<small>${batToday(bt)}</small></div>${seasonNum(d, bt, 'avg', 'AVG')}</div>
+      <div class="lv-p"><i>投</i><div class="lv-n">${pLink(pit, 'p', bat)}<small>${pitToday(pt)}</small></div>${seasonNum(d, pt, 'era', 'ERA')}</div>
+    </div>`;
+  return playHTML(cur, d.gameData || {}, { live: true, body: who });
 }
 
 export function boxHTML(d, side) {
