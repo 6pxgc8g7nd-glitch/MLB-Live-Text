@@ -671,26 +671,28 @@
       G.sig = '';
       G.lastTotal = 0;
       if (S.gtab === 'text') {
-        body.innerHTML = `
+        $('#gChips').innerHTML = `
           <div class="chips">
             <button data-f="all">全部</button><button data-f="key">重點</button><button data-f="score">得分</button>
             <button class="af${S.autoFollow ? ' on' : ''}" data-af="1" role="switch" aria-checked="${S.autoFollow}">自動跟隨<i></i></button>
-          </div><div id="plays"></div>`;
+          </div>`;
+        body.innerHTML = '<div id="plays"></div>';
       } else {
         const gd = G.data.gameData || {};
-        body.innerHTML = `
+        $('#gChips').innerHTML = `
           <div class="chips">
             <button data-side="away">${esc(teamName(gd.teams && gd.teams.away))}</button>
             <button data-side="home">${esc(teamName(gd.teams && gd.teams.home))}</button>
-          </div><div id="box"></div>`;
+          </div>`;
+        body.innerHTML = '<div id="box"></div>';
       }
     }
     $$('#gTabs button').forEach((b) => b.classList.toggle('on', b.dataset.t === S.gtab));
     if (S.gtab === 'text') {
-      $$('#gBody [data-f]').forEach((b) => b.classList.toggle('on', b.dataset.f === G.filter));
+      $$('#gChips [data-f]').forEach((b) => b.classList.toggle('on', b.dataset.f === G.filter));
       renderText(G.data);
     } else {
-      $$('#gBody [data-side]').forEach((b) => b.classList.toggle('on', b.dataset.side === G.side));
+      $$('#gChips [data-side]').forEach((b) => b.classList.toggle('on', b.dataset.side === G.side));
       const html = boxHTML(G.data, G.side);
       const box = $('#box');
       if (box && html !== G.sig) { box.innerHTML = html; G.sig = html; }
@@ -752,7 +754,11 @@
     view.innerHTML = `
       <div id="liveBar" class="livebar" hidden></div>
       <div id="gHead" class="ghead"><div class="loading">載入中…</div></div>
-      <div class="seg" id="gTabs"><button data-t="text">文字轉播</button><button data-t="box">數據</button></div>
+      <div class="tkw"><div class="tk">
+        <div class="seg" id="gTabs"><button data-t="text">文字轉播</button><button data-t="box">數據</button></div>
+        <div class="tr"></div>
+        <div id="gChips"></div>
+      </div></div>
       <div id="gBody"></div>
       <button id="newChip" class="fab" hidden></button>`;
     window.scrollTo(0, 0);
