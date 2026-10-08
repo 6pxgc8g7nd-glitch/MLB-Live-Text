@@ -314,7 +314,7 @@
       <div class="g-tm${win ? ' win' : ''}${st.k === 'final' && !win ? ' lose' : ''}">
         ${logo(t.team)}
         <div class="rc">${esc(rec(t))}</div>
-        ${t.team && t.team.id ? `<button class="fv${S.favs.includes(t.team.id) ? ' on' : ''}" data-fav="${t.team.id}" aria-label="加入最愛" aria-pressed="${S.favs.includes(t.team.id)}">${S.favs.includes(t.team.id) ? '★' : '☆'}</button>` : ''}
+        ${t.team && S.favs.includes(t.team.id) ? '<i class="fvm" aria-label="我的最愛">★</i>' : ''}
       </div>`;
     const subTxt = st.k === 'final' ? st.txt.replace('比賽結束', '') : st.k === 'other' && st.txt !== '延賽' && st.txt !== '取消' ? st.txt : st.k === 'other' ? '' : st.txt;
     const mid = '<div class="g-mid">' + (showScore
@@ -928,7 +928,8 @@
       <div class="set">
         <div class="srow"><div><b>排名預設檢視</b><small>進入排名頁時先看哪一種</small></div>
           <div class="sch"><button data-sv2="division" class="${S.standView === 'division' ? 'on' : ''}">分區</button><button data-sv2="league" class="${S.standView === 'league' ? 'on' : ''}">聯盟</button></div></div>
-        <div class="srow"><div><b>我的最愛球隊</b><small id="favTxt">${S.favs.length ? `已收藏 ${S.favs.length} 隊（在比分頁點隊徽旁的星星加入或取消）` : '尚未收藏（在比分頁點隊徽旁的星星加入）'}</small></div>${S.favs.length ? '<button class="sact" id="favClear">清除</button>' : ''}</div>
+        <div class="srow"><div><b>我的最愛球隊</b><small>選擇後，比分頁卡片與排名頁會標示這些球隊</small></div><span class="fn" id="favN">${S.favs.length ? `已選 ${S.favs.length} 隊` : '尚未選擇'}</span><button class="sact" id="favClear"${S.favs.length ? '' : ' hidden'}>清除</button></div>
+        <div class="fgrid">${Object.keys(TEAMS).map(Number).sort((x, y) => (ABBR[x] || '').localeCompare(ABBR[y] || '')).map((id) => `<button class="ft${S.favs.includes(id) ? ' on' : ''}" data-ft="${id}" aria-pressed="${S.favs.includes(id)}">${logo({ id }, 'tcl')}<span>${esc(ABBR[id] || '')}</span></button>`).join('')}</div>
         <div class="srow"><div><b>測試模式</b><small>用模擬比賽測試轉播功能（比分頁會多出三場「測試模式」比賽，不影響真實資料）</small></div><button class="sw${S.testMode ? ' on' : ''}" data-set="testMode" role="switch" aria-checked="${S.testMode}"><i></i></button></div>
         ${S.testMode ? '<div class="srow"><div><b>重新開始模擬</b><small>把進行中的模擬比賽重置回第 1 局</small></div><button class="sact" id="testRestart">重新開始</button></div>' : ''}
         <div class="srow"><div><b>更新應用程式</b><small id="verTxt">清除快取並重新載入最新版本</small></div><button class="sact" id="reloadApp">更新</button></div>
@@ -1145,14 +1146,15 @@
     };
 
     view.addEventListener('click', (e) => {
-      const fv = e.target.closest('[data-fav]');
-      if (fv) {
-        e.preventDefault(); e.stopPropagation();
-        const id = Number(fv.dataset.fav);
+      const ft = e.target.closest('[data-ft]');
+      if (ft) {
+        const id = Number(ft.dataset.ft);
         S.favs = S.favs.includes(id) ? S.favs.filter((x) => x !== id) : S.favs.concat(id);
         store.set('favs', S.favs);
-        const on = S.favs.includes(id);
-        $$(`[data-fav="${id}"]`).forEach((b) => { b.classList.toggle('on', on); b.textContent = on ? '★' : '☆'; b.setAttribute('aria-pressed', on); });
+        ft.classList.toggle('on', S.favs.includes(id));
+        ft.setAttribute('aria-pressed', S.favs.includes(id));
+        const n = $('#favN'); if (n) n.textContent = S.favs.length ? `已選 ${S.favs.length} 隊` : '尚未選擇';
+        const cl = $('#favClear'); if (cl) cl.hidden = !S.favs.length;
         return;
       }
       const st = e.target.closest('[data-set]');
