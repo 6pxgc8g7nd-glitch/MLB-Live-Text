@@ -314,7 +314,6 @@
       <div class="g-tm${win ? ' win' : ''}${st.k === 'final' && !win ? ' lose' : ''}">
         ${logo(t.team)}
         <div class="rc">${esc(rec(t))}</div>
-        ${t.team && S.favs.includes(t.team.id) ? '<i class="fvm" aria-label="我的最愛">★</i>' : ''}
       </div>`;
     const subTxt = st.k === 'final' ? st.txt.replace('比賽結束', '') : st.k === 'other' && st.txt !== '延賽' && st.txt !== '取消' ? st.txt : st.k === 'other' ? '' : st.txt;
     const mid = '<div class="g-mid">' + (showScore
@@ -969,7 +968,7 @@
       <div class="set">
         <div class="srow"><div><b>排名預設檢視</b><small>進入排名頁時先看哪一種</small></div>
           <div class="sch"><button data-sv2="division" class="${S.standView === 'division' ? 'on' : ''}">分區</button><button data-sv2="league" class="${S.standView === 'league' ? 'on' : ''}">聯盟</button></div></div>
-        <button class="srow srbtn" id="favOpen"><div><b>我的最愛球隊</b><small>選擇後，比分頁卡片與排名頁會標示這些球隊</small></div><span class="fsum" id="favSum">${favSumHTML()}</span><span class="chev">›</span></button>
+        <button class="srow srbtn" id="favOpen"><div><b>我的最愛球隊</b><small>選擇後，排名頁會標示這些球隊</small></div><span class="fsum" id="favSum">${favSumHTML()}</span><span class="chev">›</span></button>
         <div class="srow"><div><b>測試模式</b><small>用模擬比賽測試轉播功能（比分頁會多出三場「測試模式」比賽，不影響真實資料）</small></div><button class="sw${S.testMode ? ' on' : ''}" data-set="testMode" role="switch" aria-checked="${S.testMode}"><i></i></button></div>
         ${S.testMode ? '<div class="srow"><div><b>重新開始模擬</b><small>把進行中的模擬比賽重置回第 1 局</small></div><button class="sact" id="testRestart">重新開始</button></div>' : ''}
         <div class="srow"><div><b>更新應用程式</b><small id="verTxt">清除快取並重新載入最新版本</small></div><button class="sact" id="reloadApp">更新</button></div>
