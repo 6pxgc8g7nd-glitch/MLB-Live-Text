@@ -250,10 +250,10 @@ assert.ok(!lv.includes('lv-sit') && !lv.includes('class="bases"'), '局數／壘
 assert.ok(lv.includes('data-player="30"') && lv.includes('data-player="20"'), '打者與投手可開小卡');
 assert.ok(lv.includes('用球數 <b>77</b>') && lv.includes('今日 5.0 局'), '投手今日用球數');
 assert.ok(lv.includes('滑球') && lv.includes('class="pz"'), '本打席的每一球');
-assert.ok(lv.includes('Deck Guy') && lv.includes('Hole Guy'), '下一棒、再下一棒');
-assert.ok(lv.includes('上一打席') && lv.includes('全壘打'), '上一打席結果');
+assert.ok(!lv.includes('Deck Guy') && !lv.includes('上一打席'), '下一棒與上一打席的卡片已移除');
 const gap = liveHTML({ ...lvFeed, liveData: { ...lvFeed.liveData, linescore: { ...lvFeed.liveData.linescore, inningState: 'Middle' } } });
 assert.ok(gap.includes('換場中') && gap.includes('接下來：Q、Deck Guy、Hole Guy'), '半局之間顯示換場與接下來的打者');
+assert.ok(!gap.includes('上一打席'), '半局之間也不放上一打席');
 assert.ok(liveHTML({}).includes('比賽即將開始'), '全空資料不丟錯');
 const withBat = (id, batting) => { const f = JSON.parse(JSON.stringify(lvFeed)); f.liveData.plays.allPlays[1].matchup.batter = { id, fullName: 'B' }; if (batting) f.liveData.boxscore.teams.away.players['ID' + id] = { stats: { batting } }; return liveHTML(f); };
 assert.ok(withBat(10).includes('今日 3 打數 2 安打 ・ 1 打點'), '打者今日成績');

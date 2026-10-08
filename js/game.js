@@ -328,16 +328,11 @@ export function liveHTML(d) {
   const off = ls.offense || {};
   const half = ls.inningState === 'Top' || ls.inningState === 'Bottom';
   const name = (x) => esc((x && x.fullName) || '');
-  const last = all.slice().reverse().find((p) => p.about && p.about.isComplete !== false && p.result && p.result.event);
-  const lastHTML = last
-    ? `<div class="lv-last"><small>上一打席</small>${pLink(last.matchup && last.matchup.batter, 'b', last.matchup && last.matchup.pitcher)} <b>${esc(evZh(last.result.event))}</b>${last.result.rbi ? `<em>${last.result.rbi}分打點</em>` : ''}</div>` : '';
-  const due = [['下一棒', off.onDeck], ['再下一棒', off.inHole]].filter(([, x]) => x && x.fullName)
-    .map(([l, x]) => `<span><small>${l}</small>${pLink(x, 'b')}</span>`).join('');
   if (!cur || !half) {
     // 半局之間：還沒有新打席
     const st = ls.currentInning ? `${ls.currentInning}局${HALF[ls.inningState] || ''}` : '比賽即將開始';
     const next = [off.batter, off.onDeck, off.inHole].filter((x) => x && x.fullName).map(name).join('、');
-    return `<div class="lv-wait"><b>${esc(st)}</b><span>${half ? '等待下一個打席' : '換場中'}</span>${next ? `<p>接下來：${next}</p>` : ''}</div>${lastHTML}`;
+    return `<div class="lv-wait"><b>${esc(st)}</b><span>${half ? '等待下一個打席' : '換場中'}</span>${next ? `<p>接下來：${next}</p>` : ''}</div>`;
   }
   const m = cur.matchup || {};
   const bat = m.batter || {}, pit = m.pitcher || {};
@@ -348,9 +343,7 @@ export function liveHTML(d) {
       ${(() => { const t = todayStat(d, pit.id, 'pitching'); return `<div class="lv-p"><i>投</i><div class="lv-n">${pLink(pit, 'p', bat)}<small>${pitToday(t)}</small></div>${seasonNum(d, t, 'era', 'ERA')}</div>`; })()}
     </div>
     ${subs}
-    <div class="lv-pz">${zone || '<p class="lv-none">等待第一球</p>'}</div>
-    ${due ? `<div class="lv-due">${due}</div>` : ''}
-    ${lastHTML}`;
+    <div class="lv-pz">${zone || '<p class="lv-none">等待第一球</p>'}</div>`;
 }
 
 export function boxHTML(d, side) {
