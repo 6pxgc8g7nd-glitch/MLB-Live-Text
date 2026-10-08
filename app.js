@@ -388,11 +388,7 @@
     </div></div>`;
 
     let extra = '';
-    const dec = ld.decisions;
-    if (st.k === 'final' && dec) {
-      const p = (k, name) => (dec[k] && dec[k].fullName ? `${name} ${esc(dec[k].fullName)}` : '');
-      extra = `<div class="dec">${[p('winner', '勝投'), p('loser', '敗投'), p('save', '救援')].filter(Boolean).join('　')}</div>`;
-    } else if (st.k === 'upcoming') {
+    if (st.k === 'upcoming') {
       const pp = gd.probablePitchers || {};
       const ap = pp.away && pp.away.fullName, hp = pp.home && pp.home.fullName;
       if (ap || hp) extra = `<div class="dec">預定先發　${esc(ap || '未定')} vs ${esc(hp || '未定')}</div>`;
