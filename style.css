@@ -385,3 +385,6 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 /* 隊伍欄：logo 不加圓框，欄位改白底讓深色 logo 也看得清楚 */
 .ls-l { background: #fff; border-right: 2px dashed #cfcfcf; }
 .ls-l img.lw, .ls-l .tl { background: none; border-radius: 0; padding: 0; width: 38px; height: 38px; }
+/* 隊伍欄：恢復深藍底，logo 放在白色圓角方框內 */
+.ls-l { background: var(--navy); border-right: 2px dashed rgba(255, 255, 255, .65); }
+.ls-l img.lw, .ls-l .tl { background: #fff; border-radius: 8px; padding: 4px; width: 40px; height: 40px; }
