@@ -2,7 +2,7 @@ import assert from 'node:assert';
 import { twDate, shiftDate } from '../js/util.js';
 import { evZh, seriesZh } from '../js/dict.js';
 import { gameState, cardHTML } from '../js/scores.js';
-import { headHTML, textHTML, boxHTML } from '../js/game.js';
+import { headHTML, textHTML, boxHTML, liveHTML } from '../js/game.js';
 import { standingsHTML } from '../js/standings.js';
 import { S, setG } from '../js/state.js';
 import { pLink, pickStat, playerCardHTML } from '../js/player.js';
@@ -92,10 +92,11 @@ T.setG({ filter: 'all', limit: 60, open: new Set([1]) });
 const head = T.headHTML(feed);
 assert.ok(head.includes('ls3'));
 const t = T.textHTML(feed);
-assert.strictEqual(t.total, 3, '同一打席應去重');
-assert.ok((t.html.includes('擊出') && t.html.includes('>全壘打<')) && t.html.includes('2分打點') && t.html.includes('初速 105.3 mph') && t.html.includes('打擊中'));
+assert.strictEqual(t.total, 2, '同一打席應去重，進行中的打席不算');
+assert.ok((t.html.includes('擊出') && t.html.includes('>全壘打<')) && t.html.includes('2分打點') && t.html.includes('初速 105.3 mph'));
+assert.ok(!t.html.includes('打擊中') && !t.html.includes('1局下'), '進行中的打席改放 LIVE 分頁');
 assert.ok(t.html.includes('Z homers (corrected).'), '應保留最新版本');
-assert.ok(t.html.indexOf('1局下') < t.html.indexOf('1局上'), '最新在最上面');
+assert.ok(t.html.indexOf('Z homers') < t.html.indexOf('X strikes out'), '最新在最上面');
 T.S.lang = 'en';
 assert.ok(T.textHTML(feed).html.includes('Top 1'));
 T.S.lang = 'zh';
@@ -233,5 +234,30 @@ assert.strictEqual(barLabel({ inning: 3, half: 'Top', outs: 1, balls: 2, strikes
 assert.strictEqual(barLabel({ inning: 3, half: 'Middle' }), '3局中場');
 assert.strictEqual(barLabel({ inning: 0 }), '開賽前');
 assert.strictEqual(barLabel({ inning: 9, half: 'Bottom', done: true }), '重播結束');
+
+// LIVE 分頁：目前打席、今日成績與用球數、下一棒、上一打席
+const lvFeed = { ...feed, liveData: { ...feed.liveData,
+  linescore: { ...feed.liveData.linescore, inningState: 'Bottom', currentInning: 1, outs: 1,
+    offense: { first: { id: 10 }, batter: { id: 30, fullName: 'Q' }, onDeck: { id: 31, fullName: 'Deck Guy' }, inHole: { id: 32, fullName: 'Hole Guy' } } },
+  plays: { allPlays: [
+    feed.liveData.plays.allPlays[1],
+    { about: { atBatIndex: 2, inning: 1, halfInning: 'bottom', isComplete: false }, result: {}, count: { balls: 2, strikes: 1, outs: 1 },
+      matchup: { batter: { id: 30, fullName: 'Q' }, pitcher: { id: 20, fullName: 'Pitcher One' } },
+      playEvents: [{ isPitch: true, details: { type: { code: 'SL', description: 'Slider' }, isBall: true, call: { description: 'Ball' } }, count: { balls: 1, strikes: 0 }, pitchData: { startSpeed: 85.2, coordinates: { pX: -1, pZ: 1.2 } } }] },
+  ] } } };
+const lv = liveHTML(lvFeed);
+assert.ok(lv.includes('1局下') && lv.includes('1 出局') && lv.includes('2-1'), '局數、出局、球數');
+assert.ok(lv.includes('data-player="30"') && lv.includes('data-player="20"'), '打者與投手可開小卡');
+assert.ok(lv.includes('用球數 <b>77</b>') && lv.includes('今日 5.0 局'), '投手今日用球數');
+assert.ok(lv.includes('滑球') && lv.includes('class="pz"'), '本打席的每一球');
+assert.ok(lv.includes('Deck Guy') && lv.includes('Hole Guy'), '下一棒、再下一棒');
+assert.ok(lv.includes('上一打席') && lv.includes('全壘打'), '上一打席結果');
+const gap = liveHTML({ ...lvFeed, liveData: { ...lvFeed.liveData, linescore: { ...lvFeed.liveData.linescore, inningState: 'Middle' } } });
+assert.ok(gap.includes('換場中') && gap.includes('接下來：Q、Deck Guy、Hole Guy'), '半局之間顯示換場與接下來的打者');
+assert.ok(liveHTML({}).includes('比賽即將開始'), '全空資料不丟錯');
+const withBat = (id, batting) => { const f = JSON.parse(JSON.stringify(lvFeed)); f.liveData.plays.allPlays[1].matchup.batter = { id, fullName: 'B' }; if (batting) f.liveData.boxscore.teams.away.players['ID' + id] = { stats: { batting } }; return liveHTML(f); };
+assert.ok(withBat(10).includes('今日 3 打數 2 安打 ・ 1 打點'), '打者今日成績');
+assert.ok(withBat(99, { atBats: 0, plateAppearances: 0 }).includes('今日首打席'));
+assert.ok(!withBat(10).includes('打擊率'), '不放容易誤會的季後賽累計打擊率');
 
 console.log('all tests passed');

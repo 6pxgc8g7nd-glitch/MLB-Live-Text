@@ -212,7 +212,7 @@ export function textHTML(d) {
   // 以 atBatIndex 去重（同一打席只留最新版本），並依打席順序排列
   const byIdx = new Map();
   all.forEach((p, i) => byIdx.set(p.about && p.about.atBatIndex != null ? p.about.atBatIndex : 'i' + i, p));
-  let plays = [...byIdx.values()];
+  let plays = [...byIdx.values()].filter((p) => !(p.about && p.about.isComplete === false)); // 進行中的打席在 LIVE 分頁
   if (G.filter === 'score') plays = plays.filter((p) => p.about && p.about.isScoringPlay);
   else if (G.filter === 'key') plays = plays.filter(isKey);
   const total = plays.length;
@@ -282,6 +282,81 @@ export function renderText(d) {
 }
 
 /* ---- 數據（Boxscore / 賽前打線）---- */
+/* ---- LIVE 分頁：目前這個打席（文字轉播只放已結束的打席）---- */
+// 從數據中找球員今天的成績（兩隊都找，因為代打、換投後隊伍判斷不一定準）
+function todayStat(d, id, group) {
+  const teams = (d.liveData && d.liveData.boxscore && d.liveData.boxscore.teams) || {};
+  for (const side of ['away', 'home']) {
+    const pl = teams[side] && teams[side].players && teams[side].players['ID' + id];
+    if (pl) return { stat: (pl.stats && pl.stats[group]) || {} };
+  }
+  return null;
+}
+// 只放今天的成績：數據裡的 seasonStats 在季後賽是季後賽累計，容易誤會成整季打擊率（整季數據看球員小卡）
+const batToday = (t) => {
+  if (!t) return '';
+  const s = t.stat;
+  if (!Number(s.plateAppearances) && !Number(s.atBats)) return '今日首打席';
+  const bits = [`今日 ${dash(s.atBats)} 打數 ${dash(s.hits)} 安打`];
+  if (Number(s.homeRuns) > 0) bits.push(`${s.homeRuns} 全壘打`);
+  if (Number(s.rbi) > 0) bits.push(`${s.rbi} 打點`);
+  if (Number(s.baseOnBalls) > 0) bits.push(`${s.baseOnBalls} 四壞`);
+  if (Number(s.strikeOuts) > 0) bits.push(`${s.strikeOuts} 三振`);
+  return bits.join(' ・ ');
+};
+const pitToday = (t) => {
+  if (!t) return '';
+  const s = t.stat, n = s.pitchesThrown != null ? s.pitchesThrown : s.numberOfPitches;
+  const bits = [];
+  if (s.inningsPitched != null) bits.push(`今日 ${s.inningsPitched} 局`);
+  if (n != null) bits.push(`用球數 <b>${esc(n)}</b>`);
+  if (s.strikeOuts != null) bits.push(`${s.strikeOuts} 三振`);
+  return bits.join(' ・ ');
+};
+
+export function liveHTML(d) {
+  const ls = (d.liveData && d.liveData.linescore) || {};
+  const plays = (d.liveData && d.liveData.plays) || {};
+  const all = plays.allPlays || [];
+  const cur = plays.currentPlay && plays.currentPlay.about && plays.currentPlay.about.isComplete === false
+    ? plays.currentPlay
+    : all.slice().reverse().find((p) => p.about && p.about.isComplete === false);
+  const zh = S.lang === 'zh';
+  const off = ls.offense || {};
+  const half = ls.inningState === 'Top' || ls.inningState === 'Bottom';
+  const name = (x) => esc((x && x.fullName) || '');
+  const last = all.slice().reverse().find((p) => p.about && p.about.isComplete !== false && p.result && p.result.event);
+  const lastHTML = last
+    ? `<div class="lv-last"><small>上一打席</small>${pLink(last.matchup && last.matchup.batter, 'b', last.matchup && last.matchup.pitcher)} <b>${esc(evZh(last.result.event))}</b>${last.result.rbi ? `<em>${last.result.rbi}分打點</em>` : ''}</div>` : '';
+  const due = [['下一棒', off.onDeck], ['再下一棒', off.inHole]].filter(([, x]) => x && x.fullName)
+    .map(([l, x]) => `<span><small>${l}</small>${pLink(x, 'b')}</span>`).join('');
+  if (!cur || !half) {
+    // 半局之間：還沒有新打席
+    const st = ls.currentInning ? `${ls.currentInning}局${HALF[ls.inningState] || ''}` : '比賽即將開始';
+    const next = [off.batter, off.onDeck, off.inHole].filter((x) => x && x.fullName).map(name).join('、');
+    return `<div class="lv-wait"><b>${esc(st)}</b><span>${half ? '等待下一個打席' : '換場中'}</span>${next ? `<p>接下來：${next}</p>` : ''}</div>${lastHTML}`;
+  }
+  const m = cur.matchup || {};
+  const bat = m.batter || {}, pit = m.pitcher || {};
+  const c = cur.count || {};
+  const balls = c.balls != null ? c.balls : ls.balls, strikes = c.strikes != null ? c.strikes : ls.strikes, outs = c.outs != null ? c.outs : ls.outs;
+  const subs = (cur.playEvents || []).filter(isSubEvent).map((e) => subHTML(e, zh)).join('');
+  const zone = pitchZone(cur, zh);
+  return `<div class="lv-sit">
+      <div class="lv-inn"><b>${ls.currentInning || ''}局${HALF[ls.inningState] || ''}</b><span>${dash(outs)} 出局</span></div>
+      ${diamond(!!off.first, !!off.second, !!off.third)}
+      <div class="lv-cnt"><b>${dash(balls)}-${dash(strikes)}</b><span>球數</span></div>
+    </div>
+    <div class="lv-mu">
+      <div class="lv-p"><i>打</i><div>${pLink(bat, 'b', pit)}<small>${batToday(todayStat(d, bat.id, 'batting'))}</small></div></div>
+      <div class="lv-p"><i>投</i><div>${pLink(pit, 'p', bat)}<small>${pitToday(todayStat(d, pit.id, 'pitching'))}</small></div></div>
+    </div>
+    ${subs}
+    <div class="lv-pz">${zone || '<p class="lv-none">等待第一球</p>'}</div>
+    ${due ? `<div class="lv-due">${due}</div>` : ''}
+    ${lastHTML}`;
+}
+
 export function boxHTML(d, side) {
   const t = d.liveData && d.liveData.boxscore && d.liveData.boxscore.teams && d.liveData.boxscore.teams[side];
   if (!t) return '<div class="empty">尚無數據</div>';
@@ -361,11 +436,20 @@ function renderWp() {
 export function renderBody() {
   const body = $('#gBody');
   if (!body || !G.data) return;
-  if (G.bodyTab !== S.gtab) {
-    G.bodyTab = S.gtab;
+  // LIVE 分頁只在比賽進行中出現；選了 LIVE 但比賽沒在進行時，先顯示文字轉播（偏好保留，下次進行中再切回）
+  const gs = G.data.gameData && G.data.gameData.status;
+  const isLive = !!gs && gameState(gs, G.data.liveData && G.data.liveData.linescore).k === 'live';
+  const lvBtn = $('#gTabs [data-t="live"]');
+  if (lvBtn) lvBtn.hidden = !isLive;
+  const tab = S.gtab === 'live' && !isLive ? 'text' : S.gtab;
+  if (G.bodyTab !== tab) {
+    G.bodyTab = tab;
     G.sig = '';
     G.lastTotal = 0;
-    if (S.gtab === 'text') {
+    if (tab === 'live') {
+      $('#gChips').innerHTML = '';
+      body.innerHTML = '<div id="lv" class="lv"></div>';
+    } else if (tab === 'text') {
       $('#gChips').innerHTML = `
         <div class="chips">
           <button data-f="all">全部</button><button data-f="key">重點</button><button data-f="score">得分</button>
@@ -383,8 +467,12 @@ export function renderBody() {
       if (G.wp) G.wp.sig = '';
     }
   }
-  $$('#gTabs button').forEach((b) => b.classList.toggle('on', b.dataset.t === S.gtab));
-  if (S.gtab === 'text') {
+  $$('#gTabs button').forEach((b) => b.classList.toggle('on', b.dataset.t === tab));
+  if (tab === 'live') {
+    const html = liveHTML(G.data);
+    const el = $('#lv');
+    if (el && html !== G.sig) { el.innerHTML = html; G.sig = html; }
+  } else if (tab === 'text') {
     $$('#gChips [data-f]').forEach((b) => b.classList.toggle('on', b.dataset.f === G.filter));
     renderText(G.data);
   } else {
@@ -395,7 +483,7 @@ export function renderBody() {
     renderWp();
   }
   const lb = $('#langBtn');
-  if (lb) { lb.style.visibility = 'visible'; lb.classList.toggle('off', S.gtab !== 'text'); lb.disabled = S.gtab !== 'text'; }
+  if (lb) { lb.style.visibility = 'visible'; lb.classList.toggle('off', tab === 'box'); lb.disabled = tab === 'box'; }
 }
 
 export function gameHeader(d) {
@@ -522,7 +610,7 @@ export function showGame(pk) {
     <div id="liveBar" class="livebar" hidden></div>
     <div id="gHead" class="ghead"><div class="loading">載入中…</div></div>
     <div class="tkw${S.gFold ? ' fold' : ''}" id="gCtl"><div class="tk">
-      <div class="seg" id="gTabs"><button data-t="text">文字轉播</button><button data-t="box">數據</button></div>
+      <div class="seg" id="gTabs"><button data-t="text">文字轉播</button><button data-t="box">數據</button><button data-t="live" class="lv-tab" hidden>LIVE</button></div>
       <div class="tr"></div>
       <div id="gChips"></div>
     </div><button class="fbt" id="gFold" aria-label="收合或展開工具列"><span class="fl lc">收合</span><span class="fl lm">更多</span><svg viewBox="0 0 16 10" aria-hidden="true"><path d="M2 8l6-6 6 6"/></svg></button></div>
