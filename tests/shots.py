@@ -156,6 +156,7 @@ threading.Thread(target=httpd.serve_forever, daemon=True).start()
 
 shots = [('scores', '#/scores', 'light'), ('gametop', '#/game/1', 'light'), ('game', '#/game/1', 'light'), ('box', '#/game/1', 'light', 'box'), ('settings', '#/settings', 'light'), ('yday', '#/scores', 'light'), ('err', '#/scores', 'light'), ('stand', '#/standings', 'light'), ('tset', '#/settings', 'light'), ('post', '#/standings', 'light'), ('br', '#/standings', 'light'), ('fav', '#/scores', 'light'), ('favst', '#/standings', 'light'), ('favset', '#/settings', 'light'), ('favsheet', '#/settings', 'light')]
 
+failures = []
 with sync_playwright() as p:
     b = p.chromium.launch()
     for s in shots:
@@ -188,6 +189,12 @@ with sync_playwright() as p:
         out = '%s/shot_%s_%s.png' % (OUT, name, theme)
         pg.screenshot(path=out, full_page=(name in ('stand','br')))
         print(out, 'errors:', errs[:3])
+        bad = [e for e in errs if not (name == 'err' and 'ERR_FAILED' in e)]  # err 這張刻意斷網，載入失敗是預期的
+        if bad: failures.append((name, bad[:3]))
         ctx.close()
     b.close()
 httpd.shutdown()
+if failures:
+    print('FAILED:', failures)
+    sys.exit(1)
+print('all %d shots OK' % len(shots))

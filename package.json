@@ -1,0 +1,10 @@
+{
+  "name": "mlb-live-text",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/unit.test.js",
+    "check": "node scripts/sw.mjs check",
+    "sync": "node scripts/sw.mjs sync"
+  }
+}

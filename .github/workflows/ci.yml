@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 比對 VERSION 需要前一個提交
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 單元測試
+        run: node tests/unit.test.js
+
+      - name: 檢查 sw.js（快取清單與版本號）
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: node scripts/sw.mjs check "$BASE"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 安裝 Playwright
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: 截圖檢查（模擬 API，不連 MLB）
+        run: python tests/shots.py shots
+
+      - name: 上傳截圖
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: shots
+          retention-days: 7

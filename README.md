@@ -21,13 +21,27 @@
 ## 專案結構
 
 ```
-index.html            頁面骨架
-app.js                主程式：資料抓取、路由、各頁面渲染、輪詢
+index.html            頁面骨架（以 <script type="module"> 載入 js/main.js）
+js/                   主程式，原生 ES modules，不需建置
+  main.js             進入點：啟動與事件綁定
+  util.js             工具：DOM、localStorage、台灣時間日期格式
+  dict.js             字典：球隊、分區、事件中文對照
+  api.js              資料層：API 請求、狀態橫幅、輪詢
+  state.js            共用狀態（其他模組透過 setG / setPoller 等函式改值）
+  scores.js           比分頁
+  game.js             單場頁：局數表、文字轉播、數據、全壘打動畫
+  standings.js        排名、季後賽、對戰樹
+  settings.js         設定頁與最愛球隊
+  shell.js            外框：標題欄日期、日曆、路由
+  gestures.js         左右滑動換頁、下拉更新
 style.css             樣式（藍色票券風格）
 sw.js                 Service Worker（外殼 network-first，VERSION 變更即更新）
 manifest.webmanifest  PWA 設定
 icons/                App 圖示（192、512、apple-touch、maskable）
 logos/                球隊 logo 副本（見 logos/README.md）
+scripts/sw.mjs        維護 sw.js 的快取清單與 VERSION
+.githooks/            pre-commit hook（自動執行 scripts/sw.mjs）
+.github/workflows/    CI：單元測試、sw.js 檢查、截圖檢查
 tests/                單元測試、截圖檢查、全壘打回放
 ```
 
@@ -42,18 +56,30 @@ python3 -m http.server 8000
 
 ## 部署與更新
 
-推送到 `main` 後由 GitHub Pages 發佈。每次修改外殼檔案時，請同步調高 `sw.js` 的 `VERSION`，
-使用者才會在 設定 → 更新應用程式 時取得新版。
+推送到 `main` 後由 GitHub Pages 發佈。修改外殼檔案（HTML、CSS、`js/`、圖示、logo）時，`sw.js` 的 `VERSION`
+必須調高，使用者才會在 設定 → 更新應用程式 時取得新版。這件事已自動化：
+
+```bash
+git config core.hooksPath .githooks   # 每個 clone 做一次，之後提交時自動更新 sw.js
+node scripts/sw.mjs sync              # 也可以手動執行：重寫 SHELL 清單，必要時 VERSION +1
+```
+
+新增或刪除 `js/`、`icons/`、`logos/` 裡的檔案時，SHELL 清單也會跟著更新。
+沒有啟用 hook 就提交（例如在 GitHub 網頁上直接編輯）時，CI 會檢查出來並標示失敗。
 
 ## 測試
 
 ```bash
-node tests/unit.test.js          # 單元測試（解析、格式化、狀態判斷）
-python3 tests/shots.py [輸出資料夾]  # 以 Playwright 截 16 張頁面圖，輸出中 "errors: []" 應出現 16 次
-python3 tests/hr_replay.py       # 回放已結束的真實比賽，驗證全壘打偵測與動畫
+node tests/unit.test.js          # 單元測試（解析、格式化、狀態判斷），也可用 npm test
+node scripts/sw.mjs check        # sw.js 的 SHELL 清單是否和實際檔案一致
+python3 tests/shots.py [輸出資料夾]  # 以 Playwright 截 15 張頁面圖（模擬 API），有 JS 錯誤時回傳失敗
+python3 tests/hr_replay.py       # 回放已結束的真實比賽，驗證全壘打偵測與動畫（需要網路）
 ```
 
-截圖與回放需要 `pip install playwright`（Chromium）。三者都讀取本資料夾的檔案，執行前請先儲存最新修改。
+截圖與回放需要 `pip install playwright`（Chromium）。都讀取本資料夾的檔案，執行前請先儲存最新修改。
+
+每次推送或開 PR，GitHub Actions 會自動執行單元測試、`sw.js` 檢查（含 VERSION 是否有調高）與截圖檢查，
+截圖會上傳成 artifact 保留 7 天。`hr_replay.py` 需要連到真實的 MLB API，不放在 CI 裡。
 
 ## 設計
 

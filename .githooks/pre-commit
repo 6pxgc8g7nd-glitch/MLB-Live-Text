@@ -1,0 +1,5 @@
+#!/bin/sh
+# 外殼檔案有變動時，自動更新 sw.js 的 SHELL 清單並調高 VERSION
+# 啟用方式（每個 clone 做一次）：git config core.hooksPath .githooks
+command -v node >/dev/null 2>&1 || { echo "pre-commit: 找不到 node，略過 sw.js 檢查" >&2; exit 0; }
+exec node scripts/sw.mjs precommit
