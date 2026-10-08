@@ -359,7 +359,7 @@
     const st = gameState(gd.status, ls, gd.datetime && gd.datetime.dateTime);
     const tot = ls.teams || {};
     const r = (side) => (st.k === 'upcoming' || st.k === 'other' ? '–' : dash(tot[side] && tot[side].runs != null ? tot[side].runs : 0));
-    const n = st.k === 'live' || st.k === 'final' ? Math.max((ls.innings || []).length, ls.currentInning || 0, 1) : 9;
+    const n = Math.max(9, (ls.innings || []).length);
     const cell = (side, i) => {
       const inn = (ls.innings || [])[i - 1];
       if (!inn || st.k === 'upcoming') return '';
