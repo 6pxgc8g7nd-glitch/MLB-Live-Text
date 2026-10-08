@@ -203,7 +203,7 @@
     // 台灣日期 D 涵蓋的比賽，美國日期可能是 D-1 或 D，所以兩天一起抓再用開賽時間過濾
     const from = shiftDate(date, -1);
     const d = await api(
-      `/api/v1/schedule?sportId=1&startDate=${from}&endDate=${date}&hydrate=linescore,probablePitcher`,
+      `/api/v1/schedule?sportId=1&startDate=${from}&endDate=${date}&hydrate=linescore,probablePitcher,decisions`,
       { ttl: 4000 }
     );
     const start = Date.parse(`${date}T00:00:00+08:00`);
@@ -243,6 +243,25 @@
     return { k: 'upcoming', txt: fmtTime(gameDate) };
   }
 
+  const pitStat = new Map();
+  async function loadPitStats(games) {
+    const ids = [];
+    games.forEach((g) => ['away', 'home'].forEach((s) => {
+      const p = g.teams && g.teams[s] && g.teams[s].probablePitcher;
+      if (p && p.id && !pitStat.has(p.id)) ids.push(p.id);
+    }));
+    if (!ids.length) return;
+    try {
+      const yr = new Date().getFullYear();
+      const d = await api(`/api/v1/people?personIds=${[...new Set(ids)].join(',')}&hydrate=stats(group=[pitching],type=[season],season=${yr})`, { ttl: 6e5 });
+      (d.people || []).forEach((p) => {
+        const sp = p.stats && p.stats[0] && p.stats[0].splits && p.stats[0].splits[0];
+        const s = sp && sp.stat;
+        pitStat.set(p.id, s ? `${s.wins}-${s.losses}　${s.era}` : '');
+      });
+      document.querySelectorAll('[data-pid]').forEach((el) => { const t = pitStat.get(+el.dataset.pid); if (t) el.textContent = t; });
+    } catch (e) { /* 沒有戰績就只顯示名字 */ }
+  }
   function cardHTML(g) {
     const st = gameState(g.status, g.linescore, g.gameDate);
     const a = (g.teams && g.teams.away) || {};
@@ -255,9 +274,15 @@
     const rec = (t) => (t.leagueRecord ? `${t.leagueRecord.wins}-${t.leagueRecord.losses}` : '');
     let foot = '';
     if (st.k === 'upcoming') {
-      const ap = a.probablePitcher && a.probablePitcher.fullName;
-      const hp = h.probablePitcher && h.probablePitcher.fullName;
-      if (ap || hp) foot = `<div class="g-foot">預定先發　${esc(ap || '未定')} vs ${esc(hp || '未定')}</div>`;
+      const ap = a.probablePitcher, hp = h.probablePitcher;
+      const pcol = (p) => p && p.fullName
+        ? `<div><b>${esc(p.fullName)}</b><span data-pid="${p.id || ''}">${esc(pitStat.get(p.id) || '')}</span></div>`
+        : '<div><b>未定</b><span></span></div>';
+      if ((ap && ap.fullName) || (hp && hp.fullName)) foot = `<div class="g-foot pp">${pcol(ap)}${pcol(hp)}</div>`;
+    } else if (st.k === 'final' && g.decisions && g.decisions.winner) {
+      const d = g.decisions;
+      const it = (cls, lbl, p) => (p ? `<span><em class="${cls}">${lbl}</em>${esc(p.fullName)}</span>` : '');
+      foot = `<div class="g-foot dc">${it('w', '勝', d.winner)}${it('l', '敗', d.loser)}${it('s', '救', d.save)}</div>`;
     }
     const side = (t, win) => `
       <div class="g-tm${win ? ' win' : ''}${st.k === 'final' && !win ? ' lose' : ''}">
@@ -292,6 +317,7 @@
       .filter((k) => groups[k].length)
       .map((k) => `<h2 class="grp">${titles[k]}<small>${groups[k].length}</small></h2>${groups[k].map(cardHTML).join('')}`)
       .join('');
+    loadPitStats(games);
   }
 
   function showScores() {
