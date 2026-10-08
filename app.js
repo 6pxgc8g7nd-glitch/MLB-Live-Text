@@ -809,7 +809,7 @@
       parts = parts.filter((p) => p.t < 1.5);
       for (const p of parts) { p.t += dt; p.vy += 90 * dt; p.vx *= .985; p.x += p.vx * dt; p.y += p.vy * dt; const a = Math.max(0, 1 - p.t / 1.5); ctx.globalAlpha = a; ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.r * a + .6, 0, 6.283); ctx.fill(); }
       ctx.globalAlpha = 1;
-      if (ts - t0 < 3700) requestAnimationFrame(loop); else el.remove();
+      if (ts - t0 < 3700 && el.isConnected) requestAnimationFrame(loop); else el.remove();
     };
     requestAnimationFrame(loop);
   }
@@ -1376,6 +1376,7 @@
     stopPoller();
     token++;
     G = null;
+    const hrfx = document.getElementById('hrfx'); if (hrfx) hrfx.remove(); // 換頁時立刻結束全壘打動畫
     $('#banner').hidden = true;
     const [name, arg] = location.hash.replace(/^#\/?/, '').split('/');
     if (name === 'game' && /^\d+$/.test(arg || '')) return showGame(arg);
