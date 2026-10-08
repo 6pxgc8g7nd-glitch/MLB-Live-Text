@@ -322,9 +322,8 @@
     if (!foot) foot = `<div class="g-foot">${st.k === 'live' ? '進入文字轉播 ›' : st.k === 'final' ? '查看比賽紀錄 ›' : '尚無預定先發資訊'}</div>`;
     const corner = { live: '● 進行', upcoming: '○ 未賽', final: '■ 終了' }[st.k] || (st.txt === '取消' ? '△ 取消' : st.txt === '延賽' ? '△ 延賽' : '△ 暫停');
     return `
-      <a class="game ${st.k}" href="#/game/${g.gamePk}">
+      <a class="game ${st.k}${[a.team, h.team].some((t) => t && S.favs.includes(t.id)) ? ' fav' : ''}" href="#/game/${g.gamePk}">
         <span class="gt">${esc(corner)}</span>
-        ${[a.team, h.team].some((t) => t && S.favs.includes(t.id)) ? '<i class="fvm" aria-label="我的最愛">★</i>' : ''}
         <div class="ser">${esc(label || '例行賽')}</div>
         <div class="g-body">${side(a, aWin)}${mid}${side(h, hWin)}</div>
         <div class="tear"></div>${foot}
@@ -900,7 +899,7 @@
     const lgc = /^AL /i.test(desc) ? 'AL' : /^NL /i.test(desc) ? 'NL' : '';
     const abbr = { F: lgc + 'WC', D: lgc + 'DS', L: lgc + 'CS', W: 'WS' }[g0.gameType] || '';
     const stText = live ? '進行中' : status;
-    return { k, html: `<div class="ptk ${k}"><div class="pth"><span>${name}</span><span>${abbr}</span></div>
+    return { k, html: `<div class="ptk ${k}${[A, H].some((t) => S.favs.includes(t.id)) ? ' fav' : ''}"><div class="pth"><span>${name}</span><span>${abbr}</span></div>
       <div class="ptm-row">${side(A)}<div class="pcn"><b class="psb">${wins[A.id]} : ${wins[H.id]}</b><i class="par"></i></div>${side(H)}</div>
       <div class="pinf"><div><small>場次</small><b>G${gNo} / ${n}</b></div><div><small>狀態</small><b>${stText}</b></div><div><small>制度</small><b>${n} 戰 ${need} 勝</b></div></div></div>` };
   }
@@ -1111,7 +1110,7 @@
       <div class="set">
         <div class="srow"><div><b>排名預設檢視</b><small>進入排名頁時先看哪一種</small></div>
           <div class="sch"><button data-sv2="division" class="${S.standView === 'division' ? 'on' : ''}">分區</button><button data-sv2="league" class="${S.standView === 'league' ? 'on' : ''}">聯盟</button></div></div>
-        <button class="srow srbtn" id="favOpen"><div><b>我的最愛球隊</b><small>選擇後，比分頁卡片與排名頁會標示這些球隊</small></div><span class="fsum" id="favSum">${favSumHTML()}</span><span class="chev">›</span></button>
+        <button class="srow srbtn" id="favOpen"><div><b>我的最愛球隊</b><small>選擇後，比分、排名與季後賽頁會標示這些球隊</small></div><span class="fsum" id="favSum">${favSumHTML()}</span><span class="chev">›</span></button>
         <div class="srow"><div><b>測試模式</b><small>用模擬比賽測試轉播功能（比分頁會多出三場「測試模式」比賽，不影響真實資料）</small></div><button class="sw${S.testMode ? ' on' : ''}" data-set="testMode" role="switch" aria-checked="${S.testMode}"><i></i></button></div>
         ${S.testMode ? '<div class="srow"><div><b>重新開始模擬</b><small>把進行中的模擬比賽重置回第 1 局</small></div><button class="sact" id="testRestart">重新開始</button></div>' : ''}
         <div class="srow"><div><b>更新應用程式</b><small id="verTxt">清除快取並重新載入最新版本</small></div><button class="sact" id="reloadApp">更新</button></div>
