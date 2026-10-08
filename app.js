@@ -857,6 +857,67 @@
     return out;
   }
 
+  /* ---- 季後賽 ---- */
+  function seriesHTML(s) {
+    const games = (s.games || []).slice().sort((x, y) => Date.parse(x.gameDate) - Date.parse(y.gameDate));
+    const g0 = games[0];
+    if (!g0) return '';
+    const A = g0.teams.away.team, H = g0.teams.home.team;
+    const wins = { [A.id]: 0, [H.id]: 0 };
+    let anyPlayed = false, live = false;
+    games.forEach((g) => {
+      const k = gameState(g.status, g.linescore, g.gameDate).k;
+      if (k === 'live') live = true;
+      ['away', 'home'].forEach((sd) => {
+        const t = g.teams[sd];
+        if (k === 'final') anyPlayed = true;
+        if (t && t.isWinner && t.team && wins[t.team.id] != null) wins[t.team.id]++;
+      });
+    });
+    const n = g0.gamesInSeries || games.length;
+    const need = Math.ceil(n / 2);
+    const done = wins[A.id] >= need || wins[H.id] >= need;
+    const lead = wins[A.id] === wins[H.id] ? null : wins[A.id] > wins[H.id] ? A : H;
+    const hi = Math.max(wins[A.id], wins[H.id]), lo = Math.min(wins[A.id], wins[H.id]);
+    let status;
+    if (done) status = `${esc(teamName(lead))} 晉級`;
+    else if (live) status = '● 進行中';
+    else if (!anyPlayed) status = '尚未開打';
+    else status = lead ? `${esc(teamName(lead))} 領先 ${hi}-${lo}` : `戰成 ${hi}-${lo}`;
+    const row = (t) => `<div class="sr${done && lead && lead.id === t.id ? ' w' : ''}${done && lead && lead.id !== t.id ? ' l' : ''}">${logo(t, 'tcl')}<span class="sn">${esc(teamName(t))}</span><b>${wins[t.id]}</b></div>`;
+    const chip = (g) => {
+      const k = gameState(g.status, g.linescore, g.gameDate).k;
+      const a = g.teams.away, h = g.teams.home;
+      const num = g.seriesGameNumber || '';
+      let txt;
+      if (k === 'final') txt = `${esc(teamAbbr(a.team))} ${a.score}–${h.score} ${esc(teamAbbr(h.team))}`;
+      else if (k === 'live') txt = '● 進行中';
+      else {
+        const dt = new Date(g.gameDate);
+        txt = new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', month: 'numeric', day: 'numeric' }).format(dt);
+      }
+      return `<a class="pg ${k}" href="#/game/${g.gamePk}"><em>G${num}</em>${txt}</a>`;
+    };
+    return `<div class="pser${live ? ' live' : ''}">
+      <div class="sh"><span>${esc(seriesZh(g0) || g0.seriesDescription || '')}</span><small>${n} 戰 ${need} 勝</small></div>
+      ${row(A)}${row(H)}
+      <div class="ss">${status}</div>
+      <div class="pgs">${games.map(chip).join('')}</div></div>`;
+  }
+  function postHTML(d) {
+    const list = (d && d.series) || [];
+    const byType = {};
+    list.forEach((s) => { const g = (s.games || [])[0]; if (g) (byType[g.gameType] = byType[g.gameType] || []).push(s); });
+    const titles = { F: '世界大賽', L: '聯盟冠軍賽', D: '分區系列賽', W: '外卡系列賽' };
+    let out = '';
+    for (const t of ['F', 'L', 'D', 'W']) {
+      if (!byType[t]) continue;
+      const arr = byType[t].slice().sort((x, y) => (x.series.sortNumber || 0) - (y.series.sortNumber || 0));
+      out += `<h2 class="grp">${titles[t]}<small>${arr.length}</small></h2>${arr.map(seriesHTML).join('')}`;
+    }
+    return out || '<div class="empty">目前沒有季後賽資料</div>';
+  }
+
   function showSettings() {
     route$ = 'settings';
     setHeader('設定', false, 'settings');
@@ -883,12 +944,15 @@
     let data = null;
     view.innerHTML = `
       <div class="chips">
-        <button data-sv="division">分區</button><button data-sv="league">聯盟</button>
+        <button data-sv="division">分區</button><button data-sv="league">聯盟</button><button data-sv="post">季後賽</button>
       </div><div id="stand"><div class="loading">載入中…</div></div>`;
     const paint = () => {
       $$('[data-sv]').forEach((b) => b.classList.toggle('on', b.dataset.sv === S.standView));
-      if (data) $('#stand').innerHTML = standingsHTML(data);
+      if (S.standView === 'post') {
+        if (post) $('#stand').innerHTML = postHTML(post);
+      } else if (data) $('#stand').innerHTML = standingsHTML(data);
     };
+    let post = null;
     G = { repaint: paint };
     paint();
     const season = twDate().slice(0, 4);
@@ -897,9 +961,13 @@
         const d = await api(`/api/v1/standings?leagueId=103,104&season=${season}&standingsTypes=regularSeason`, { ttl: 60000 });
         if (my !== token) return;
         data = d;
+        try {
+          post = await api(`/api/v1/schedule/postseason/series?season=${season}&sportId=1`, { ttl: 30000 });
+        } catch (e) { post = post || { series: [] }; }
+        if (my !== token) return;
         paint();
       },
-      () => 300000
+      () => (S.standView === 'post' ? 60000 : 300000)
     );
     poller.start();
   }
@@ -1148,7 +1216,7 @@
         renderBody();
       } else if (b.dataset.sv) {
         S.standView = b.dataset.sv;
-        store.set('standView', S.standView);
+        if (S.standView !== 'post') store.set('standView', S.standView);
         if (G && G.repaint) G.repaint();
       } else if (b.id === 'boxMore') {
         S.boxMore = !S.boxMore;

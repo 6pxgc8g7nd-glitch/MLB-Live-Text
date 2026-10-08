@@ -495,3 +495,22 @@ html, body { touch-action: manipulation; }
 #title, #ballIc { cursor: pointer; }
 #ballIc.pulse { animation: pulse .5s ease; }
 @keyframes pulse { 0% { transform: scale(1); } 40% { transform: scale(.82); opacity: .6; } 100% { transform: scale(1); } }
+
+/* 季後賽系列賽卡片 */
+.pser { background: var(--card); border-radius: 12px; box-shadow: var(--shadow); margin: 10px 0 14px; overflow: hidden; }
+.pser.live { box-shadow: 0 0 0 2px var(--emph), var(--shadow); }
+.pser .sh { display: flex; align-items: baseline; justify-content: space-between; padding: 9px 14px; background: var(--navy); color: #fff; font-weight: 800; font-size: 13px; }
+.pser .sh small { font-weight: 500; opacity: .85; font-size: 12px; }
+.pser .sr { display: flex; align-items: center; gap: 12px; padding: 8px 14px; }
+.pser .sr .tcl { width: 38px; height: 38px; object-fit: contain; margin: 0; flex: none; }
+.pser .sr .sn { font-weight: 700; font-size: 15px; }
+.pser .sr b { margin-left: auto; font-size: 26px; font-weight: 900; color: var(--navy); font-variant-numeric: tabular-nums; }
+.pser .sr.l { opacity: .5; }
+.pser .sr.w .sn { font-weight: 800; }
+.pser .ss { padding: 6px 14px; font-size: 12.5px; font-weight: 700; color: var(--navy); background: #eaf1f9; }
+.pser.live .ss { color: var(--emph); }
+.pser .pgs { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px; border-top: 1px dashed var(--line); }
+.pser .pg { font-size: 12px; color: var(--text); text-decoration: none; background: var(--chip); border-radius: 8px; padding: 4px 9px; font-variant-numeric: tabular-nums; }
+.pser .pg em { font-style: normal; font-weight: 800; color: var(--navy); margin-right: 5px; }
+.pser .pg.upcoming { color: var(--sub); }
+.pser .pg.live { color: var(--emph); font-weight: 700; }
