@@ -489,7 +489,8 @@ body.nonav .fab { bottom: calc(24px + env(safe-area-inset-bottom)); }
 
 /* 禁止雙擊放大與選取文字 */
 html, body, * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
-html, body { touch-action: manipulation; }
+html, body { touch-action: pan-y pinch-zoom; }
+.scroll { touch-action: pan-x pan-y pinch-zoom; }
 
 /* 點標題手動更新 */
 #title, #ballIc { cursor: pointer; }
@@ -608,7 +609,8 @@ a.bk-card:active { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .2)) brightness(.
                 radial-gradient(circle 9px at 100% calc(100% - 44px), #0000 98%, #000) right / 51% 100% no-repeat;
 }
 .game.fav .tear { border-top-color: #9db7d3; }
-.tc.rib { background: linear-gradient(90deg, #fff6dc, #fffaf0); }
+.tc.rib { background: repeating-linear-gradient(115deg, rgba(0, 75, 147, .07) 0 1px, #0000 1px 8px), linear-gradient(#e3eefa, #f2f7fd); }
+.tc.rib .wm { color: #d3e1f1; }
 .ptk.fav { background: linear-gradient(#fffaf0, #fff6e0); }
 .bk2 { --ln: #8d9cac; margin-top: 4px; }
 .bk2-lg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 4px 0 10px; font-size: 12px; font-weight: 900; color: var(--navy); }
@@ -736,3 +738,12 @@ a.bk2c:active { filter: brightness(.97); }
 .game .pq { width: 44px; height: 44px; border-radius: 50%; background: var(--chip); color: #9aa; font-weight: 900; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
 .game .g-tm .rc { font-size: 12px; opacity: 1; }
 .game .g-tm.lose img, .game .g-tm.lose .pq { opacity: .4; }
+
+/* ---------- 主頁左右滑動：疊層視差 ---------- */
+html.sw-on, html.sw-on body { overflow-x: clip; }
+.sw-layer { position: fixed; left: 0; right: 0; bottom: 0; z-index: 12; background: var(--bg); will-change: transform; overflow: hidden; }
+.sw-layer.in, .sw-layer.sw-ghost { box-shadow: -10px 0 20px rgba(0, 0, 0, .22); }
+.sw-layer.under { z-index: 0; }
+.sw-ph { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--sub); font-size: 13px; }
+.sw-ph b { font-size: 22px; color: var(--navy); opacity: .45; letter-spacing: 2px; }
+.sw-ghost main { margin-top: 0; }
