@@ -638,13 +638,14 @@ a.bk2c:active { filter: brightness(.97); }
 .bk2c.live .bk2t em { color: var(--emph); }
 .bk2t.l { opacity: .4; }
 .bk2-stem { height: 14px; }
-.bk2-s { background: linear-gradient(var(--ln), var(--ln)) 50% 0 / 2px 100% no-repeat; }
+.bk2-s { background: linear-gradient(var(--ls, var(--ln)), var(--ls, var(--ln))) 50% 0 / 2px 100% no-repeat; }
 .bk2-join { height: 26px; }
-.bk2-j { background:
-  linear-gradient(var(--ln), var(--ln)) 25% 0 / 2px 50% no-repeat,
-  linear-gradient(var(--ln), var(--ln)) 75% 0 / 2px 50% no-repeat,
-  linear-gradient(var(--ln), var(--ln)) 50% 50% / 50% 2px no-repeat,
-  linear-gradient(var(--ln), var(--ln)) 50% 100% / 2px 50% no-repeat; }
+.bk2-j { --la: var(--ln); --lb: var(--ln); --ld: var(--ln); background:
+  linear-gradient(var(--la), var(--la)) 25% 0 / 2px 50% no-repeat,
+  linear-gradient(var(--lb), var(--lb)) 75% 0 / 2px 50% no-repeat,
+  linear-gradient(var(--la), var(--la)) 33.333% 50% / 25% 2px no-repeat,
+  linear-gradient(var(--lb), var(--lb)) 66.667% 50% / 25% 2px no-repeat,
+  linear-gradient(var(--ld), var(--ld)) 50% 100% / 2px 50% no-repeat; }
 .bk2.first .bk2-row { animation: bk2in .5s ease both; animation-delay: var(--d); }
 .bk2.first .bk2-join, .bk2.first .bk2-stem { animation-name: bk2draw; }
 @keyframes bk2in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
@@ -748,6 +749,36 @@ html.sw-on, html.sw-on body { overflow-x: clip; }
 .sw-layer { position: fixed; left: 0; right: 0; bottom: 0; z-index: 12; background: var(--bg); will-change: transform; overflow: hidden; }
 .sw-layer.in, .sw-layer.sw-ghost { box-shadow: -10px 0 20px rgba(0, 0, 0, .22); }
 .sw-layer.under { z-index: 0; }
-.sw-ph { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--sub); font-size: 13px; }
-.sw-ph b { font-size: 22px; color: var(--navy); opacity: .45; letter-spacing: 2px; }
 .sw-ghost main { margin-top: 0; }
+
+/* ---------- 骨架畫面（載入中） ---------- */
+.loading.skelbox { padding: 0; text-align: left; }
+.sk { display: block; background: #d8dee6; border-radius: 6px; }
+i.sk { font-style: normal; height: 12px; }
+.sk.c { width: 44px; height: 44px; border-radius: 50%; flex: none; }
+.sk.w15 { width: 15%; } .sk.w30 { width: 30%; } .sk.w40 { width: 40%; } .sk.w50 { width: 50%; } .sk.w60 { width: 60%; } .sk.w70 { width: 70%; }
+.game.skel { pointer-events: none; }
+.game.skel .gt { width: 64px; height: 21px; padding: 0; background: #d0d7e0; }
+.game.skel .ser { display: flex; justify-content: center; padding-top: 12px; }
+.game.skel .ser .sk { height: 10px; }
+.sk-tm { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.sk-tm .sk:last-child { height: 9px; }
+.sk-mid { display: flex; justify-content: center; width: 96px; }
+.sk-mid .sk { height: 32px; border-radius: 8px; }
+.game.skel .gf { display: flex; justify-content: center; align-items: center; }
+.tcs.skel .tc .sk-col { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.tcs.skel .tc .sk-r { margin-left: auto; }
+.sk-chips { display: flex; gap: 8px; margin-bottom: 14px; }
+.sk-chips .sk { flex: 1; height: 38px; border-radius: 12px; }
+.sk-h { height: 14px; }
+.sw-ph { margin: 0 auto; padding: 12px; max-width: 720px; }
+
+/* ---------- 比分：贏的比分深色、輸的淡化 ---------- */
+.big .sc.l { color: var(--sub); opacity: .5; font-weight: 700; }
+
+/* ---------- 排名：季後賽線 ---------- */
+.cutline { display: flex; align-items: center; gap: 8px; height: 22px; padding: 0 14px; font-size: 11px; font-weight: 800; letter-spacing: 1px; color: var(--navy); }
+.cutline::before, .cutline::after { content: ''; flex: 1; border-top: 2px dashed var(--navy); opacity: .55; }
+.tc.inpo .wm { color: #dbe4ef; }
+.tc.rib.inpo .wm { color: #c9d9ec; }
+.game.skel .gf .sk { height: 10px; margin-top: 4px; }

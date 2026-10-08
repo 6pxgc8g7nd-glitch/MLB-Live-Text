@@ -319,7 +319,7 @@
       </div>`;
     const subTxt = st.k === 'final' ? st.txt.replace('比賽結束', '') : st.k === 'other' && st.txt !== '延賽' && st.txt !== '取消' ? st.txt : st.k === 'other' ? '' : st.txt;
     const mid = '<div class="g-mid">' + (showScore
-      ? `<div class="big">${dash(a.score ?? 0)}<i class="cn"></i>${dash(h.score ?? 0)}</div>`
+      ? `<div class="big">${scN(a.score ?? 0, aWin, hWin)}<i class="cn"></i>${scN(h.score ?? 0, hWin, aWin)}</div>`
       : '<div class="big vs">VS</div>') + (subTxt ? `<div class="msub">${esc(subTxt)}</div>` : '') + '</div>';
     if (!foot) foot = `<div class="g-foot">${st.k === 'live' ? '進入文字轉播 ›' : st.k === 'final' ? '查看比賽紀錄 ›' : '尚無預定先發資訊'}</div>`;
     const corner = { live: '● 進行', upcoming: '○ 未賽', final: '■ 終了' }[st.k] || (st.txt === '取消' ? '△ 取消' : st.txt === '延賽' ? '△ 延賽' : '△ 暫停');
@@ -354,13 +354,23 @@
     loadPitStats(games);
   }
 
+  // 已結束的比賽：贏的比分維持深色、輸的淡化（進行中不套用）
+  const scN = (v, win, lose) => (win || lose ? `<span class="sc ${win ? 'w' : 'l'}">${dash(v)}</span>` : dash(v));
+
+  /* 載入中的骨架畫面：票券／排名列的灰色外形（不動畫），換頁占位也共用 */
+  const skelTicket = () => '<div class="game skel" aria-hidden="true"><span class="gt sk"></span><div class="ser"><i class="sk w40"></i></div><div class="g-body"><div class="sk-tm"><i class="sk c"></i><i class="sk w50"></i></div><div class="sk-mid"><i class="sk w70"></i></div><div class="sk-tm"><i class="sk c"></i><i class="sk w50"></i></div></div><div class="tear"></div><div class="gf"><i class="sk w50"></i></div></div>';
+  const skelRows = (n) => `<div class="tcs skel" aria-hidden="true">${Array.from({ length: n }, () => '<div class="tc"><i class="sk c"></i><div class="sk-col"><i class="sk w60"></i><i class="sk w40"></i></div><i class="sk w15 sk-r"></i></div>').join('')}</div>`;
+  const skelPage = (name) => (name === 'standings'
+    ? '<div class="chips stt sk-chips" aria-hidden="true"><i class="sk"></i><i class="sk"></i><i class="sk"></i><i class="sk"></i></div><h2 class="grp"><i class="sk w30 sk-h"></i></h2>' + skelRows(5)
+    : name === 'settings' ? skelRows(4) : '<h2 class="grp"><i class="sk w30 sk-h"></i></h2>' + skelTicket() + skelTicket());
+
   function showScores() {
     route$ = 'scores';
     setHeader('MLB Live Text', false, 'scores');
     const my = token;
     let anyLive = false;
     view.innerHTML = `
-      <div id="games"><div class="loading">載入中…</div></div>`;
+      <div id="games"><div class="loading skelbox">${skelTicket()}${skelTicket()}${skelTicket()}</div></div>`;
     poller = createPoller(
       async () => {
         const games = await loadSchedule(S.date);
@@ -893,12 +903,12 @@
     const s = t.records && (t.records.splitRecords || []).find((x) => x.type === 'lastTen');
     return s ? `${s.wins}-${s.losses}` : '–';
   };
-  function standRow(t, rank) {
+  function standRow(t, rank, po) {
     const c = t.clinchIndicator && CLINCH[t.clinchIndicator];
     const gb = t.gamesBack;
     const lead = gb === '-' || gb === '0' || gb === '0.0' || gb == null;
     const fav = t.team && S.favs.includes(t.team.id);
-    return `<div class="tc${t.clinchIndicator ? ' po' : ''}${fav ? ' rib' : ''}"><span class="wm">${esc(rank)}</span>${logo(t.team, 'tcl')}
+    return `<div class="tc${t.clinchIndicator ? ' po' : ''}${fav ? ' rib' : ''}${po ? ' inpo' : ''}"><span class="wm">${esc(rank)}</span>${logo(t.team, 'tcl')}
       <div><div class="tn">${esc(teamName(t.team))}${c ? `<i class="cl" title="${c}">${esc(t.clinchIndicator)}</i>` : ''}</div>
       <div class="ts">${dash(t.wins)}-${dash(t.losses)} ・ ${dash(t.winningPercentage)}</div></div>
       <div class="tg">${lead ? '領先' : '落後'}${lead ? '' : `<b>${esc(gb)}</b>`}</div></div>`;
@@ -927,7 +937,13 @@
           .filter((x) => x.league && x.league.id === lg)
           .flatMap((x) => x.teamRecords || [])
           .sort((a, b) => Number(a.leagueRank) - Number(b.leagueRank));
-        out += `<h2 class="grp">${LEAGUE[lg]}</h2>` + standTable('聯盟排名', teams.map((t) => standRow(t, t.leagueRank || '')).join(''));
+        // 季後賽線：3 個分區冠軍＋3 張外卡。資料沒有這些欄位時，退而用第 6 名之後
+        const inPO = (t) => t.divisionLeader === true || t.divisionLeader === 'true' || (t.wildCardRank != null && t.wildCardRank !== '' && Number(t.wildCardRank) <= 3);
+        const hasInfo = teams.some((t) => t.divisionLeader != null || t.wildCardRank != null);
+        let cut = 6;
+        if (hasInfo) { cut = 0; teams.forEach((t, i) => { if (inPO(t)) cut = i + 1; }); }
+        const rows = teams.map((t, i) => standRow(t, t.leagueRank || '', i < cut) + (i + 1 === cut && cut < teams.length ? '<div class="cutline"><span>季後賽線</span></div>' : '')).join('');
+        out += `<h2 class="grp">${LEAGUE[lg]}</h2>` + standTable('聯盟排名', rows);
       }
     }
     const used = Object.keys(CLINCH).filter((k) => recs.some((r) => (r.teamRecords || []).some((t) => t.clinchIndicator === k)));
@@ -979,7 +995,7 @@
     const foot = live && liveG ? '進入文字轉播 ›' : `G${gNo} / ${n}　・　${n} 戰 ${need} 勝`;
     const inner = `<span class="gt">${corner}</span>
         <div class="ser">${name}${abbrTxt(g0) ? '　' + abbrTxt(g0) : ''}</div>
-        <div class="g-body">${side(A)}<div class="g-mid"><div class="big">${wins[A.id]}<i class="cn"></i>${wins[H.id]}</div><div class="msub">${sub}</div></div>${side(H)}</div>
+        <div class="g-body">${side(A)}<div class="g-mid"><div class="big">${scN(wins[A.id], done && lead && lead.id === A.id, done && lead && lead.id !== A.id)}<i class="cn"></i>${scN(wins[H.id], done && lead && lead.id === H.id, done && lead && lead.id !== H.id)}</div><div class="msub">${sub}</div></div>${side(H)}</div>
         <div class="tear"></div><div class="g-foot">${foot}</div>`;
     const favCls = [A, H].some((t) => S.favs.includes(t.id)) ? ' fav' : '';
     return { k, html: live && liveG
@@ -1126,6 +1142,9 @@
     }
     const ws = infos.find((x) => x.type === 'W') || null;
     const hasWC = ['AL', 'NL'].some((lg) => lgs[lg].wcCol.some(Boolean));
+    const adv = (x) => !!x && x.teamIds.some((id) => S.favs.includes(id)) && (!x.done || (x.winner && S.favs.includes(x.winner.id)));
+    const hl = (on) => (on ? 'var(--navy)' : 'var(--ln)');
+    const joinSty = (span, a, b) => `style="grid-column:${span};--la:${hl(adv(a))};--lb:${hl(adv(b))};--ld:${hl(adv(a) || adv(b))}"`;
     const cell = (x, span) => `<div class="bk2-c" style="grid-column:${span}">${bk2Chip(x)}</div>`;
     let step = 0;
     const dl = () => `style="--d:${(step++ * 0.18).toFixed(2)}s"`;
@@ -1134,13 +1153,13 @@
     if (hasWC) {
       const w = [lgs.AL.wcCol[0], lgs.AL.wcCol[1], lgs.NL.wcCol[0], lgs.NL.wcCol[1]];
       out += `<div class="bk2-row" ${dl()}>${w.map((x, i) => (x ? cell(x, `${i * 2 + 1} / span 2`) : '')).join('')}</div>
-      <div class="bk2-row bk2-stem" ${dl()}>${w.map((x, i) => (x ? `<div class="bk2-s" style="grid-column:${i * 2 + 1} / span 2"></div>` : '')).join('')}</div>`;
+      <div class="bk2-row bk2-stem" ${dl()}>${w.map((x, i) => (x ? `<div class="bk2-s" style="grid-column:${i * 2 + 1} / span 2;--ls:${hl(adv(x))}"></div>` : '')).join('')}</div>`;
     }
     const dsCells = [lgs.AL.ds[0], lgs.AL.ds[1], lgs.NL.ds[0], lgs.NL.ds[1]];
     out += `<div class="bk2-row" ${dl()}>${dsCells.map((x, i) => cell(x, `${i * 2 + 1} / span 2`)).join('')}</div>
-      <div class="bk2-row bk2-join" ${dl()}><div class="bk2-j" style="grid-column:1 / span 4"></div><div class="bk2-j" style="grid-column:5 / span 4"></div></div>
+      <div class="bk2-row bk2-join" ${dl()}><div class="bk2-j" ${joinSty('1 / span 4', lgs.AL.ds[0], lgs.AL.ds[1])}></div><div class="bk2-j" ${joinSty('5 / span 4', lgs.NL.ds[0], lgs.NL.ds[1])}></div></div>
       <div class="bk2-row" ${dl()}>${cell(lgs.AL.cs, '2 / span 2')}${cell(lgs.NL.cs, '6 / span 2')}</div>
-      <div class="bk2-row bk2-join" ${dl()}><div class="bk2-j" style="grid-column:1 / span 8"></div></div>
+      <div class="bk2-row bk2-join" ${dl()}><div class="bk2-j" ${joinSty('1 / span 8', lgs.AL.cs, lgs.NL.cs)}></div></div>
       <div class="bk2-row bk2-wsr" ${dl()}>${cell(ws, '4 / span 2')}</div>
     </div>`;
     const other = infos.filter((x) => x.lg === '' && x.type !== 'W');
@@ -1226,7 +1245,7 @@
     view.innerHTML = `
       <div class="chips stt">
         <button data-sv="division">分區</button><button data-sv="league">聯盟</button><button data-sv="post">季後賽</button><button data-sv="bracket">對戰樹</button>
-      </div><div id="stand"><div class="loading">載入中…</div></div>`;
+      </div><div id="stand"><div class="loading skelbox">${skelRows(6)}</div></div>`;
     const bk = { sig: '' };
     const paint = () => {
       $$('[data-sv]').forEach((b) => b.classList.toggle('on', b.dataset.sv === S.standView));
@@ -1414,21 +1433,20 @@
 
   /* ================= 主頁左右滑動切換（疊層視差） ================= */
   // 比分／排名／設定可左右滑動切換。往左滑：下一頁從右側蓋上，目前頁退後變暗；往右滑：目前頁向右滑出，前一頁從退後位置回到原位。
-  // 下一頁的內容在切換完成後才載入，滑動途中先顯示頁名與「載入中…」。
+  // 下一頁的內容在切換完成後才載入，滑動途中先顯示該頁的骨架畫面。
   function initSwipe() {
     const ORDER = ['scores', 'standings', 'settings'];
-    const NAME = { scores: '比分', standings: '排名', settings: '設定' };
     const RET = 0.28, DUR = 340, EASE = 'cubic-bezier(.22,.8,.3,1)';
     const html = document.documentElement;
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
     let d = null, busy = false, mute = 0;
     const W = () => innerWidth;
     const topEdge = () => { const t = $('.top'); return t ? Math.round(t.getBoundingClientRect().bottom) : 0; };
-    const mkLayer = (cls, name) => {
+    const mkLayer = (cls, key) => {
       const el = document.createElement('div');
       el.className = 'sw-layer ' + cls;
       el.style.top = topEdge() + 'px';
-      el.innerHTML = `<div class="sw-ph"><b>${name}</b><span>載入中…</span></div>`;
+      el.innerHTML = `<main class="sw-ph" aria-hidden="true">${skelPage(key)}</main>`;
       document.body.appendChild(el);
       return el;
     };
@@ -1447,7 +1465,7 @@
       dropLayer();
       d.dir = dir;
       const ni = d.i - dir;
-      if (ni >= 0 && ni < ORDER.length) d.layer = mkLayer(dir < 0 ? 'in' : 'under', NAME[ORDER[ni]]);
+      if (ni >= 0 && ni < ORDER.length) d.layer = mkLayer(dir < 0 ? 'in' : 'under', ORDER[ni]);
       view.style.background = dir > 0 && d.layer ? 'var(--bg)' : '';
       view.style.boxShadow = dir > 0 && d.layer ? '-10px 0 20px rgba(0,0,0,.22)' : '';
     };
@@ -1605,7 +1623,7 @@
       }
       if (e.target.closest('#retryBtn')) {
         const eb = e.target.closest('.errbox');
-        if (eb) { eb.className = 'loading'; eb.textContent = '載入中…'; }
+        if (eb) { eb.className = 'loading skelbox'; eb.innerHTML = route$ === 'standings' ? skelRows(6) : skelTicket() + skelTicket() + skelTicket(); }
         if (poller) poller.kick();
         return;
       }
