@@ -320,7 +320,7 @@
       </div>`;
     const subTxt = st.k === 'final' ? st.txt.replace('比賽結束', '') : st.k === 'other' && st.txt !== '延賽' && st.txt !== '取消' ? st.txt : st.k === 'other' ? '' : st.txt;
     const mid = '<div class="g-mid">' + (showScore
-      ? `<div class="big">${dash(a.score ?? 0)}<i>:</i>${dash(h.score ?? 0)}</div>`
+      ? `<div class="big">${dash(a.score ?? 0)}<i class="cn"></i>${dash(h.score ?? 0)}</div>`
       : '<div class="big vs">VS</div>') + (subTxt ? `<div class="msub">${esc(subTxt)}</div>` : '') + '</div>';
     if (!foot) foot = `<div class="g-foot">${st.k === 'live' ? '進入文字轉播 ›' : st.k === 'final' ? '查看比賽紀錄 ›' : '尚無預定先發資訊'}</div>`;
     const corner = { live: '● 進行', upcoming: '○ 未賽', final: '■ 終了' }[st.k] || (st.txt === '取消' ? '△ 取消' : st.txt === '延賽' ? '△ 延賽' : '△ 暫停');
@@ -789,7 +789,7 @@
         lbEl.innerHTML = `<div class="lm${fx.bat ? ' in' : ''}"><b>${zh ? '打' : 'AB'} ${esc(bat.fullName || '–')}</b><span>${zh ? '投' : 'P'} ${esc((def.pitcher && def.pitcher.fullName) || '–')}</span></div>${mid}<div class="lbr">${bs}<div class="lc"><b${fx.cnt ? ' class="pop"' : ''}>${dash(ls.balls)}-${dash(ls.strikes)}</b><span>${dash(ls.outs)} ${zh ? '出局' : 'out'}</span></div></div>${ov}`;
       }
     }
-    $('#gameRow').innerHTML = `<div class="gstrip">${blk(aT)}<div class="gm">${showN ? `<b class="gn ${st.k}">${run('away')} : ${run('home')}</b>` : '<b class="gn vs">VS</b>'}<small>${esc(st.txt)}</small></div>${blk(hT)}</div>`;
+    $('#gameRow').innerHTML = `<div class="gstrip">${blk(aT)}<div class="gm">${showN ? `<b class="gn ${st.k}">${run('away')}<i class="cn"></i>${run('home')}</b>` : '<b class="gn vs">VS</b>'}<small>${esc(st.txt)}</small></div>${blk(hT)}</div>`;
   }
   /* ---- 全壘打煙火（進行中的比賽出現新全壘打時播放，約 3.5 秒，不擋操作）---- */
   function playHR(info) {
@@ -975,7 +975,7 @@
     const abbr = { F: lgc + 'WC', D: lgc + 'DS', L: lgc + 'CS', W: 'WS' }[g0.gameType] || '';
     const stText = live ? '進行中' : status;
     return { k, html: `<div class="ptk ${k}${[A, H].some((t) => S.favs.includes(t.id)) ? ' fav' : ''}"><div class="pth"><span>${name}</span><span>${abbr}</span></div>
-      <div class="ptm-row">${side(A)}<div class="pcn"><b class="psb">${wins[A.id]} : ${wins[H.id]}</b><i class="par"></i></div>${side(H)}</div>
+      <div class="ptm-row">${side(A)}<div class="pcn"><b class="psb">${wins[A.id]}<i class="cn"></i>${wins[H.id]}</b><i class="par"></i></div>${side(H)}</div>
       <div class="pinf"><div><small>場次</small><b>G${gNo} / ${n}</b></div><div><small>狀態</small><b>${stText}</b></div><div><small>制度</small><b>${n} 戰 ${need} 勝</b></div></div></div>` };
   }
   function postHTML(d) {
@@ -1467,7 +1467,7 @@
     const dia = (on, c) => `<i class="${c}${on ? ' on' : ''}"></i>`;
     return list.map((p) => `<div class="pf-g${one ? ' one' : ''}" data-pk="${p.pk}">
       <div class="pf-h"><span class="pf-lv">● LIVE</span><span>${esc(p.inn)}</span></div>
-      <div class="pf-sc"><b>${esc(p.aw)}</b><em>${p.ar}</em><u>:</u><em class="r">${p.hr}</em><b>${esc(p.hm)}</b></div>
+      <div class="pf-sc"><b>${esc(p.aw)}</b><em>${p.ar}</em><u class="cn"></u><em class="r">${p.hr}</em><b>${esc(p.hm)}</b></div>
       <div class="pf-f"><span class="pf-bs">${dia(p.bases[1], 'b2')}${dia(p.bases[2], 'b3')}${dia(p.bases[0], 'b1')}</span><span>${p.outs}出局　${p.balls}-${p.strikes}</span><span class="pf-go">進入轉播 ›</span></div>
     </div>`).join('');
   }

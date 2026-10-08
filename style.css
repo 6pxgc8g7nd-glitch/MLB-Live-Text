@@ -739,3 +739,15 @@ a.bk2c:active { filter: brightness(.97); }
 .pf-bs i.on { background: currentColor; opacity: 1; }
 .pf-bs .b2 { left: 9px; top: 0; } .pf-bs .b3 { left: 1px; top: 8px; } .pf-bs .b1 { left: 17px; top: 8px; }
 @media (prefers-reduced-motion: reduce) { .pf-ball, .pf-ball.pulse::after { animation: none; } }
+
+/* ---------- 比分冒號：兩點與數字垂直置中（所有頁面共用） ---------- */
+.cn {
+  display: inline-block; flex: none; width: .15em; height: .5em; margin: 0 .2em; font-style: normal; text-decoration: none; opacity: 1;
+  background: radial-gradient(circle closest-side, currentColor 96%, transparent 100%) 50% 0 / 100% 36% no-repeat,
+              radial-gradient(circle closest-side, currentColor 96%, transparent 100%) 50% 100% / 100% 36% no-repeat;
+}
+.big, .gstrip .gn, .ptk .psb { display: flex; align-items: center; justify-content: center; }
+.big .cn { font-size: inherit; color: var(--sub); margin: 0 .18em; opacity: .85; }
+.gstrip .gn .cn { color: var(--sub); margin: 0 .24em; opacity: .85; }
+.ptk .psb .cn { color: var(--sub); margin: 0 .22em; opacity: .85; }
+.pf-sc .cn { color: var(--sub); font-size: 34px; margin: 0 .1em; opacity: .85; }
