@@ -11,7 +11,7 @@ import { renderBody, renderGame } from './game.js';
 import { openFavSheet } from './settings.js';
 import { bindSegs, applyLang, route, rollover, toast } from './shell.js';
 import { initSwipe, initPull } from './gestures.js';
-import { openPlayer } from './player.js';
+import { openPlayer, fromEl } from './player.js';
 
 function boot() {
   setView($('#view'));
@@ -83,7 +83,7 @@ function boot() {
     }
     const pl = e.target.closest('[data-player]'); // 球員名字：開小卡，不要同時展開／收合打席
     if (pl) {
-      openPlayer({ id: +pl.dataset.player, role: pl.dataset.role, vs: pl.dataset.vs ? +pl.dataset.vs : null, vsName: pl.dataset.vsn });
+      openPlayer(fromEl(pl));
       return;
     }
     const play = e.target.closest('.play');

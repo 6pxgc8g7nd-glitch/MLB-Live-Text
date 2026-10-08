@@ -9,13 +9,26 @@ const POS_ZH = {
 };
 const HAND = { L: '左', R: '右' };
 
-// 可點的球員名字；opp 是對戰的另一方（打者對投手），沒有就不顯示對戰紀錄
+// 讓任何元素（名字、整列、按鈕）點了開小卡；opp 是對戰的另一方（打者對投手），沒有就不顯示對戰紀錄
+export const pAttrs = (person, role, opp) => {
+  if (!person || !person.id) return '';
+  const vs = opp && opp.id ? ` data-vs="${opp.id}" data-vsn="${esc(opp.fullName || '')}"` : '';
+  return ` role="button" tabindex="0" data-player="${person.id}" data-role="${role}"${vs}`;
+};
+
+// 可點的球員名字。用行內 span 而非 button：長名字在目前打席條才能照原樣以「…」截斷
 export const pLink = (person, role, opp) => {
   const nm = esc((person && person.fullName) || '');
   if (!person || !person.id || !nm) return nm;
-  const vs = opp && opp.id ? ` data-vs="${opp.id}" data-vsn="${esc(opp.fullName || '')}"` : '';
-  // 用行內 span 而非 button：長名字在目前打席條才能照原樣以「…」截斷
-  return `<span class="pl-n" role="button" tabindex="0" data-player="${person.id}" data-role="${role}"${vs}>${nm}</span>`;
+  return `<span class="pl-n"${pAttrs(person, role, opp)}>${nm}</span>`;
+};
+
+// 展開的打席底部：打者、投手兩顆大按鈕（手機上名字太小不好點）
+export const pButtons = (bat, pit) => {
+  const b = (who, role, opp, lbl) => (who && who.id && who.fullName
+    ? `<span class="pw"${pAttrs(who, role, opp)}><i>${lbl}</i><b>${esc(who.fullName)}</b><em>›</em></span>` : '');
+  const html = b(bat, 'b', pit, '打') + b(pit, 'p', bat, '投');
+  return html ? `<div class="p-who">${html}</div>` : '';
 };
 
 // 季中被交易的球員會有多筆 split（各隊＋合計），優先取沒有 team 的合計那筆
@@ -42,7 +55,7 @@ function vsLine(v) {
   return `<p class="pcd-vs">${bits.join(' ・ ')}${s.avg ? `<b>${esc(s.avg)}</b>` : ''}</p>`;
 }
 
-/* p：people API 的球員；role：'b' 打者 / 'p' 投手；vs：{ name, stat } 對戰資料（打者觀點） */
+/* p：people API 的球員；role：'b' 打者 / 'p' 投手；vs：{ id, name, stat } 對戰資料（打者觀點） */
 export function playerCardHTML(p, role, vs) {
   if (!p) return '<div class="empty">找不到球員資料</div>';
   const pos = (p.primaryPosition && p.primaryPosition.abbreviation) || '';
@@ -56,25 +69,43 @@ export function playerCardHTML(p, role, vs) {
   const fmt = group === 'pitching' ? pitCells : hitCells;
   const sea = pickStat(p.stats, 'season', group), car = pickStat(p.stats, 'career', group);
   const sec = (title, x) => `<div class="pcd-sec"><h4>${title}</h4>${x ? fmt(x.stat) : '<p class="pcd-none">尚無數據</p>'}</div>`;
-  const vsSec = vs ? `<div class="pcd-sec"><h4>${role === 'p' ? '對' : '對上投手'} ${esc(vs.name || '')}・生涯</h4>${vsLine(vs)}</div>` : '';
+  // 對手的名字做成按鈕，點了直接換成對手的小卡（從目前打席條只點得到打者，靠這裡看投手）
+  const opp = vs && vs.id ? `<span class="pcd-sw"${pAttrs({ id: vs.id, fullName: vs.name }, role === 'p' ? 'b' : 'p', p)}>${esc(vs.name || '')} ›</span>` : esc((vs && vs.name) || '');
+  const vsSec = vs ? `<div class="pcd-sec"><h4>${role === 'p' ? '對打者' : '對上投手'} ${opp}<small>生涯對戰</small></h4>${vsLine(vs)}</div>` : '';
   return `<div class="pcd-h">${logo(p.currentTeam, 'pcd-l')}<div><b>${esc(p.fullName || '')}</b><small>${meta}</small></div></div>
     ${sec(`${sea && sea.season ? sea.season + ' ' : ''}本季${group === 'pitching' ? '投球' : '打擊'}`, sea)}
     ${sec(`生涯${group === 'pitching' ? '投球' : '打擊'}`, car)}
     ${vsSec}`;
 }
 
+// data-player 元素 → openPlayer 的參數
+export const fromEl = (el) => ({ id: +el.dataset.player, role: el.dataset.role, vs: el.dataset.vs ? +el.dataset.vs : null, vsName: el.dataset.vsn });
+
 export function openPlayer({ id, role, vs, vsName }) {
-  closePlayer();
-  const wrap = document.createElement('div');
-  wrap.id = 'pcard'; wrap.className = 'fsheet';
-  wrap.innerHTML = `<div class="fs-bg"></div><div class="fs-p pcd" role="dialog" aria-label="球員資料"><div class="fs-grab"></div>
-    <div id="pcdBody"><div class="loading">載入中…</div></div>
-    <button class="fs-done" id="pcdClose">關閉</button></div>`;
-  document.body.appendChild(wrap);
-  wrap.addEventListener('click', (e) => {
-    if (e.target.closest('#pcdClose') || e.target.classList.contains('fs-bg')) closePlayer();
-  });
-  requestAnimationFrame(() => wrap.classList.add('show'));
+  let wrap = document.getElementById('pcard');
+  if (wrap) { // 已開著（卡片內換成對手）：沿用同一張面板，只換內容
+    wrap.querySelector('#pcdBody').innerHTML = '<div class="loading">載入中…</div>';
+    wrap.querySelector('.fs-p').scrollTop = 0;
+  } else {
+    wrap = document.createElement('div');
+    wrap.id = 'pcard'; wrap.className = 'fsheet';
+    wrap.innerHTML = `<div class="fs-bg"></div><div class="fs-p pcd" role="dialog" aria-label="球員資料"><div class="fs-grab"></div>
+      <div id="pcdBody"><div class="loading">載入中…</div></div>
+      <button class="fs-done" id="pcdClose">關閉</button></div>`;
+    document.body.appendChild(wrap);
+    wrap.addEventListener('click', (e) => {
+      const sw = e.target.closest('[data-player]');
+      if (sw) openPlayer(fromEl(sw));
+      else if (e.target.closest('#pcdClose') || e.target.classList.contains('fs-bg')) closePlayer();
+    });
+    wrap.addEventListener('keydown', (e) => {
+      const sw = e.target.closest && e.target.closest('[data-player]');
+      if (sw && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openPlayer(fromEl(sw)); }
+      else if (e.key === 'Escape') closePlayer();
+    });
+    requestAnimationFrame(() => wrap.classList.add('show'));
+  }
+  const ticket = (wrap._t = (wrap._t || 0) + 1); // 連續切換時只採用最後一次的結果
 
   // 對戰紀錄一律用打者觀點查詢
   const [bid, pid] = role === 'p' ? [vs, id] : [id, vs];
@@ -83,12 +114,12 @@ export function openPlayer({ id, role, vs, vsName }) {
     ? api(`/api/v1/people/${bid}/stats?stats=vsPlayerTotal&opposingPlayerId=${pid}&group=hitting`, { ttl: 6e5 }).catch(() => null)
     : Promise.resolve(null);
   Promise.all([person, match]).then(([d, m]) => {
-    if (!wrap.isConnected) return;
+    if (!wrap.isConnected || wrap._t !== ticket) return;
     const s = m && m.stats && m.stats[0] && m.stats[0].splits;
-    const v = vs ? { name: vsName, stat: (s && s[0] && s[0].stat) || {} } : null;
+    const v = vs ? { id: vs, name: vsName, stat: (s && s[0] && s[0].stat) || {} } : null;
     wrap.querySelector('#pcdBody').innerHTML = playerCardHTML(d && d.people && d.people[0], role, v);
   }).catch(() => {
-    if (wrap.isConnected) wrap.querySelector('#pcdBody').innerHTML = '<div class="empty">資料載入失敗，請稍後再試</div>';
+    if (wrap.isConnected && wrap._t === ticket) wrap.querySelector('#pcdBody').innerHTML = '<div class="empty">資料載入失敗，請稍後再試</div>';
   });
 }
 

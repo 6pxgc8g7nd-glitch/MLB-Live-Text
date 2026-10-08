@@ -528,15 +528,25 @@ html, body { touch-action: pan-y pinch-zoom; }
 .g-tm { position: relative; }
 
 /* 球員名字（可點開小卡）與球員小卡 */
-.pl-n { cursor: pointer; text-decoration: underline dotted; text-decoration-thickness: 1px; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); }
-.livebar .lm .pl-n { display: inline; font-size: inherit; opacity: 1; } /* 打席條的 .lm span 規則是給整行用的，名字要維持行內 */
+.pl-n, .pl-u, .pcs .pc[data-player] .nm { text-decoration: underline dotted; text-decoration-thickness: 1px; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); }
+.pl-n { cursor: pointer; padding: 8px 2px; margin: 0 -2px; } /* 行內元素的上下 padding 不影響排版，只把點擊範圍加大 */
+[data-player] { cursor: pointer; }
+.livebar .lm[data-player]:active, .pcs .pc[data-player]:active, .pw:active, .pcd-sw:active { opacity: .7; }
+.p-who { display: none; gap: 8px; margin-top: 10px; }
+.play.open .p-who { display: flex; }
+.pw { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 10px; border-radius: 10px; background: var(--bg); color: var(--navy); font-size: 14px; }
+.pw i { flex: none; font-style: normal; font-size: 11px; font-weight: 800; color: #fff; background: var(--navy); border-radius: 5px; padding: 1px 5px; }
+.pw b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.pw em { flex: none; font-style: normal; opacity: .55; }
 .pcd { padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
 .pcd-h { display: flex; align-items: center; gap: 12px; padding: 2px 2px 10px; border-bottom: 1px dashed var(--line); }
 .pcd-h .pcd-l { width: 44px; height: 44px; object-fit: contain; margin: 0; flex: none; }
 .pcd-h b { display: block; font-size: 19px; line-height: 1.2; }
 .pcd-h small { display: block; margin-top: 2px; font-size: 13px; color: var(--sub); }
 .pcd-sec { margin-top: 12px; }
-.pcd-sec h4 { margin: 0 0 6px; font-size: 13px; color: var(--navy); font-weight: 800; }
+.pcd-sec h4 { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin: 0 0 6px; font-size: 13px; color: var(--navy); font-weight: 800; }
+.pcd-sec h4 small { color: var(--sub); font-weight: 600; font-size: 12px; margin-left: 2px; }
+.pcd-sw { display: inline-flex; align-items: center; min-height: 32px; padding: 0 12px; border-radius: 999px; background: var(--accent-soft); color: var(--navy); font-size: 13px; }
 .pcd-g { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .pcd-g div { background: var(--bg); border-radius: 10px; padding: 8px 4px 6px; text-align: center; }
 .pcd-g b { display: block; font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }

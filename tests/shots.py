@@ -202,7 +202,11 @@ with sync_playwright() as p:
             pg.evaluate("document.querySelector('#wp').scrollIntoView(); window.scrollBy(0, -170)"); pg.wait_for_timeout(300)
             pg.hover('.wp-c', position={'x': 200, 'y': 60}); pg.wait_for_timeout(200)
             print('wp:', pg.evaluate("[(document.querySelector('.wp-now')||{}).textContent, (document.querySelector('.wp-tip')||{}).innerText]"))
-        if name == 'pcard': pg.click('#plays .pl-n'); pg.wait_for_timeout(700); print('pcard:', pg.evaluate("(document.querySelector('#pcdBody')||{}).innerText").replace('\n', ' | ')[:160])
+        if name == 'pcard':
+            pg.click('#plays .play.open .pw'); pg.wait_for_timeout(700)  # 展開打席底部的大按鈕
+            print('pcard:', pg.evaluate("(document.querySelector('#pcdBody')||{}).innerText").replace('\n', ' | ')[:120])
+            pg.click('#pcard .pcd-sw'); pg.wait_for_timeout(700)  # 卡片內換成對手
+            print('pcard switched, vs header:', pg.evaluate("(document.querySelector('#pcdBody .pcd-sec:last-child h4')||{}).innerText"))
         if name in ('stand', 'gametop'):
             n0 = len(reqs); pg.click('#title'); pg.wait_for_timeout(400); print(name, 'refresh requests:', len(reqs) - n0, 'toast:', pg.evaluate("(document.getElementById('toast')||{}).textContent"))
         if name == 'yday': pg.click('#segL'); pg.wait_for_timeout(800)
