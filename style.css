@@ -720,7 +720,7 @@ a.bk2c:active { filter: brightness(.97); }
 .pf-ball.pulse::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 3px solid #004B93; animation: pfpulse 1.2s ease-out 2; pointer-events: none; }
 @keyframes pfglow { 50% { box-shadow: 0 0 0 7px rgba(0, 75, 147, .26), 0 0 0 15px rgba(0, 75, 147, .08), 0 4px 10px rgba(0, 0, 0, .35); } }
 @keyframes pfpulse { from { transform: scale(1); opacity: 1; } to { transform: scale(2); opacity: 0; } }
-.pf-card { position: fixed; z-index: 41; background: #fff; color: var(--text); border: 2px solid #004B93; border-radius: 14px; padding: 10px 14px 8px; box-shadow: 0 8px 20px rgba(0, 0, 0, .35); }
+.pf-card { max-height: calc(100vh - 220px); overflow-y: auto; position: fixed; z-index: 41; background: #fff; color: var(--text); border: 2px solid #004B93; border-radius: 14px; padding: 10px 14px 8px; box-shadow: 0 8px 20px rgba(0, 0, 0, .35); }
 
 .pf-g + .pf-g { border-top: 2px dashed #cfcfcf; margin-top: 8px; padding-top: 8px; }
 .pf-g { cursor: pointer; }

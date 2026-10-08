@@ -1409,10 +1409,10 @@
 
   /* ================= 關注球隊比賽中・懸浮按鈕 ================= */
   // 只要有關注的球隊正在比賽就自動出現；沒有進行中的比賽時隱藏
-  const PF = { el: null, games: [], prev: new Map(), timer: 0, last: 0, drag: null };
+  const PF = { el: null, games: [], prev: new Map(), timer: 0, last: 0, drag: null, busy: false };
   const PF_SIZE = 52;
   const pfSafeB = () => Math.max(0, (parseFloat(getComputedStyle(document.body).paddingBottom) || 0) - 92);
-  const pfRange = () => { const minTop = 130; return [minTop, Math.max(minTop, innerHeight - PF_SIZE - 96 - pfSafeB())]; };
+  const pfRange = () => { const top = $('.top'); const minTop = Math.round((top ? top.getBoundingClientRect().bottom : 114) + 12); return [minTop, Math.max(minTop, innerHeight - PF_SIZE - 96 - pfSafeB())]; };
   const pfCurPk = () => { const m = /^#\/game\/(\d+)/.exec(location.hash); return m ? m[1] : null; };
   const pfList = () => PF.games.filter((g) => String(g.pk) !== pfCurPk());
 
@@ -1423,10 +1423,12 @@
     b.classList.remove('pulse'); void b.offsetWidth; b.classList.add('pulse');
   }
   async function pfFetch() {
+    if (PF.busy) return; // 避免同時多個請求造成計時器重複
+    PF.busy = true;
     clearTimeout(PF.timer);
     PF.last = Date.now();
     let next = 15000;
-    if (!S.favs.length) { PF.games = []; PF.prev.clear(); pfRender(); PF.timer = setTimeout(pfFetch, 60000); return; }
+    if (!S.favs.length) { PF.games = []; PF.prev.clear(); pfRender(); PF.busy = false; PF.timer = setTimeout(pfFetch, 60000); return; }
     if (!document.hidden) {
       try {
         const today = twDate();
@@ -1460,6 +1462,7 @@
         if (!out.length) next = 30000; // 目前沒有進行中的比賽：放慢檢查
       } catch (e) { /* 網路失敗：下次再試 */ }
     }
+    PF.busy = false;
     PF.timer = setTimeout(pfFetch, next);
   }
   function pfCardHTML() {
@@ -1693,7 +1696,7 @@
 
     addEventListener('hashchange', route);
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) { rollover(); if (poller) poller.kick(); }
+      if (!document.hidden) { rollover(); if (poller) poller.kick(); pfFetch(); }
     });
     addEventListener('online', () => poller && poller.kick());
     addEventListener('pageshow', () => poller && poller.kick());
