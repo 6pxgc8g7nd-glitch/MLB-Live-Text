@@ -6,6 +6,7 @@ import { S, view, poller, token, G, setRoute, setPoller, setG } from './state.js
 import { gameState, seriesLbl } from './scores.js';
 import { setHeader } from './shell.js';
 import { pLink } from './player.js';
+import { wpPoints, wpHTML, bindWp } from './winprob.js';
 
 export const diamond = (on1, on2, on3) => {
   const d = (cx, cy, on) =>
@@ -334,6 +335,34 @@ export function boxHTML(d, side) {
     <button class="tgl" id="boxMore">${S.boxMore ? '收合欄位' : '更多欄位'}</button>`;
 }
 
+/* 勝率走勢：只在進行中或已結束的比賽顯示；進行中有新打席時才重抓，且至少間隔 15 秒 */
+function renderWp() {
+  const el = $('#wp');
+  if (!el) return;
+  const d = G.data, gd = d.gameData || {};
+  const aT = gd.teams && gd.teams.away, hT = gd.teams && gd.teams.home;
+  const k = gd.status ? gameState(gd.status, d.liveData && d.liveData.linescore).k : '';
+  if (k !== 'live' && k !== 'final') { el.innerHTML = ''; return; }
+  const wp = G.wp || (G.wp = { n: -1, t: 0, busy: false, pts: [], sig: '' });
+  const all = (d.liveData && d.liveData.plays && d.liveData.plays.allPlays) || [];
+  const n = all.filter((p) => p.about && p.about.isComplete !== false).length;
+  const paint = () => {
+    const html = wpHTML(wp.pts, aT, hT, el.clientWidth);
+    if (html === wp.sig) return;
+    el.innerHTML = html; wp.sig = html;
+    bindWp(el, wp.pts, aT, hT);
+  };
+  paint();
+  if (wp.busy || wp.n === n || Date.now() - wp.t < 15000) return;
+  wp.busy = true; wp.t = Date.now();
+  const my = token;
+  api(`/api/v1/game/${G.pk}/winProbability`).then((list) => {
+    if (my !== token || !G || G.wp !== wp) return;
+    wp.n = n; wp.pts = wpPoints(list);
+    if (document.body.contains(el)) paint();
+  }).catch(() => { /* 沒有勝率資料就不顯示，下次輪詢再試 */ }).finally(() => { wp.busy = false; });
+}
+
 export function renderBody() {
   const body = $('#gBody');
   if (!body || !G.data) return;
@@ -355,7 +384,8 @@ export function renderBody() {
           <button data-side="away">${esc(teamName(gd.teams && gd.teams.away))}</button>
           <button data-side="home">${esc(teamName(gd.teams && gd.teams.home))}</button>
         </div>`;
-      body.innerHTML = '<div id="box"></div>';
+      body.innerHTML = '<div id="wp" class="wp"></div><div id="box"></div>';
+      if (G.wp) G.wp.sig = '';
     }
   }
   $$('#gTabs button').forEach((b) => b.classList.toggle('on', b.dataset.t === S.gtab));
@@ -367,6 +397,7 @@ export function renderBody() {
     const html = boxHTML(G.data, G.side);
     const box = $('#box');
     if (box && html !== G.sig) { box.innerHTML = html; G.sig = html; }
+    renderWp();
   }
   const lb = $('#langBtn');
   if (lb) { lb.style.visibility = 'visible'; lb.classList.toggle('off', S.gtab !== 'text'); lb.disabled = S.gtab !== 'text'; }

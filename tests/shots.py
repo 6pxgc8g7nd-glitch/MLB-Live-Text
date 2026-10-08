@@ -136,8 +136,20 @@ person = {'people': [{'id': 1007, 'fullName': 'Brayan Rocchio', 'primaryNumber':
               {'type': {'displayName': 'career'}, 'group': {'displayName': 'hitting'}, 'splits': [{'stat': {'gamesPlayed': 431, 'avg': '.243', 'homeRuns': 24, 'rbi': 160, 'stolenBases': 55, 'ops': '.651'}}]}]}]}
 vs_stats = {'stats': [{'type': {'displayName': 'vsPlayerTotal'}, 'splits': [{'stat': {'plateAppearances': 7, 'atBats': 6, 'hits': 2, 'homeRuns': 1, 'baseOnBalls': 1, 'strikeOuts': 2, 'avg': '.333'}}]}]}
 
+# 勝率：依比分差粗略換算，只求有起伏可看
+wp_data, _a, _h = [], 0, 0
+for q in plays:
+    if not q['about']['isComplete']: continue
+    _a, _h = q['result'].get('awayScore', _a), q['result'].get('homeScore', _h)
+    hp = max(1, min(99, 50 - 9 * (_a - _h) + (q['about']['atBatIndex'] % 5) - 2))
+    wp_data.append({'homeTeamWinProbability': hp, 'homeTeamWinProbabilityAdded': hp - (wp_data[-1]['homeTeamWinProbability'] if wp_data else 50),
+                    'about': {'inning': q['about']['inning'], 'isTopInning': q['about']['halfInning'] == 'top', 'isComplete': True},
+                    'result': {'event': q['result']['event']}, 'matchup': {'batter': q['matchup']['batter']}})
+
 def handler(route):
     url = route.request.url
+    if '/winProbability' in url:
+        return route.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin': '*'}, body=json.dumps(wp_data))
     if 'stats=vsPlayerTotal' in url:
         return route.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin': '*'}, body=json.dumps(vs_stats))
     if re.search(r'/people/\d+\?', url):
@@ -164,7 +176,7 @@ socketserver.TCPServer.allow_reuse_address = True
 httpd = socketserver.TCPServer(('127.0.0.1', PORT), functools.partial(Q, directory=ROOT))
 threading.Thread(target=httpd.serve_forever, daemon=True).start()
 
-shots = [('scores', '#/scores', 'light'), ('gametop', '#/game/1', 'light'), ('game', '#/game/1', 'light'), ('box', '#/game/1', 'light', 'box'), ('settings', '#/settings', 'light'), ('yday', '#/scores', 'light'), ('err', '#/scores', 'light'), ('stand', '#/standings', 'light'), ('tset', '#/settings', 'light'), ('post', '#/standings', 'light'), ('br', '#/standings', 'light'), ('fav', '#/scores', 'light'), ('favst', '#/standings', 'light'), ('favset', '#/settings', 'light'), ('favsheet', '#/settings', 'light'), ('pcard', '#/game/1', 'light')]
+shots = [('scores', '#/scores', 'light'), ('gametop', '#/game/1', 'light'), ('game', '#/game/1', 'light'), ('box', '#/game/1', 'light', 'box'), ('settings', '#/settings', 'light'), ('yday', '#/scores', 'light'), ('err', '#/scores', 'light'), ('stand', '#/standings', 'light'), ('tset', '#/settings', 'light'), ('post', '#/standings', 'light'), ('br', '#/standings', 'light'), ('fav', '#/scores', 'light'), ('favst', '#/standings', 'light'), ('favset', '#/settings', 'light'), ('favsheet', '#/settings', 'light'), ('pcard', '#/game/1', 'light'), ('wp', '#/game/1', 'light', 'box')]
 
 failures = []
 with sync_playwright() as p:
@@ -186,6 +198,10 @@ with sync_playwright() as p:
         if name == 'br': pg.click('[data-sv=bracket]'); pg.wait_for_timeout(3000)
         if name == 'post': pg.click('[data-sv=post]'); pg.wait_for_timeout(600)
         if name == 'favsheet': pg.click('#favOpen'); pg.wait_for_timeout(500)
+        if name == 'wp':
+            pg.evaluate("document.querySelector('#wp').scrollIntoView(); window.scrollBy(0, -170)"); pg.wait_for_timeout(300)
+            pg.hover('.wp-c', position={'x': 200, 'y': 60}); pg.wait_for_timeout(200)
+            print('wp:', pg.evaluate("[(document.querySelector('.wp-now')||{}).textContent, (document.querySelector('.wp-tip')||{}).innerText]"))
         if name == 'pcard': pg.click('#plays .pl-n'); pg.wait_for_timeout(700); print('pcard:', pg.evaluate("(document.querySelector('#pcdBody')||{}).innerText").replace('\n', ' | ')[:160])
         if name in ('stand', 'gametop'):
             n0 = len(reqs); pg.click('#title'); pg.wait_for_timeout(400); print(name, 'refresh requests:', len(reqs) - n0, 'toast:', pg.evaluate("(document.getElementById('toast')||{}).textContent"))

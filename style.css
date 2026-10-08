@@ -805,3 +805,27 @@ i.sk { font-style: normal; height: 12px; }
 .game.skel .gf .sk { height: 10px; margin-top: 4px; }
 
 /* ---------- 下拉更新：標誌旋轉 ---------- */
+
+/* 勝率走勢（數據頁上方） */
+.wp .inn { display: flex; align-items: baseline; }
+.wp-now { margin-left: auto; font-size: 15px; font-weight: 800; color: var(--navy); font-variant-numeric: tabular-nums; }
+.wp-c { position: relative; background: var(--card); border-radius: 14px; padding: 8px 0 2px; box-shadow: var(--shadow); touch-action: pan-y; outline-offset: 2px; }
+.wp-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.wp-mid { stroke: var(--line); stroke-width: 1; }
+.wp-tk { stroke: #eceef1; stroke-width: 1; }
+.wp-ax { fill: var(--sub); font-size: 10px; font-weight: 700; }
+.wp-area { fill: var(--navy); opacity: .1; }
+.wp-line { fill: none; stroke: var(--navy); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.wp-end, .wp-dot { fill: var(--navy); stroke: var(--card); stroke-width: 2; }
+.wp-x { stroke: var(--sub); stroke-width: 1; }
+/* 說明框放在圖表下方：放上方會被固定在頂端的目前打席條蓋住 */
+.wp-tip { position: absolute; top: calc(100% + 6px); max-width: 100%; background: rgba(28, 36, 48, .94); color: #fff; border-radius: 10px; padding: 6px 10px; font-size: 12px; line-height: 1.35; pointer-events: none; z-index: 2; }
+.wp-tip[hidden] { display: none; }
+.wp-tip b { display: block; font-size: 15px; font-variant-numeric: tabular-nums; }
+.wp-tip span { opacity: .85; }
+.wp-keys { list-style: none; margin: 8px 0 0; padding: 0; background: var(--card); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+.wp-keys li { display: flex; align-items: center; gap: 8px; padding: 9px 12px; font-size: 13px; border-top: 1px dashed var(--line); }
+.wp-keys li.wp-kh { border-top: 0; font-size: 12px; color: var(--sub); font-weight: 700; padding-bottom: 2px; }
+.wp-ki { flex: none; width: 44px; color: var(--sub); font-size: 12px; }
+.wp-kw { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wp-keys b { flex: none; color: var(--navy); font-variant-numeric: tabular-nums; }

@@ -6,6 +6,7 @@ import { headHTML, textHTML, boxHTML } from '../js/game.js';
 import { standingsHTML } from '../js/standings.js';
 import { S, setG } from '../js/state.js';
 import { pLink, pickStat, playerCardHTML } from '../js/player.js';
+import { wpPoints, wpHTML } from '../js/winprob.js';
 
 const T = { twDate, shiftDate, evZh, seriesZh, gameState, cardHTML, headHTML, textHTML, boxHTML, standingsHTML, S, setG };
 
@@ -142,5 +143,24 @@ const fp = { ...feed, liveData: { ...feed.liveData, plays: { allPlays: [{ about:
   matchup: { batter: { id: 11, fullName: 'Bat' }, pitcher: { id: 22, fullName: 'Pit' } }, count: { outs: 0 } }] } } };
 const th = T.textHTML(fp).html;
 assert.ok(th.includes('data-player="11" data-role="b" data-vs="22"') && th.includes('data-player="22" data-role="p" data-vs="11"'));
+
+// 勝率走勢
+const wpRaw = [
+  { homeTeamWinProbability: 52.2, homeTeamWinProbabilityAdded: 2.2, about: { inning: 1, isTopInning: true, isComplete: true }, result: { event: 'Groundout' }, matchup: { batter: { fullName: 'A' } } },
+  { homeTeamWinProbability: 26.2, homeTeamWinProbabilityAdded: -26, about: { inning: 1, isTopInning: true, isComplete: true }, result: { event: 'Home Run' }, matchup: { batter: { fullName: 'B <i>' } } },
+  { homeTeamWinProbability: 40, homeTeamWinProbabilityAdded: 13.8, about: { inning: 1, isTopInning: false, isComplete: true }, result: { event: 'Double' }, matchup: { batter: { fullName: 'C' } } },
+  { homeTeamWinProbability: 99, about: { inning: 2, isTopInning: true, isComplete: false }, result: {}, matchup: {} }, // 進行中的打席不畫
+];
+const wpts = wpPoints(wpRaw);
+assert.strictEqual(wpts.length, 4, '開賽點＋3 個完成的打席');
+assert.strictEqual(Math.round(wpts[0].h), 50, '開賽勝率由第一個打席回推');
+assert.ok(wpts[2].top && !wpts[3].top && wpts[2].ev === '全壘打');
+assert.deepStrictEqual(wpPoints([]), []);
+assert.strictEqual(wpHTML(wpts.slice(0, 1), {}, {}, 340), '', '少於兩點不畫');
+const wh = wpHTML(wpts, { id: 114 }, { id: 145 }, 340);
+assert.ok(wh.includes('class="wp-line"') && wh.includes('>CWS<') && wh.includes('>CLE<') && wh.includes('50%'));
+assert.ok(wh.includes('CWS 60%') || wh.includes('CLE 60%'), '目前勝率以領先方表示');
+assert.ok(wh.includes('B &lt;i&gt; 全壘打') && wh.indexOf('B &lt;i&gt;') < wh.indexOf('>C 二壘安打'), '影響最大的打席依幅度排序且跳脫');
+assert.ok(wh.includes('CLE +26%'), '客隊得利的打席歸給客隊');
 
 console.log('all tests passed');

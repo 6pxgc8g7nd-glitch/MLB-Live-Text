@@ -143,6 +143,12 @@ function boot() {
     if ((e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('[data-player]')) { e.preventDefault(); e.target.click(); }
   });
 
+  let rsT = 0; // 勝率圖依容器寬度繪製，視窗大小改變時重畫
+  addEventListener('resize', () => {
+    clearTimeout(rsT);
+    rsT = setTimeout(() => { if (G && G.wp && S.gtab === 'box') { G.wp.sig = ''; renderBody(); } }, 150);
+  });
+
   let lastY = 0;
   addEventListener('scroll', () => {
     const chip = $('#newChip');
