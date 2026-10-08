@@ -898,7 +898,7 @@
     const gNo = Math.min(n, done ? played : played + 1);
     const desc = g0.seriesDescription || '';
     const lgc = /^AL /i.test(desc) ? 'AL' : /^NL /i.test(desc) ? 'NL' : '';
-    const abbr = { W: lgc + 'WC', D: lgc + 'DS', L: lgc + 'CS', F: 'WS' }[g0.gameType] || '';
+    const abbr = { F: lgc + 'WC', D: lgc + 'DS', L: lgc + 'CS', W: 'WS' }[g0.gameType] || '';
     const stText = live ? '進行中' : status;
     return { k, html: `<div class="ptk ${k}"><div class="pth"><span>${name}</span><span>${abbr}</span></div>
       <div class="ptm-row">${side(A)}<div class="pcn"><b class="psb">${wins[A.id]} : ${wins[H.id]}</b><i class="par"></i></div>${side(H)}</div>
@@ -910,7 +910,7 @@
     list.forEach((s) => { const g = (s.games || [])[0]; if (g) (byType[g.gameType] = byType[g.gameType] || []).push(s); });
     const order = { F: 0, L: 1, D: 2, W: 3 };
     const groups = { live: [], todo: [], fin: [] };
-    ['W', 'D', 'L', 'F'].forEach((t) => {
+    ['F', 'D', 'L', 'W'].forEach((t) => {
       (byType[t] || []).slice().sort((x, y) => (x.series.sortNumber || 0) - (y.series.sortNumber || 0)).forEach((s) => {
         const r = seriesHTML(s);
         if (r) groups[r.k].push(r.html);
