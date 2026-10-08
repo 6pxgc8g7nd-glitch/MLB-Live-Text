@@ -276,3 +276,9 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .cal-g button.sel { background: var(--navy); color: #fff; }
 .cal-g button:active { opacity: .6; }
 .cal-t { display: block; width: 100%; margin-top: 8px; height: 40px; border: 0; border-radius: 10px; background: var(--navy); color: #fff; font-size: 15px; font-weight: 800; }
+
+.cal-g button { position: relative; }
+.cal-g button.hv::after { content: ''; position: absolute; bottom: 3px; left: 50%; margin-left: -2px; width: 4px; height: 4px; border-radius: 50%; background: var(--navy); }
+.cal-g button.sel.hv::after { background: #fff; }
+.cal-lg { display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 2px; font-size: 11px; color: var(--sub); }
+.cal-lg i { width: 5px; height: 5px; border-radius: 50%; background: var(--navy); }

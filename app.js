@@ -744,6 +744,7 @@
     $('#segL').setAttribute('aria-label', '前一天'); $('#segR').setAttribute('aria-label', '後一天');
   }
   /* 長按今天：跳出日曆，點日期直接切換 */
+  const calDays = new Map();
   function openCal(sel, onPick) {
     const old = document.getElementById('cal'); if (old) old.remove();
     const today = twDate();
@@ -752,7 +753,26 @@
     wrap.id = 'cal'; wrap.className = 'cal';
     document.body.appendChild(wrap);
     const close = () => wrap.remove();
+    const key = () => `${y}-${String(m).padStart(2, '0')}`;
+    const loadMonth = async () => {
+      const k = key();
+      if (calDays.has(k)) return;
+      calDays.set(k, null);
+      try {
+        const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+        const d = await api(`/api/v1/schedule?sportId=1&startDate=${shiftDate(k + '-01', -1)}&endDate=${shiftDate(k + '-' + String(last).padStart(2, '0'), 1)}`, { ttl: 6e5 });
+        const set = new Set();
+        for (const day of d.dates || []) for (const g of day.games || []) {
+          const s = g.status && g.status.detailedState;
+          if (s === 'Postponed' || s === 'Cancelled') continue;
+          set.add(twDate(new Date(g.gameDate)));
+        }
+        calDays.set(k, set);
+        if (document.body.contains(wrap) && key() === k) draw();
+      } catch (e) { calDays.delete(k); }
+    };
     const draw = () => {
+      const has = calDays.get(key()) || new Set();
       const first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
       const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
       const pad = (n) => String(n).padStart(2, '0');
@@ -760,22 +780,24 @@
       for (let i = 0; i < first; i++) cells += '<i></i>';
       for (let d = 1; d <= days; d++) {
         const iso = `${y}-${pad(m)}-${pad(d)}`;
-        cells += `<button data-d="${iso}" class="${iso === sel ? 'sel' : ''}${iso === today ? ' now' : ''}">${d}</button>`;
+        cells += `<button data-d="${iso}" class="${iso === sel ? 'sel' : ''}${iso === today ? ' now' : ''}${has.has(iso) ? ' hv' : ''}">${d}</button>`;
       }
       wrap.innerHTML = `<div class="cal-bg"></div><div class="cal-box" role="dialog" aria-label="選擇日期">
         <div class="cal-h"><button class="cal-nav" data-m="-1" aria-label="上個月">‹</button><b>${y} 年 ${m} 月</b><button class="cal-nav" data-m="1" aria-label="下個月">›</button></div>
         <div class="cal-w"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
         <div class="cal-g">${cells}</div>
+        <div class="cal-lg"><i></i>有比賽</div>
         <button class="cal-t" data-d="${today}">回到今天</button></div>`;
     };
     wrap.addEventListener('click', (e) => {
       if (e.target.classList.contains('cal-bg')) return close();
       const n = e.target.closest('[data-m]');
-      if (n) { m += +n.dataset.m; if (m < 1) { m = 12; y--; } if (m > 12) { m = 1; y++; } return draw(); }
+      if (n) { m += +n.dataset.m; if (m < 1) { m = 12; y--; } if (m > 12) { m = 1; y++; } draw(); return loadMonth(); }
       const d = e.target.closest('[data-d]');
       if (d) { close(); onPick(d.dataset.d); }
     });
     draw();
+    loadMonth();
   }
   /* 左右兩張：前後一天；中間：單擊回到今天、長按（約 0.5 秒）開啟日期選擇器 */
   function bindSegs() {
