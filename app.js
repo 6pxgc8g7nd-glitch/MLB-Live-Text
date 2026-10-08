@@ -889,26 +889,17 @@
     else if (live) status = '● 進行中';
     else if (!anyPlayed) status = '尚未開打';
     else status = lead ? `${esc(teamName(lead))} 領先 ${hi}-${lo}` : `戰成 ${hi}-${lo}`;
-    const ring = (t) => {
-      const w = wins[t.id], lost = done && lead && lead.id !== t.id;
-      return `<div class="pt${lost ? ' l' : ''}"><div class="ring" style="--p:${Math.min(100, Math.round((w / need) * 100))}%"><div>${logo(t, 'tcl')}</div></div><span>${esc(teamName(t))}</span></div>`;
-    };
     const k = live ? 'live' : done ? 'fin' : 'todo';
     const name = esc(seriesZh(g0) || g0.seriesDescription || '');
-    if (live) {
-      return { k, html: `<div class="pser live sm"><div class="sh"><span>${name}</span><small>${n} 戰 ${need} 勝</small></div>
-      <div class="pm">${ring(A)}<b class="psc">${wins[A.id]} : ${wins[H.id]}</b>${ring(H)}</div>
-      <div class="ss">${status}</div></div>` };
-    }
-    const lost = (t) => done && lead && lead.id !== t.id;
     const real = (t) => !!(t && TEAMS[t.id]);
-    const side = (t, r) => {
-      const nm = `<span class="pnm${lost(t) ? ' l' : ''}">${real(t) ? esc(teamName(t)) : '待定'}</span>`;
-      const lg = real(t) ? logo(t, 'tcl') : '';
-      return `<div class="pside${r ? ' r' : ''}">${r ? nm + lg : lg + nm}</div>`;
-    };
-    return { k, html: `<div class="prw ${k}"><div class="prt"><span>${name}</span><span>${status}</span></div>
-      <div class="prm">${side(A)}<b class="psb">${wins[A.id]} : ${wins[H.id]}</b>${side(H, true)}</div></div>` };
+    const lost = (t) => done && lead && lead.id !== t.id;
+    const side = (t) => `<div class="ptm${lost(t) ? ' l' : ''}">${real(t) ? logo(t, 'tcl') : '<span class="pq">?</span>'}<b>${real(t) ? esc(teamName(t)) : '待定'}</b></div>`;
+    const played = games.filter((g) => gameState(g.status, g.linescore, g.gameDate).k === 'final').length;
+    const gNo = Math.min(n, done ? played : played + 1);
+    const stText = live ? '● 進行中' : status;
+    return { k, html: `<div class="ptk ${k}"><div class="pth"><span>ADMIT ONE</span><span>${name}</span><span>${stText}</span></div>
+      <div class="ptm-row">${side(A)}<div class="pcn"><b class="psb">${wins[A.id]} : ${wins[H.id]}</b><small>G${gNo} / ${n}</small></div>${side(H)}</div>
+      <i class="pbc"></i></div>` };
   }
   function postHTML(d) {
     const list = (d && d.series) || [];
