@@ -715,7 +715,11 @@ a.bk2c:active { filter: brightness(.97); }
 /* 轉播頁工具列收合：純文字按鈕（「收合」／「展開」），沒有線條與底色 */
 .tkw { position: relative; margin-bottom: 30px; }
 .tkw .fbt { position: absolute; left: 50%; bottom: -26px; transform: translateX(-50%); height: 24px; padding: 0 14px; border: 0; background: none; color: var(--sub); font-size: 13px; font-weight: 800; letter-spacing: 1px; white-space: nowrap; }
-.tkw .fbt svg { width: 18px; height: 11px; display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.tkw .fbt { display: flex; align-items: center; gap: 5px; }
+.tkw .fbt .fl { font-size: 13px; line-height: 1; }
+.tkw .fbt .lm, .tkw.fold .fbt .lc { display: none; }
+.tkw.fold .fbt .lm { display: inline; }
+.tkw .fbt svg { width: 14px; height: 9px; display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
 .tkw.fold .fbt svg { transform: rotate(180deg); }
 .tkw.fold { height: 26px; margin: 4px 0 8px; filter: none; }
 .tkw.fold .tk { display: none; }
