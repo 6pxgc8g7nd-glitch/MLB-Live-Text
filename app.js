@@ -585,8 +585,10 @@
         const bt = teamAbbr(top ? aT : hT);
         const he = halfEnd.get(key);
         const runs = he ? (top ? he.a - he.from.a : he.h - he.from.h) : null;
+        const na = top ? `<b class="of">${he ? he.a : ''}</b>` : `${he ? he.a : ''}`;
+        const nh = top ? `${he ? he.h : ''}` : `<b class="of">${he ? he.h : ''}</b>`;
         const sc = he
-          ? `<em class="hs">${zh0 ? '本局' : 'Inn'} ${runs} ${zh0 ? '分' : 'R'}　${esc(teamAbbr(aT))} ${he.a} – ${he.h} ${esc(teamAbbr(hT))}</em>` : '';
+          ? `${runs > 0 ? `<em class="rb">+${runs}</em>` : ''}<em class="hs${runs > 0 ? '' : ' al'}">${esc(teamAbbr(aT))} ${na} – ${nh} ${esc(teamAbbr(hT))}</em>` : '';
         out += S.lang === 'zh'
           ? `<h3 class="inn stk">${ab.inning}局${top ? '上' : '下'}<small>${esc(bt)} 進攻</small>${sc}</h3>`
           : `<h3 class="inn stk">${top ? 'Top' : 'Bot'} ${ab.inning}<small>${esc(bt)} batting</small>${sc}</h3>`;

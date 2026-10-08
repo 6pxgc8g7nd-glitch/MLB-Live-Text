@@ -341,7 +341,10 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .pl2 li { display: flex; align-items: center; gap: 6px; } .pl2 span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .pl2 em { font-style: normal; color: var(--sub); white-space: nowrap; }
 /* S2 半局標題固定 */
 .inn.stk { position: sticky; top: calc(var(--th) + env(safe-area-inset-top) + var(--bar)); z-index: 6; background: var(--bg); margin-top: 10px; padding-top: 8px; }
-.inn .hs { margin-left: auto; font-style: normal; font-size: 12px; font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; }
+.inn .rb { margin-left: auto; font-style: normal; font-size: 12px; font-weight: 800; color: #fff; background: var(--emph); border-radius: 6px; padding: 1px 7px; }
+.inn .hs.al { margin-left: auto; }
+.inn .hs b.of { color: var(--emph); font-weight: 800; }
+.inn .hs { margin-left: 0; font-style: normal; font-size: 12px; font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; }
 /* S3 目前打席固定條 */
 .livebar { position: sticky; top: calc(var(--th) + env(safe-area-inset-top)); z-index: 18; margin: 0 -12px 8px; height: 44px; padding: 0 14px; background: var(--navy); color: #fff; display: flex; align-items: center; gap: 12px; border-radius: 0 0 12px 12px; box-shadow: 0 2px 5px rgba(0, 0, 0, .25); }
 .livebar[hidden] { display: none; }
