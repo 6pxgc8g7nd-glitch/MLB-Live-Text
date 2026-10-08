@@ -790,6 +790,3 @@ i.sk { font-style: normal; height: 12px; }
 #ballIc.spin { animation: ballspin .8s linear infinite; }
 @keyframes ballspin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { #ballIc.spin { animation: none; opacity: .6; } }
-
-/* ---------- 狀態列區域底色：iOS 在狀態列上緣會做漸層模糊，淡出時露出的底層改為深藍，避免出現一段淡色 ---------- */
-body::before { content: ''; position: fixed; left: 0; right: 0; top: 0; height: calc(env(safe-area-inset-top, 0px) + 24px); background: var(--navy); z-index: -1; pointer-events: none; }
