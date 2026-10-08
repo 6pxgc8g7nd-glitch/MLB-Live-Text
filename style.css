@@ -692,4 +692,4 @@ a.bk2c:active { filter: brightness(.97); }
 .livebar { padding: 0 20px; }
 .livebar::before, .livebar::after { content: ''; position: absolute; top: 50%; width: 14px; height: 14px; margin-top: -7px; border-radius: 50%; background: var(--bg); z-index: 1; }
 .livebar::before { left: -7px; } .livebar::after { right: -7px; }
-.livebar .lr { height: 34px; margin: 0 10px; padding: 0 12px; display: flex; flex-direction: column; justify-content: center; border-left: 2px dashed rgba(255, 255, 255, .55); border-right: 2px dashed rgba(255, 255, 255, .55); }
+.livebar .lr { height: 34px; margin: 0 10px; padding: 0 12px; display: flex; flex-direction: column; justify-content: center; }
