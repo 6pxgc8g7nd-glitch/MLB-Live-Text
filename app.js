@@ -889,25 +889,15 @@
     else if (live) status = '● 進行中';
     else if (!anyPlayed) status = '尚未開打';
     else status = lead ? `${esc(teamName(lead))} 領先 ${hi}-${lo}` : `戰成 ${hi}-${lo}`;
-    const row = (t) => `<div class="sr${done && lead && lead.id === t.id ? ' w' : ''}${done && lead && lead.id !== t.id ? ' l' : ''}">${logo(t, 'tcl')}<span class="sn">${esc(teamName(t))}</span><b>${wins[t.id]}</b></div>`;
-    const chip = (g) => {
-      const k = gameState(g.status, g.linescore, g.gameDate).k;
-      const a = g.teams.away, h = g.teams.home;
-      const num = g.seriesGameNumber || '';
-      let txt;
-      if (k === 'final') txt = `${esc(teamAbbr(a.team))} ${a.score}–${h.score} ${esc(teamAbbr(h.team))}`;
-      else if (k === 'live') txt = '● 進行中';
-      else {
-        const dt = new Date(g.gameDate);
-        txt = new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', month: 'numeric', day: 'numeric' }).format(dt);
-      }
-      return `<a class="pg ${k}" href="#/game/${g.gamePk}"><em>G${num}</em>${txt}</a>`;
+    const ring = (t) => {
+      const w = wins[t.id], lost = done && lead && lead.id !== t.id;
+      return `<div class="pt${lost ? ' l' : ''}"><div class="ring" style="--p:${Math.min(100, Math.round((w / need) * 100))}%"><div>${logo(t, 'tcl')}</div></div><span>${esc(teamName(t))}</span></div>`;
     };
-    return `<div class="pser${live ? ' live' : ''}">
+    const cls = live ? ' live' : done ? ' fin' : '';
+    return `<div class="pser${cls}">
       <div class="sh"><span>${esc(seriesZh(g0) || g0.seriesDescription || '')}</span><small>${n} 戰 ${need} 勝</small></div>
-      ${row(A)}${row(H)}
-      <div class="ss">${status}</div>
-      <div class="pgs">${games.map(chip).join('')}</div></div>`;
+      <div class="pm">${ring(A)}<b class="psc">${wins[A.id]} : ${wins[H.id]}</b>${ring(H)}</div>
+      <div class="ss">${status}</div></div>`;
   }
   function postHTML(d) {
     const list = (d && d.series) || [];
