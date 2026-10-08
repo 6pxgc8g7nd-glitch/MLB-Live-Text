@@ -708,7 +708,7 @@
       if (box && html !== G.sig) { box.innerHTML = html; G.sig = html; }
     }
     const lb = $('#langBtn');
-    if (lb) lb.style.visibility = S.gtab === 'text' ? 'visible' : 'hidden';
+    if (lb) { lb.style.visibility = 'visible'; lb.classList.toggle('off', S.gtab !== 'text'); lb.disabled = S.gtab !== 'text'; }
   }
 
   function gameHeader(d) {
