@@ -1,7 +1,7 @@
 /* Service Worker：只快取「網頁外殼」，MLB 資料一律走網路，不快取。
  * 外殼採「網路優先、離線才用快取」，所以更新網頁後重新開啟就是新版，不會卡在舊版。
  * 若要強制清掉舊快取，修改 VERSION 即可。 */
-const VERSION = 'v124';
+const VERSION = 'v125';
 const CACHE = 'mlb-shell-' + VERSION;
 const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'mock.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',

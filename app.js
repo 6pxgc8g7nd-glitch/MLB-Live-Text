@@ -565,7 +565,9 @@
     const outs = p.count && p.count.outs != null && done ? `${p.count.outs} 出局` : '';
     const meta = zh && done ? [pit ? `投手 ${esc(pit)}` : '', outs].filter(Boolean).join(' · ') : '';
     const cat = playCat(p, done);
-    const cls = ['play', cat.cls, G.open.has(ab.atBatIndex) ? 'open' : ''].filter(Boolean).join(' ');
+    // 進行中的打席自動展開（除非手動收起）；已結束的一律收起（除非手動展開）
+    const isOpen = done ? G.open.has(ab.atBatIndex) : !(G.shut && G.shut.has(ab.atBatIndex));
+    const cls = ['play', cat.cls, isOpen ? 'open' : ''].filter(Boolean).join(' ');
     const en = zh && done && r.description ? `<div class="en">${esc(r.description)}</div>` : '';
     const top = cat.label || score
       ? `<div class="p-top">${cat.label ? `<span class="tag">${cat.label}</span>` : '<span></span>'}${score}</div>` : '';
@@ -855,7 +857,7 @@
     route$ = 'game';
     setHeader('比賽', true, null);
     const my = token;
-    G = { pk, data: null, filter: 'all', side: 'away', limit: 60, sig: '', headSig: '', bodyTab: '', lastTotal: 0, open: new Set() };
+    G = { pk, data: null, filter: 'all', side: 'away', limit: 60, sig: '', headSig: '', bodyTab: '', lastTotal: 0, open: new Set(), shut: new Set() };
     view.innerHTML = `
       <div id="liveBar" class="livebar" hidden></div>
       <div id="gHead" class="ghead"><div class="loading">載入中…</div></div>
@@ -1483,8 +1485,10 @@
       const play = e.target.closest('.play');
       if (play && G && G.open) {
         const k = Number(play.dataset.k);
-        if (G.open.has(k)) G.open.delete(k); else G.open.add(k);
-        play.classList.toggle('open', G.open.has(k));
+        const nowOpen = !play.classList.contains('open');
+        if (play.classList.contains('live')) { if (nowOpen) G.shut.delete(k); else G.shut.add(k); } // 進行中：記錄「手動收起」
+        else if (nowOpen) G.open.add(k); else G.open.delete(k); // 已結束：記錄「手動展開」
+        play.classList.toggle('open', nowOpen);
         G.sig = '';
         return;
       }
