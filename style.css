@@ -657,3 +657,14 @@ a.bk2c:active { filter: brightness(.97); }
 .hrx-tk p b { color: #A6051A; font-size: 18px; margin-left: 10px; }
 @keyframes hrxpop { 0% { opacity: 0; transform: translateY(-30px) scale(.6); } 12% { opacity: 1; transform: translateY(0) scale(1.08); } 20% { transform: scale(1); } 85% { opacity: 1; } 100% { opacity: 0; transform: translateY(10px) scale(.96); } }
 @media (prefers-reduced-motion: reduce) { .hrx-tk { animation-duration: .01s; } }
+
+/* 局數表 D1：每局一格票券小方格（左右固定、中間可滑動） */
+.ls-s .line td { padding: 8px 1.5px; min-width: 33px; background: none !important; }
+.ls-s .line td:first-child { padding-left: 4px; } .ls-s .line td:last-child { padding-right: 4px; }
+.ls-s .line th { min-width: 33px; } .ls-s .line th.cur { color: var(--navy); font-weight: 900; }
+.ls-s .line td i { display: flex; align-items: center; justify-content: center; height: 30px; font-style: normal; background: #eef1f4; border-radius: 3px;
+  -webkit-mask: radial-gradient(circle 3.5px at 0 50%, #0000 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 3.5px at 100% 50%, #0000 98%, #000) right / 51% 100% no-repeat;
+  mask: radial-gradient(circle 3.5px at 0 50%, #0000 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 3.5px at 100% 50%, #0000 98%, #000) right / 51% 100% no-repeat; }
+.ls-s .line td.z i { color: #9aa4af; }
+.ls-s .line td.sc i { background: var(--emph); color: #fff; font-weight: 800; }
+.ls-s .line td.cur i { box-shadow: inset 0 -3px 0 var(--navy); }

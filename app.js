@@ -407,7 +407,7 @@
     const th = Array.from({ length: n }, (_, i) => `<th class="${i + 1 === curI ? 'cur' : ''}">${i + 1}</th>`).join('');
     const rowCells = (side) => Array.from({ length: n }, (_, i) => {
       const v = cell(side, i + 1);
-      return `<td class="${i + 1 === curI ? 'cur' : ''}${v === 0 ? ' z' : ''}${typeof v === 'number' && v > 0 ? ' sc' : ''}">${v}</td>`;
+      return `<td class="${i + 1 === curI ? 'cur' : ''}${v === 0 ? ' z' : ''}${typeof v === 'number' && v > 0 ? ' sc' : ''}"><i>${v}</i></td>`;
     }).join('');
     const rhe = (side) => `<div class="rw"><b>${r(side)}</b><span>${dash(tot[side] && tot[side].hits)}</span><span>${dash(tot[side] && tot[side].errors)}</span></div>`;
     const lsHTML = `<div class="ls3w"><div class="ls3" data-cur="${curI}">
