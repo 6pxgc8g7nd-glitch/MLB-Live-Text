@@ -457,3 +457,11 @@ body.nonav .fab { bottom: calc(24px + env(safe-area-inset-bottom)); }
 .sw i { position: absolute; left: 3px; top: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: left .15s; }
 .sw.on { background: var(--navy); } .sw.on i { left: 21px; }
 .sact { border: 1px solid var(--navy); color: var(--navy); background: none; font-weight: 700; border-radius: 9px; padding: 6px 14px; }
+
+/* 非今天：中間日期改琥珀色提醒 */
+.dseg.on:not(.today) {
+  color: #fff;
+  background: radial-gradient(circle 5px at 0 50%, #0000 98%, #b07d00) left / 50% 100% no-repeat,
+              radial-gradient(circle 5px at 100% 50%, #0000 98%, #b07d00) right / 50% 100% no-repeat;
+}
+.dseg.on:not(.today) small { color: rgba(255, 255, 255, .85); }
