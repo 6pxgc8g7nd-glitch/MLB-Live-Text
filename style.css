@@ -517,7 +517,7 @@ html, body { touch-action: manipulation; }
 
 /* 我的最愛：卡片標示、設定選擇、金色角標 */
 .g-tm { position: relative; }
-.fvm { position: absolute; top: -4px; right: 8px; font-style: normal; font-size: 20px; line-height: 1; color: #e0a800; pointer-events: none; }
+.fvm { position: absolute; top: 8px; right: 14px; z-index: 2; font-style: normal; font-size: 20px; line-height: 1; color: #e0a800; pointer-events: none; }
 
 .srbtn { width: 100%; border: 0; border-bottom: 1px dashed var(--line); background: none; text-align: left; font: inherit; color: inherit; }
 .fsum { display: flex; align-items: center; gap: 2px; margin-left: auto; font-size: 12px; color: var(--sub); }
@@ -542,7 +542,7 @@ html, body { touch-action: manipulation; }
 .ft.on::after { content: '★'; position: absolute; right: 3px; top: 0; color: #e0a800; font-size: 13px; }
 .fs-done { width: 100%; height: 46px; margin-top: 12px; border: 0; border-radius: 12px; background: var(--navy); color: #fff; font-weight: 800; font-size: 16px; }
 .g-tm { position: relative; }
-.fvm { position: absolute; top: -4px; right: 8px; font-style: normal; font-size: 20px; line-height: 1; color: #e0a800; pointer-events: none; }
+.fvm { position: absolute; top: 8px; right: 14px; z-index: 2; font-style: normal; font-size: 20px; line-height: 1; color: #e0a800; pointer-events: none; }
 .tc.rib::before { content: ''; position: absolute; left: 0; top: 0; width: 0; height: 0; border-style: solid; border-width: 26px 26px 0 0; border-color: #e0a800 transparent transparent transparent; z-index: 1; }
 .tc.rib::after { content: "★"; position: absolute; left: 3px; top: 1px; color: #fff; font-size: 10px; z-index: 2; }
 
