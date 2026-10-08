@@ -390,3 +390,7 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 /* 隊伍欄：恢復深藍底，logo 放在白色圓角方框內 */
 .ls-l { background: var(--navy); border-right: 2px dashed rgba(255, 255, 255, .65); }
 .ls-l img.lw, .ls-l .tl { background: #fff; border-radius: 8px; padding: 4px; width: 40px; height: 40px; }
+
+/* 返回鍵：票券缺口 */
+#back { border: 0; border-radius: 10px; min-width: 40px; padding: 0 12px 0 8px; background: radial-gradient(circle 6px at 100% 50%, #0000 98%, rgba(255, 255, 255, .2)); }
+#back:active { background: radial-gradient(circle 6px at 100% 50%, #0000 98%, rgba(255, 255, 255, .34)); }
