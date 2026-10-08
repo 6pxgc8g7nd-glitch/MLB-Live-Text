@@ -341,6 +341,8 @@
     }
     const groups = { live: [], upcoming: [], final: [], other: [] };
     games.forEach((g) => groups[gameState(g.status, g.linescore, g.gameDate).k].push(g));
+    const isFav = (g) => [g.teams.away.team, g.teams.home.team].some((t) => t && S.favs.includes(t.id));
+    Object.values(groups).forEach((l) => l.sort((x, y) => isFav(y) - isFav(x)));
     const titles = { live: '進行中', upcoming: '尚未開打', final: '已結束', other: '其他' };
     const html = ['live', 'upcoming', 'final', 'other']
       .filter((k) => groups[k].length)
