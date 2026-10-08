@@ -1168,7 +1168,7 @@
           <div class="sch">${[['division', '分區'], ['league', '聯盟'], ['post', '季後賽'], ['bracket', '對戰樹']].map(([k, n]) => `<button data-sv2="${k}" class="${S.standDef === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
         <button class="srow srbtn" id="favOpen"><div><b>我的最愛球隊</b><small>選擇後，比分、排名與季後賽頁會標示這些球隊</small></div><span class="fsum" id="favSum">${favSumHTML()}</span><span class="chev">›</span></button>
         <div class="srow"><div><b>測試模式</b><small>用模擬比賽測試轉播功能（比分頁會多出三場「測試模式」比賽，不影響真實資料）</small></div><button class="sw${S.testMode ? ' on' : ''}" data-set="testMode" role="switch" aria-checked="${S.testMode}"><i></i></button></div>
-        ${S.testMode ? '<div class="srow"><div><b>重新開始模擬</b><small>重置模擬比賽；進入「測試模式」進行中的比賽，約 40 秒後會出現第一支全壘打（可看煙火）</small></div><button class="sact" id="testRestart">重新開始</button></div>' : ''}
+        ${S.testMode ? '<div class="srow"><div><b>重新開始模擬</b><small>重置模擬比賽；進入「測試模式」進行中的比賽，約 15 秒後會出現第一支全壘打（可看煙火）</small></div><button class="sact" id="testRestart">重新開始</button></div>' : ''}
         <div class="srow"><div><b>更新應用程式</b><small id="verTxt">清除快取並重新載入最新版本</small></div><button class="sact" id="reloadApp">更新</button></div>
       </div>`;
     fetch('sw.js', { cache: 'no-store' }).then((r) => r.text()).then((t) => {
@@ -1404,14 +1404,14 @@
         S[k] = !S[k];
         store.set(k, S[k]);
         if (k === 'testMode') {
-          if (S[k]) { S.testStart = Date.now() - 88000; store.set('testStart', S.testStart); }
+          if (S[k]) { S.testStart = Date.now() - 113000; store.set('testStart', S.testStart); }
           cache.clear();
           showSettings();
         }
         return;
       }
       if (e.target.closest('#testRestart')) {
-        S.testStart = Date.now() - 88000; store.set('testStart', S.testStart); // 約 40 秒後會有第一支全壘打
+        S.testStart = Date.now() - 113000; store.set('testStart', S.testStart); // 約 15 秒後會有第一支全壘打
         cache.clear();
         e.target.closest('#testRestart').textContent = '已重置';
         return;
