@@ -596,7 +596,19 @@ a.bk-card:active { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .2)) brightness(.
 .ptk .pinf > div { min-width: 0; }
 .ptk .pinf small { display: block; font-size: 10px; color: #9aa; }
 .ptk .pinf b { font-size: 12.5px; color: var(--c); }
-.game.fav { --card: #fff6e0; }
+/* 我的最愛卡片：冰藍斜光（淡藍底＋光澤帶＋藍色細斜紋）；缺口以 mask 與票券一致 */
+.game.fav { --card: #e9f1fa; }
+.game.fav::before {
+  content: ''; position: absolute; inset: 0; border-radius: 14px; z-index: -1; pointer-events: none;
+  background: linear-gradient(115deg, #0000 30%, rgba(255, 255, 255, .7) 47%, #0000 62%),
+              repeating-linear-gradient(115deg, rgba(0, 75, 147, .07) 0 1px, #0000 1px 8px),
+              linear-gradient(#e3eefa, #f2f7fd);
+  -webkit-mask: radial-gradient(circle 9px at 0 calc(100% - 44px), #0000 98%, #000) left / 51% 100% no-repeat,
+                radial-gradient(circle 9px at 100% calc(100% - 44px), #0000 98%, #000) right / 51% 100% no-repeat;
+          mask: radial-gradient(circle 9px at 0 calc(100% - 44px), #0000 98%, #000) left / 51% 100% no-repeat,
+                radial-gradient(circle 9px at 100% calc(100% - 44px), #0000 98%, #000) right / 51% 100% no-repeat;
+}
+.game.fav .tear { border-top-color: #9db7d3; }
 .tc.rib { background: linear-gradient(90deg, #fff6dc, #fffaf0); }
 .ptk.fav { background: linear-gradient(#fffaf0, #fff6e0); }
 .bk2 { --ln: #8d9cac; margin-top: 4px; }
