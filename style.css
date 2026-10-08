@@ -178,7 +178,9 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .seg { display: flex; gap: 4px; margin: 12px 0 8px; background: var(--card); border: 1px solid var(--line); padding: 4px; border-radius: 12px; box-shadow: var(--shadow); }
 .tkw { margin: 12px 0 8px; filter: drop-shadow(0 2px 5px rgba(0,0,0,.12)); }
 .tk { background: var(--card); border-radius: 12px; padding: 6px 10px 2px; }
-.tk .seg { margin: 0; padding: 0 0 6px; border: 0; box-shadow: none; background: none; border-radius: 0; }
+.tk .seg { margin: 0; padding: 0; border: 0; box-shadow: none; background: none; border-radius: 0; }
+.tk .seg button { height: 40px; border-radius: 0; }
+.tk .seg button.on { background: none; color: var(--navy); border-bottom: 3px solid var(--navy); }
 .tk .tr { border-top: 1.5px dashed #c4c4c4; margin: 0 -10px; }
 .tk .chips { margin: 8px 0; }
 .seg button { flex: 1; height: 38px; border: 0; border-radius: 9px; background: transparent; color: var(--sub); font-weight: 700; }
