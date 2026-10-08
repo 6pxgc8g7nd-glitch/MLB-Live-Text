@@ -743,6 +743,40 @@
     });
     $('#segL').setAttribute('aria-label', '前一天'); $('#segR').setAttribute('aria-label', '後一天');
   }
+  /* 長按今天：跳出日曆，點日期直接切換 */
+  function openCal(sel, onPick) {
+    const old = document.getElementById('cal'); if (old) old.remove();
+    const today = twDate();
+    let y = +sel.slice(0, 4), m = +sel.slice(5, 7); // m: 1-12
+    const wrap = document.createElement('div');
+    wrap.id = 'cal'; wrap.className = 'cal';
+    document.body.appendChild(wrap);
+    const close = () => wrap.remove();
+    const draw = () => {
+      const first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
+      const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
+      const pad = (n) => String(n).padStart(2, '0');
+      let cells = '';
+      for (let i = 0; i < first; i++) cells += '<i></i>';
+      for (let d = 1; d <= days; d++) {
+        const iso = `${y}-${pad(m)}-${pad(d)}`;
+        cells += `<button data-d="${iso}" class="${iso === sel ? 'sel' : ''}${iso === today ? ' now' : ''}">${d}</button>`;
+      }
+      wrap.innerHTML = `<div class="cal-bg"></div><div class="cal-box" role="dialog" aria-label="選擇日期">
+        <div class="cal-h"><button class="cal-nav" data-m="-1" aria-label="上個月">‹</button><b>${y} 年 ${m} 月</b><button class="cal-nav" data-m="1" aria-label="下個月">›</button></div>
+        <div class="cal-w"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
+        <div class="cal-g">${cells}</div>
+        <button class="cal-t" data-d="${today}">回到今天</button></div>`;
+    };
+    wrap.addEventListener('click', (e) => {
+      if (e.target.classList.contains('cal-bg')) return close();
+      const n = e.target.closest('[data-m]');
+      if (n) { m += +n.dataset.m; if (m < 1) { m = 12; y--; } if (m > 12) { m = 1; y++; } return draw(); }
+      const d = e.target.closest('[data-d]');
+      if (d) { close(); onPick(d.dataset.d); }
+    });
+    draw();
+  }
   /* 左右兩張：前後一天；中間：單擊回到今天、長按（約 0.5 秒）開啟日期選擇器 */
   function bindSegs() {
     const c = $('#segC'), pick = $('#datePick');
@@ -759,8 +793,7 @@
     const openPicker = () => {
       longDone = true;
       if (route$ !== 'scores') return;
-      pick.value = S.date;
-      try { if (pick.showPicker) pick.showPicker(); else pick.click(); } catch (e) { try { pick.click(); } catch (e2) { /* 略過 */ } }
+      openCal(S.date, go);
     };
     c.addEventListener('pointerdown', () => { longDone = false; clear(); timer = setTimeout(openPicker, 500); });
     ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => c.addEventListener(ev, clear));

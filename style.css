@@ -262,3 +262,17 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .tl { display: block; width: 44px; height: 44px; object-fit: contain; margin: 0 auto 2px; }
 .h-team .tl.hl { width: 46px; height: 46px; padding: 4px; background: #fff; border-radius: 50%; margin: 0 0 4px; }
 .h-team.home .tl.hl { margin-left: auto; }
+
+.cal { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; }
+.cal-bg { position: absolute; inset: 0; background: rgba(0, 20, 50, .45); }
+.cal-box { position: relative; width: min(340px, calc(100vw - 32px)); background: #fff; border-radius: 16px; padding: 14px 14px 12px; box-shadow: 0 8px 28px rgba(0, 0, 0, .35); }
+.cal-h { display: flex; align-items: center; justify-content: space-between; color: var(--navy); font-size: 17px; }
+.cal-nav { width: 40px; height: 36px; border: 0; background: transparent; color: var(--navy); font-size: 26px; font-weight: 700; border-radius: 10px; }
+.cal-nav:active { background: #e6e6e6; }
+.cal-w, .cal-g { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; }
+.cal-w { margin: 8px 0 4px; padding-bottom: 6px; border-bottom: 2px dashed #cfcfcf; font-size: 12px; color: var(--sub); }
+.cal-g button { height: 40px; margin: 2px auto; width: 40px; border: 0; border-radius: 50%; background: transparent; font-size: 15px; font-weight: 600; color: #14202e; }
+.cal-g button.now { box-shadow: inset 0 0 0 2px var(--navy); }
+.cal-g button.sel { background: var(--navy); color: #fff; }
+.cal-g button:active { opacity: .6; }
+.cal-t { display: block; width: 100%; margin-top: 8px; height: 40px; border: 0; border-radius: 10px; background: var(--navy); color: #fff; font-size: 15px; font-weight: 800; }
