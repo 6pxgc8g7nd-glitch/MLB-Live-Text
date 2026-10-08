@@ -926,6 +926,11 @@
   }
 
   /* ---- 季後賽 ---- */
+  const abbrTxt = (g0) => {
+    const desc = g0.seriesDescription || '';
+    const lgc = /^AL /i.test(desc) ? 'AL' : /^NL /i.test(desc) ? 'NL' : '';
+    return { F: lgc + 'WC', D: lgc + 'DS', L: lgc + 'CS', W: 'WS' }[g0.gameType] || '';
+  };
   function seriesHTML(s) {
     const games = (s.games || []).slice().sort((x, y) => Date.parse(x.gameDate) - Date.parse(y.gameDate));
     const g0 = games[0];
@@ -947,25 +952,29 @@
     const done = wins[A.id] >= need || wins[H.id] >= need;
     const lead = wins[A.id] === wins[H.id] ? null : wins[A.id] > wins[H.id] ? A : H;
     const hi = Math.max(wins[A.id], wins[H.id]), lo = Math.min(wins[A.id], wins[H.id]);
-    let status;
-    if (done) status = `${esc(teamName(lead))} 晉級`;
-    else if (live) status = '● 進行中';
-    else if (!anyPlayed) status = '尚未開打';
-    else status = lead ? `${esc(teamName(lead))} 領先 ${hi}-${lo}` : `戰成 ${hi}-${lo}`;
     const k = live ? 'live' : done ? 'fin' : 'todo';
     const name = esc(seriesZh(g0) || g0.seriesDescription || '');
     const real = (t) => !!(t && TEAMS[t.id]);
-    const lost = (t) => done && lead && lead.id !== t.id;
-    const side = (t) => `<div class="ptm${lost(t) ? ' l' : ''}"><b>${real(t) ? esc(teamName(t)) : '待定'}</b>${real(t) ? logo(t, 'tcl') : '<span class="pq">?</span>'}</div>`;
     const played = games.filter((g) => gameState(g.status, g.linescore, g.gameDate).k === 'final').length;
     const gNo = Math.min(n, done ? played : played + 1);
-    const desc = g0.seriesDescription || '';
-    const lgc = /^AL /i.test(desc) ? 'AL' : /^NL /i.test(desc) ? 'NL' : '';
-    const abbr = { F: lgc + 'WC', D: lgc + 'DS', L: lgc + 'CS', W: 'WS' }[g0.gameType] || '';
-    const stText = live ? '進行中' : status;
-    return { k, html: `<div class="ptk ${k}${[A, H].some((t) => S.favs.includes(t.id)) ? ' fav' : ''}"><div class="pth"><span>${name}</span><span>${abbr}</span></div>
-      <div class="ptm-row">${side(A)}<div class="pcn"><b class="psb">${wins[A.id]}<i class="cn"></i>${wins[H.id]}</b><i class="par"></i></div>${side(H)}</div>
-      <div class="pinf"><div><small>場次</small><b>G${gNo} / ${n}</b></div><div><small>狀態</small><b>${stText}</b></div><div><small>制度</small><b>${n} 戰 ${need} 勝</b></div></div></div>` };
+    const liveG = games.find((g) => gameState(g.status, g.linescore, g.gameDate).k === 'live');
+    // 版型與「比分」頁的比賽卡片一致：左上狀態標籤、中間大比分（系列賽勝場）、虛線撕線、底部資訊
+    const cls = { live: 'live', fin: 'final', todo: 'upcoming' }[k];
+    const corner = { live: '● 進行', fin: '■ 終了', todo: '○ 未賽' }[k];
+    const side = (t) => {
+      const win = done && lead && lead.id === t.id, lose = done && lead && lead.id !== t.id;
+      return `<div class="g-tm${win ? ' win' : ''}${lose ? ' lose' : ''}">${real(t) ? logo(t) : '<span class="pq">?</span>'}<div class="rc">${real(t) ? esc(teamName(t)) : '待定'}</div></div>`;
+    };
+    const sub = done ? `${esc(teamName(lead))} 晉級` : live ? `G${gNo} 進行中` : !anyPlayed ? '尚未開打' : lead ? `${esc(teamName(lead))} 領先 ${hi}-${lo}` : `戰成 ${hi}-${lo}`;
+    const foot = live && liveG ? '進入文字轉播 ›' : `G${gNo} / ${n}　・　${n} 戰 ${need} 勝`;
+    const inner = `<span class="gt">${corner}</span>
+        <div class="ser">${name}${abbrTxt(g0) ? '　' + abbrTxt(g0) : ''}</div>
+        <div class="g-body">${side(A)}<div class="g-mid"><div class="big">${wins[A.id]}<i class="cn"></i>${wins[H.id]}</div><div class="msub">${sub}</div></div>${side(H)}</div>
+        <div class="tear"></div><div class="g-foot">${foot}</div>`;
+    const favCls = [A, H].some((t) => S.favs.includes(t.id)) ? ' fav' : '';
+    return { k, html: live && liveG
+      ? `<a class="game ${cls}${favCls}" href="#/game/${liveG.gamePk}">${inner}</a>`
+      : `<div class="game ${cls}${favCls}">${inner}</div>` };
   }
   function postHTML(d) {
     const list = (d && d.series) || [];
