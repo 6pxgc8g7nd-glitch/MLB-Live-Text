@@ -1181,8 +1181,9 @@
       if (hold !== true) toastT = setTimeout(() => t.classList.remove('show'), 1400);
     };
     const manualRefresh = async () => {
+      if (route$ !== 'scores') return;
       const ic = $('#ballIc'); if (ic) { ic.classList.remove('pulse'); void ic.offsetWidth; ic.classList.add('pulse'); }
-      if (!poller) { toast('此頁沒有需要更新的資料'); return; }
+      if (!poller) return;
       cache.clear();
       toast('更新中…', true);
       const u = $('#updated'); if (u) u.textContent = '更新中…';
