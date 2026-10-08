@@ -677,14 +677,12 @@ a.bk2c:active { filter: brightness(.97); }
 .livebar .lr .res.hit { background: #e0a800; color: #14202e; } .livebar .lr .res.run { background: var(--emph); color: #fff; }
 .livebar .in { animation: lbin .45s ease-out; }
 @keyframes lbin { 0% { opacity: 0; transform: translateY(7px); } 100% { opacity: 1; transform: none; } }
-.lbs rect.pulse { transform-box: fill-box; transform-origin: center; animation: lbp .7s ease-out; }
-@keyframes lbp { 0% { transform: rotate(45deg) scale(1.5); } 100% { transform: rotate(45deg) scale(1); } }
 .livebar .lc b.pop { display: inline-block; animation: lbpop .35s ease-out; }
 @keyframes lbpop { 0% { transform: scale(1.35); color: #ffd24a; } 100% { transform: scale(1); } }
 .lov { position: absolute; inset: 0; background: var(--navy); display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 900; letter-spacing: 1px; pointer-events: none; animation: lbov 1.7s ease forwards; }
 .lov em { font-style: normal; font-size: 12px; background: #fff; color: var(--navy); padding: 2px 8px; border-radius: 3px; }
 @keyframes lbov { 0% { opacity: 0; transform: translateX(-14px); } 15%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .livebar .in, .lbs rect.pulse, .livebar .lc b.pop, .lov { animation-duration: .01s; } }
+@media (prefers-reduced-motion: reduce) { .livebar .in, .livebar .lc b.pop, .lov { animation-duration: .01s; } }
 /* 打席條三欄：左（打者/投手）｜中（上一打席，置中）｜右（壘包＋球數），左右等寬讓中間剛好在正中央 */
 .livebar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
 .livebar .lr { max-width: none; justify-self: center; }

@@ -770,8 +770,7 @@
           cnt: sameHalf && pv.bid === key.bid && pv.bs !== key.bs,
           last: sameHalf && pv.last !== key.last,
         };
-        const baseFx = (k) => (sameHalf && pv.bases[k] !== bases[k] ? ' pulse' : '');
-        const bs = `<svg class="lbs" viewBox="0 0 40 30" aria-hidden="true"><rect x="15" y="1" width="10" height="10" transform="rotate(45 20 6)" class="${off.second ? 'on' : ''}${baseFx(1)}"/><rect x="2" y="12" width="10" height="10" transform="rotate(45 7 17)" class="${off.third ? 'on' : ''}${baseFx(2)}"/><rect x="28" y="12" width="10" height="10" transform="rotate(45 33 17)" class="${off.first ? 'on' : ''}${baseFx(0)}"/></svg>`;
+        const bs = `<svg class="lbs" viewBox="0 0 40 30" aria-hidden="true"><rect x="15" y="1" width="10" height="10" transform="rotate(45 20 6)" class="${off.second ? 'on' : ''}"/><rect x="2" y="12" width="10" height="10" transform="rotate(45 7 17)" class="${off.third ? 'on' : ''}"/><rect x="28" y="12" width="10" height="10" transform="rotate(45 33 17)" class="${off.first ? 'on' : ''}"/></svg>`;
         let mid = '<div class="lr"></div>';
         if (lastP) {
           const cat = playCat(lastP, true).cls;
