@@ -8,6 +8,7 @@ import { S, setG } from '../js/state.js';
 import { pLink, pickStat, playerCardHTML } from '../js/player.js';
 import { wpPoints, wpHTML } from '../js/winprob.js';
 import { tcToMs, stampAt, halfStarts } from '../js/replay.js';
+import { applyPatch, loadLiveFeed } from '../js/livefeed.js';
 
 const T = { twDate, shiftDate, evZh, seriesZh, gameState, cardHTML, headHTML, textHTML, boxHTML, standingsHTML, S, setG };
 
@@ -178,5 +179,50 @@ const hs = halfStarts([
 ]);
 assert.deepStrictEqual(hs.map((h) => `${h.inning}${h.top ? '上' : '下'}`), ['1上', '1下', '2上']);
 assert.strictEqual(hs[1].t, Date.parse('2026-10-07T20:15:00Z'));
+
+// 差異更新：JSON Patch 套用
+const doc = { metaData: { timeStamp: 't1' }, a: { 'x/y': 1, list: [1, 2, 3] } };
+applyPatch(doc, [
+  { op: 'replace', path: '/metaData/timeStamp', value: 't2' },
+  { op: 'add', path: '/a/list/-', value: 4 },
+  { op: 'add', path: '/a/list/0', value: 0 },
+  { op: 'remove', path: '/a/list/1' },
+  { op: 'replace', path: '/a/x~1y', value: 9 },
+  { op: 'copy', from: '/a/list', path: '/a/copy' },
+  { op: 'move', from: '/a/copy', path: '/b' },
+  { op: 'test', path: '/b/0', value: 0 },
+]);
+assert.deepStrictEqual(doc, { metaData: { timeStamp: 't2' }, a: { 'x/y': 9, list: [0, 2, 3, 4] }, b: [0, 2, 3, 4] });
+assert.throws(() => applyPatch(doc, [{ op: 'replace', path: '/nope/x', value: 1 }]), /路徑不存在/);
+assert.throws(() => applyPatch(doc, [{ op: 'replace', path: '/a/list/9', value: 1 }]), /索引不符/);
+assert.throws(() => applyPatch(doc, [{ op: 'frobnicate', path: '/a' }]), /不支援/);
+
+// 差異更新：抓資料的流程（假的 api，記錄打了哪些網址）
+const fakeApi = (replies) => { const calls = []; const f = async (p) => { calls.push(p); const r = replies.shift(); if (r instanceof Error) throw r; return r; }; f.calls = calls; return f; };
+const fullDoc = () => ({ metaData: { timeStamp: 't1' }, gameData: {}, liveData: { plays: { allPlays: [1] } } });
+let gs = { data: fullDoc() }, fa = fakeApi([[{ diff: [{ op: 'replace', path: '/metaData/timeStamp', value: 't2' }, { op: 'add', path: '/liveData/plays/allPlays/-', value: 2 }] }]]);
+let res = await loadLiveFeed(fa, 7, gs, true);
+assert.strictEqual(res.mode, 'diff');
+assert.ok(fa.calls[0].includes('/diffPatch?startTimecode=t1'));
+assert.deepStrictEqual(res.data.liveData.plays.allPlays, [1, 2]);
+assert.deepStrictEqual(gs.data.liveData.plays.allPlays, [1], '套用在複本上，原本的資料不動');
+gs = { data: fullDoc() }; fa = fakeApi([[]]);
+assert.strictEqual((await loadLiveFeed(fa, 7, gs, true)).mode, 'same');
+gs = { data: fullDoc() }; fa = fakeApi([{ ...fullDoc(), metaData: { timeStamp: 't9' } }]);
+res = await loadLiveFeed(fa, 7, gs, true);
+assert.ok(res.mode === 'full' && res.data.metaData.timeStamp === 't9', 'MLB 回整份時直接用');
+const warn = console.warn; console.warn = () => {};
+gs = { data: fullDoc() }; fa = fakeApi([[{ diff: [{ op: 'replace', path: '/no/such', value: 1 }] }], fullDoc()]);
+res = await loadLiveFeed(fa, 7, gs, true);
+assert.ok(res.mode === 'full' && fa.calls[1] === '/api/v1.1/game/7/feed/live', '套用失敗就改抓整份');
+gs = { data: fullDoc() }; fa = fakeApi([new Error('HTTP 500'), fullDoc()]);
+assert.strictEqual((await loadLiveFeed(fa, 7, gs, true)).mode, 'full', '差異請求失敗也改抓整份');
+console.warn = warn;
+gs = { data: fullDoc() }; fa = fakeApi([fullDoc()]);
+await loadLiveFeed(fa, 7, gs, false);
+assert.strictEqual(fa.calls[0], '/api/v1.1/game/7/feed/live', '沒開 LIVE 模式就照舊抓整份');
+gs = { data: fullDoc(), diffN: 120 }; fa = fakeApi([fullDoc()]);
+await loadLiveFeed(fa, 7, gs, true);
+assert.ok(!fa.calls[0].includes('diffPatch') && gs.diffN === 0, '定期抓整份重新對齊');
 
 console.log('all tests passed');

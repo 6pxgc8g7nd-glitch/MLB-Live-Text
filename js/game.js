@@ -7,6 +7,7 @@ import { gameState, seriesLbl } from './scores.js';
 import { setHeader } from './shell.js';
 import { pLink, pAttrs, pButtons } from './player.js';
 import { wpPoints, wpHTML, bindWp } from './winprob.js';
+import { loadLiveFeed } from './livefeed.js';
 
 export const diamond = (on1, on2, on3) => {
   const d = (cx, cy, on) =>
@@ -57,13 +58,6 @@ export function headHTML(d) {
     const ap = pp.away && pp.away.fullName, hp = pp.home && pp.home.fullName;
     if (ap || hp) extra = `<div class="dec">預定先發　${esc(ap || '未定')} vs ${esc(hp || '未定')}</div>`;
   }
-  const venue = gd.venue && gd.venue.name;
-  const aRuns = tot.away && tot.away.runs, hRuns = tot.home && tot.home.runs;
-  const showN = st.k === 'live' || st.k === 'final';
-  const dimA = st.k === 'final' && aRuns < hRuns, dimH = st.k === 'final' && hRuns < aRuns;
-  const num = (v, dim) => `<b class="${dim ? 'dim' : ''}">${showN ? dash(v != null ? v : 0) : '–'}</b>`;
-  const teamBlk = (cls, t, fb) =>
-    `<div class="h-team ${cls}">${logo(t, 'hl')}<div class="ab">${esc(teamAbbr(t) || fb)}</div><div class="zn">${esc(teamName(t))}</div></div>`;
   return `
     <div class="hero">
       ${lsHTML}
@@ -163,7 +157,6 @@ export function playCat(p, done) {
 
 export function playHTML(p, gd) {
   const r = p.result || {}, ab = p.about || {}, m = p.matchup || {};
-  const bat = (m.batter && m.batter.fullName) || '';
   const pit = (m.pitcher && m.pitcher.fullName) || '';
   const done = ab.isComplete !== false;
   const zh = S.lang === 'zh';
@@ -216,7 +209,6 @@ export function textHTML(d) {
   // 以 atBatIndex 去重（同一打席只留最新版本），並依打席順序排列
   const byIdx = new Map();
   all.forEach((p, i) => byIdx.set(p.about && p.about.atBatIndex != null ? p.about.atBatIndex : 'i' + i, p));
-  const zh0 = S.lang === 'zh';
   let plays = [...byIdx.values()];
   if (G.filter === 'score') plays = plays.filter((p) => p.about && p.about.isScoringPlay);
   else if (G.filter === 'key') plays = plays.filter(isKey);
@@ -228,7 +220,7 @@ export function textHTML(d) {
   // 每個半局結束時的比數，用來算「本局得分」與目前比數
   const fullList = [...byIdx.values()];
   const halfEnd = new Map();
-  let prevKey = null, prevScore = { a: 0, h: 0 };
+  let prevScore = { a: 0, h: 0 };
   fullList.forEach((q) => {
     const ab = q.about || {}, rr = q.result || {};
     const k = `${ab.inning}-${ab.halfInning}`;
@@ -536,9 +528,10 @@ export function showGame(pk) {
   window.scrollTo(0, 0);
   setPoller(createPoller(
     async () => {
-      const d = await api(`/api/v1.1/game/${pk}/feed/live`);
+      // LIVE 模式（每秒更新）改抓差異：只下載上次之後變動的部分
+      const { data } = await loadLiveFeed(api, pk, G, !!G.liveMode);
       if (my !== token) return;
-      G.data = d;
+      G.data = data;
       renderGame();
     },
     () => {

@@ -1,5 +1,5 @@
 /* 資料層：API 請求、狀態橫幅、輪詢 */
-import { API, $, store, fmtClock } from './util.js';
+import { API, $, fmtClock } from './util.js';
 import { G } from './state.js';
 
 export const cache = new Map(); // path -> { t, d }  只用來避免短時間內重複請求
@@ -15,7 +15,7 @@ export async function apiReal(path, { ttl = 0, timeout = 12000 } = {}) {
     const r = await fetch(API + path, { signal: ctl.signal, cache: 'no-store' });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
-    cache.set(path, { t: Date.now(), d });
+    if (ttl > 0) cache.set(path, { t: Date.now(), d }); // 不需要快取的請求（例如每秒的差異更新）不要存，免得越積越多
     return d;
   } finally {
     clearTimeout(to);

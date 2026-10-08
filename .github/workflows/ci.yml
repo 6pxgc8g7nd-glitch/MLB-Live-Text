@@ -1,5 +1,6 @@
 name: CI
 
+# 每次推送／PR 都跑測試；推到 main 且測試全過，才部署到 GitHub Pages（Pages 來源需設為「GitHub Actions」）
 on:
   push:
   pull_request:
@@ -19,6 +20,12 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
+
+      - name: 安裝開發工具（ESLint）
+        run: npm ci
+
+      - name: ESLint
+        run: npx eslint .
 
       - name: 單元測試
         run: node tests/unit.test.js
@@ -47,3 +54,34 @@ jobs:
           name: screenshots
           path: shots
           retention-days: 7
+
+  deploy:
+    needs: test # 測試沒過就不會執行
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: 只收網站需要的檔案（不含測試、腳本、node_modules）
+        run: |
+          mkdir _site
+          cp -R index.html replay.html style.css sw.js manifest.webmanifest js icons logos _site/
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+      - id: deploy
+        uses: actions/deploy-pages@v5
