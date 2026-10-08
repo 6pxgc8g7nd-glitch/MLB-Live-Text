@@ -376,3 +376,9 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .dec { border-top: 1px solid var(--line); color: var(--sub); padding-top: 8px; }
 .ls3w { filter: drop-shadow(0 2px 5px rgba(0, 0, 0, .25)); margin-top: 10px; }
 .ls3w .ls3 { margin-top: 0; }
+
+.livebar .bso { display: grid; gap: 2px; flex: none; }
+.livebar .br { display: flex; align-items: center; gap: 4px; height: 12px; }
+.livebar .br em { width: 9px; font-style: normal; font-size: 9px; font-weight: 800; opacity: .85; line-height: 1; }
+.livebar .br i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255, 255, 255, .25); }
+.livebar .br i.b.on { background: #4ac27a; } .livebar .br i.s.on { background: #f2b800; } .livebar .br i.o.on { background: #ff5a6c; }
