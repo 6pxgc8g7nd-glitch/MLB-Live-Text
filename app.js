@@ -152,7 +152,7 @@
       lastOk = Date.now();
       b.hidden = true;
       const u = $('#updated');
-      if (u) u.textContent = (S.testMode ? '測試模式 ・ ' : '') + '更新 ' + fmtClock(lastOk);
+      if (u) u.textContent = (G && G.liveMode ? 'LIVE ・ ' : '') + (S.testMode ? '測試模式 ・ ' : '') + '更新 ' + fmtClock(lastOk);
     } else {
       const ld = document.querySelector('#view .loading');
       if (ld) {
@@ -878,7 +878,7 @@
       () => {
         const st = G.data && G.data.gameData && G.data.gameData.status;
         const k = st ? gameState(st, G.data.liveData && G.data.liveData.linescore).k : 'live';
-        if (k === 'live') return 10000;
+        if (k === 'live') return G.liveMode ? 1000 : 10000; // 三連點比分列開啟 LIVE 模式：每秒更新
         if (k === 'upcoming') return 30000;
         return null; // 已結束或延賽：不再輪詢
       }
@@ -1420,6 +1420,21 @@
       const failed = !$('#banner').hidden || document.querySelector('#view .errbox');
       toast(failed ? '更新失敗，請稍後再試' : '已更新');
     };
+    /* 在比賽頁連點比分列 3 下：開／關 LIVE 模式（進行中的比賽改為每秒更新，離開比賽頁自動關閉） */
+    let taps = [];
+    $('#gameRow').addEventListener('click', () => {
+      const now = Date.now();
+      taps = taps.filter((t) => now - t < 700).concat(now);
+      if (taps.length < 3) return;
+      taps = [];
+      if (route$ !== 'game' || !G || !poller) return;
+      const live = G.data && G.data.gameData && gameState(G.data.gameData.status, G.data.liveData && G.data.liveData.linescore).k === 'live';
+      if (!G.liveMode && !live) { toast('這場比賽目前不是進行中，無法開啟 LIVE 模式'); return; }
+      G.liveMode = !G.liveMode;
+      toast(G.liveMode ? 'LIVE 模式已開啟・每秒更新' : 'LIVE 模式已關閉');
+      const u = $('#updated'); if (u) u.textContent = (G.liveMode ? 'LIVE ・ ' : '') + (S.testMode ? '測試模式 ・ ' : '') + '更新 ' + fmtClock(lastOk || Date.now());
+      poller.kick();
+    });
     $('#title').onclick = manualRefresh;
     $('#ballIc').onclick = manualRefresh;
 
