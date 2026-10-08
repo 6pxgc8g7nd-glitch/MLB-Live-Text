@@ -261,7 +261,7 @@
     }
     const side = (t, win) => `
       <div class="g-tm${win ? ' win' : ''}${st.k === 'final' && !win ? ' lose' : ''}">
-        ${logo(t.team)}<div class="ab">${esc(teamAbbr(t.team))}</div>
+        ${logo(t.team)}
         <div class="zn">${esc(teamName(t.team))}</div>
         <div class="rc">${esc(rec(t))}</div>
       </div>`;

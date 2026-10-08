@@ -63,7 +63,6 @@ body.ingame .r2, body.nodates .r2 { display: none; }
               radial-gradient(circle 5px at 100% 50%, #0000 98%, #fff) right / 50% 100% no-repeat;
 }
 .dseg.on small { color: var(--sub); }
-.dseg.on.today b::after { content: ' ●'; color: var(--emph); font-size: 9px; vertical-align: 2px; }
 #datePick { position: absolute; left: 50%; top: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .banner { position: sticky; top: calc(var(--th) + env(safe-area-inset-top)); z-index: 19; margin: 0; padding: 8px 12px; background: var(--emph); color: #fff; font-size: 13px; text-align: center; }
 
