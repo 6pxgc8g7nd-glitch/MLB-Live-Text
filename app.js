@@ -866,7 +866,7 @@
         <div class="seg" id="gTabs"><button data-t="text">文字轉播</button><button data-t="box">數據</button></div>
         <div class="tr"></div>
         <div id="gChips"></div>
-      </div><button class="fbt" id="gFold" aria-label="收合或展開工具列"><span class="fo">收合</span><span class="fc">展開</span></button></div>
+      </div><button class="fbt" id="gFold" aria-label="收合或展開工具列"><svg viewBox="0 0 16 10" aria-hidden="true"><path d="M2 8l6-6 6 6"/></svg></button></div>
       <div id="gBody"></div>
       <button id="newChip" class="fab" hidden></button>`;
     window.scrollTo(0, 0);
