@@ -685,3 +685,7 @@ a.bk2c:active { filter: brightness(.97); }
 .lov em { font-style: normal; font-size: 12px; background: #fff; color: var(--navy); padding: 2px 8px; border-radius: 3px; }
 @keyframes lbov { 0% { opacity: 0; transform: translateX(-14px); } 15%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .livebar .in, .lbs rect.pulse, .livebar .lc b.pop, .lov { animation-duration: .01s; } }
+/* 打席條三欄：左（打者/投手）｜中（上一打席，置中）｜右（壘包＋球數），左右等寬讓中間剛好在正中央 */
+.livebar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+.livebar .lr { max-width: none; justify-self: center; }
+.livebar .lbr { display: flex; align-items: center; gap: 12px; justify-self: end; }
