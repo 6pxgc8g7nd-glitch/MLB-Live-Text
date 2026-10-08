@@ -893,22 +893,34 @@
       const w = wins[t.id], lost = done && lead && lead.id !== t.id;
       return `<div class="pt${lost ? ' l' : ''}"><div class="ring" style="--p:${Math.min(100, Math.round((w / need) * 100))}%"><div>${logo(t, 'tcl')}</div></div><span>${esc(teamName(t))}</span></div>`;
     };
-    const cls = live ? ' live' : done ? ' fin' : '';
-    return `<div class="pser${cls}">
-      <div class="sh"><span>${esc(seriesZh(g0) || g0.seriesDescription || '')}</span><small>${n} 戰 ${need} 勝</small></div>
+    const k = live ? 'live' : done ? 'fin' : 'todo';
+    const name = esc(seriesZh(g0) || g0.seriesDescription || '');
+    if (live) {
+      return { k, html: `<div class="pser live sm"><div class="sh"><span>${name}</span><small>${n} 戰 ${need} 勝</small></div>
       <div class="pm">${ring(A)}<b class="psc">${wins[A.id]} : ${wins[H.id]}</b>${ring(H)}</div>
-      <div class="ss">${status}</div></div>`;
+      <div class="ss">${status}</div></div>` };
+    }
+    const lost = (t) => done && lead && lead.id !== t.id;
+    const side = (t) => `<span class="pnm${lost(t) ? ' l' : ''}">${esc(teamName(t))}</span>`;
+    return { k, html: `<div class="prw ${k}"><div class="prt"><span>${name}</span><span>${status}</span></div>
+      <div class="prm">${logo(A, 'tcl')}${side(A)}<b class="psb">${wins[A.id]} : ${wins[H.id]}</b>${side(H).replace('class="pnm', 'class="pnm r')}${logo(H, 'tcl')}</div></div>` };
   }
   function postHTML(d) {
     const list = (d && d.series) || [];
     const byType = {};
     list.forEach((s) => { const g = (s.games || [])[0]; if (g) (byType[g.gameType] = byType[g.gameType] || []).push(s); });
-    const titles = { F: '世界大賽', L: '聯盟冠軍賽', D: '分區系列賽', W: '外卡系列賽' };
+    const order = { F: 0, L: 1, D: 2, W: 3 };
+    const groups = { live: [], todo: [], fin: [] };
+    ['F', 'L', 'D', 'W'].forEach((t) => {
+      (byType[t] || []).slice().sort((x, y) => (x.series.sortNumber || 0) - (y.series.sortNumber || 0)).forEach((s) => {
+        const r = seriesHTML(s);
+        if (r) groups[r.k].push(r.html);
+      });
+    });
+    const titles = { live: '進行中', todo: '未完成', fin: '已結束' };
     let out = '';
-    for (const t of ['F', 'L', 'D', 'W']) {
-      if (!byType[t]) continue;
-      const arr = byType[t].slice().sort((x, y) => (x.series.sortNumber || 0) - (y.series.sortNumber || 0));
-      out += `<h2 class="grp">${titles[t]}<small>${arr.length}</small></h2>${arr.map(seriesHTML).join('')}`;
+    for (const k of ['live', 'todo', 'fin']) {
+      if (groups[k].length) out += `<h2 class="grp">${titles[k]}<small>${groups[k].length}</small></h2>${groups[k].join('')}`;
     }
     return out || '<div class="empty">目前沒有季後賽資料</div>';
   }
