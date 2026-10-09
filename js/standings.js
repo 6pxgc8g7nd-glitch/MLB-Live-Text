@@ -248,7 +248,8 @@ export function bracketHTML(d, first) {
   }
   const ws = infos.find((x) => x.type === 'W') || null;
   const hasWC = ['AL', 'NL'].some((lg) => lgs[lg].wcCol.some(Boolean));
-  const adv = (x) => !!x && x.teamIds.some((id) => S.favs.includes(id)) && (!x.done || (x.winner && S.favs.includes(x.winner.id)));
+  // 線只在「這個系列賽已經打完、晉級的是最愛球隊」時才亮；還沒分出勝負（即使最愛球隊在裡面）不亮
+  const adv = (x) => !!x && x.done && !!x.winner && S.favs.includes(x.winner.id);
   const hl = (on) => (on ? 'var(--navy)' : 'var(--ln)');
   const joinSty = (span, a, b) => `style="grid-column:${span};--la:${hl(adv(a))};--lb:${hl(adv(b))};--ld:${hl(adv(a) || adv(b))}"`;
   const cell = (x, span) => `<div class="bk2-c" style="grid-column:${span}">${bk2Chip(x)}</div>`;

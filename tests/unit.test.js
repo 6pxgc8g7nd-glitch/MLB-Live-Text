@@ -3,7 +3,7 @@ import { twDate, shiftDate } from '../js/util.js';
 import { evZh, seriesZh } from '../js/dict.js';
 import { gameState, cardHTML } from '../js/scores.js';
 import { headHTML, textHTML, boxHTML, liveHTML, recapTarget } from '../js/game.js';
-import { standingsHTML } from '../js/standings.js';
+import { standingsHTML, bracketHTML } from '../js/standings.js';
 import { S, setG } from '../js/state.js';
 import { pLink, pickStat, playerCardHTML } from '../js/player.js';
 import { wpPoints, wpHTML } from '../js/winprob.js';
@@ -314,5 +314,27 @@ assert.ok(errs.includes('<span>失誤</span>') && errs.includes('保送 ×2') &&
 T.S.lang = 'en';
 assert.ok(liveHTML(rcFeed([pl(0, 1, true, 'Single', { pe: [{ isPitch: false, details: { eventType: 'stolen_base_2b', event: 'Stolen Base 2B', description: 'Runner R steals (1) 2nd base.' }, player: { id: 5 } }] })], inn0, { players: { ID5: { fullName: 'Runner R' } } })).includes('Runner R steals (1) 2nd base.'), '英文模式用原文');
 T.S.lang = 'zh';
+
+// 對戰樹的連線：只有最愛球隊「已經晉級」才亮，還沒分出勝負的不亮
+const bg = (pk, a, h, n, st, winner) => ({
+  gamePk: pk, gameType: 'D', gameDate: `2026-10-0${n}T20:00:00Z`, seriesDescription: 'AL Division Series', gamesInSeries: 5, seriesGameNumber: n,
+  status: { abstractGameState: st, detailedState: st }, linescore: {},
+  teams: { away: { team: { id: a }, isWinner: st === 'Final' && winner === a }, home: { team: { id: h }, isWinner: st === 'Final' && winner === h } },
+});
+const bracketData = { series: [
+  { series: { id: 'D_1', sortNumber: 1 }, games: [bg(1, 139, 147, 1, 'Final', 147), bg(2, 139, 147, 2, 'Final', 147), bg(3, 147, 139, 3, 'Final', 147)] }, // 洋基 3–0 光芒：已晉級
+  { series: { id: 'D_2', sortNumber: 2 }, games: [bg(4, 145, 114, 1, 'Final', 114), bg(5, 145, 114, 2, 'Preview')] }, // 守護者 vs 白襪：還在打
+] };
+const lit = (html) => (html.match(/--l[abds]:var\(--navy\)/g) || []).length;
+T.S.favs = [];
+assert.strictEqual(lit(bracketHTML(bracketData, false)), 0, '沒有最愛球隊：沒有亮的線');
+T.S.favs = [114]; // 最愛球隊在還沒打完的系列賽
+assert.strictEqual(lit(bracketHTML(bracketData, false)), 0, '最愛球隊還沒確定晉級：線不亮');
+T.S.favs = [147]; // 最愛球隊已經贏下系列賽
+const won = bracketHTML(bracketData, false);
+assert.ok(won.includes('--la:var(--navy)') && won.includes('--ld:var(--navy)') && !won.includes('--lb:var(--navy)'), '最愛球隊已晉級：它那一側與往下的線亮，另一側不亮');
+T.S.favs = [139]; // 最愛球隊已被淘汰
+assert.strictEqual(lit(bracketHTML(bracketData, false)), 0, '最愛球隊被淘汰：線不亮');
+T.S.favs = [];
 
 console.log('all tests passed');
