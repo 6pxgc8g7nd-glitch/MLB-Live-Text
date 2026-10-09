@@ -5,7 +5,7 @@ import { evZh, seriesZh } from '../js/dict.js';
 import { gameState, cardHTML } from '../js/scores.js';
 import { headHTML, textHTML, boxHTML, liveHTML, recapTarget } from '../js/game.js';
 import { standingsHTML, bracketHTML, lastNoon, nextNoon, isFreshDaily } from '../js/standings.js';
-import { pollWait } from '../js/api.js';
+import { pollWait, nextWait } from '../js/api.js';
 import { S, setG } from '../js/state.js';
 import { pLink, pickStat, playerCardHTML } from '../js/player.js';
 import { wpPoints, wpHTML } from '../js/winprob.js';
@@ -372,5 +372,13 @@ assert.ok(!isFreshDaily(0) && !isFreshDaily(null), '沒有資料或抓取失敗�
 assert.deepStrictEqual([pollWait(1000, 0), pollWait(1000, 3), pollWait(10000, 0), pollWait(10000, 1)], [1000, 8000, 10000, 20000]);
 assert.strictEqual(pollWait(20000, 4), 60000, '失敗退避最多 60 秒');
 assert.strictEqual(pollWait(3 * 3600e3, 0), 3 * 3600e3, '等到隔天中午這種長間隔不被壓成 60 秒');
+
+// 輪詢節奏：從「這一次開始」算起，扣掉下載花的時間
+assert.strictEqual(nextWait(1000, 0, 370), 630, '要求每秒、下載 0.37 秒：再等 0.63 秒');
+assert.strictEqual(nextWait(10000, 0, 400), 9600, '每 10 秒也是從開始算起');
+assert.strictEqual(nextWait(1000, 0, 1600), 200, '下載比間隔還久：至少留 200 毫秒，不連續猛打');
+assert.strictEqual(nextWait(1000, 0, 0), 1000, '沒花時間就等滿');
+assert.strictEqual(nextWait(1000, 2, 370), 4000, '失敗時照退避、不扣時間');
+assert.strictEqual(nextWait(3 * 3600e3, 0, 500), 3 * 3600e3 - 500, '很長的間隔（排名等到隔天中午）也照算');
 
 console.log('all tests passed');

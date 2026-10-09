@@ -53,6 +53,12 @@ export function setStatus(ok) {
 /* 下一次輪詢前等多久：失敗越多次等越久（最多 60 秒）；呼叫端要求的間隔本來就比 60 秒長就照它（例如排名頁等到隔天中午） */
 export const pollWait = (base, fails) => Math.min(base * Math.pow(2, Math.min(fails, 4)), Math.max(60000, base));
 
+/* 下一次輪詢的等待時間。成功時從「這一次開始」算起：要求每 1 秒、這次下載花了 0.4 秒，就只再等 0.6 秒，
+ * 這樣更新的節奏才是真正的每秒一次（以前是下載完才開始等 1 秒，實際約 1.4 秒）。
+ * 下載比間隔還久時至少留 200 毫秒，不連續猛打 API；失敗時照退避，不扣時間 */
+export const MIN_GAP = 200;
+export const nextWait = (base, fails, elapsed) => (fails ? pollWait(base, fails) : Math.max(MIN_GAP, pollWait(base, 0) - elapsed));
+
 /* 輪詢：失敗時指數退避、背景分頁暫停、回到前景立即補更新、不重疊執行 */
 export function createPoller(fn, delayFn) {
   let timer = 0, fails = 0, stopped = false, busy = false;
@@ -61,14 +67,16 @@ export function createPoller(fn, delayFn) {
       clearTimeout(timer);
       if (stopped || busy || document.hidden) return;
       busy = true;
+      const t0 = performance.now();
       let ok = true;
       try { await fn(); } catch (e) { ok = false; console.warn(e); }
+      const elapsed = performance.now() - t0;
       busy = false;
       if (stopped) return;
       if (ok) { fails = 0; setStatus(true); } else { fails++; setStatus(false); }
       const base = delayFn();
       if (base == null) return; // 不需要再更新（例如比賽已結束）
-      const wait = pollWait(base, fails);
+      const wait = nextWait(base, fails, elapsed);
       timer = setTimeout(() => p.run(), wait);
     },
     start() { stopped = false; p.run(); },
