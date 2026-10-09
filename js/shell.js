@@ -101,7 +101,7 @@ export function openCal(sel, onPick) {
 }
 /* 左右兩張：前後一天；中間：單擊回到今天、長按（約 0.5 秒）開啟日期選擇器 */
 export function bindSegs() {
-  const c = $('#segC'), pick = $('#datePick');
+  const c = $('#segC');
   let timer = null, longDone = false;
   const clear = () => { clearTimeout(timer); timer = null; };
   const go = (date) => {
@@ -123,9 +123,6 @@ export function bindSegs() {
   c.addEventListener('click', () => {
     if (longDone) { longDone = false; return; }
     go(twDate());
-  });
-  pick.addEventListener('change', () => {
-    if (/^\d{4}-\d{2}-\d{2}$/.test(pick.value)) go(pick.value);
   });
 }
 

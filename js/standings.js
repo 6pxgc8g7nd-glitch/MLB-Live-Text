@@ -6,10 +6,6 @@ import { S, view, poller, token, setRoute, setPoller, setG } from './state.js';
 import { gameState, scN, skelRows } from './scores.js';
 import { setHeader } from './shell.js';
 
-export const l10 = (t) => {
-  const s = t.records && (t.records.splitRecords || []).find((x) => x.type === 'lastTen');
-  return s ? `${s.wins}-${s.losses}` : '–';
-};
 export function standRow(t, rank, po) {
   const c = t.clinchIndicator && CLINCH[t.clinchIndicator];
   const gb = t.gamesBack;
@@ -311,13 +307,13 @@ export function showStandings() {
     } else if (S.standView === 'bracket') {
       if (post) paintBracket($('#stand'), post, bk);
     } else if (data) morph($('#stand'), standingsHTML(data));
-  // expire：手動更新時把存的資料標成過期，下一次輪詢就會重抓（略過「每天中午才更新」的規則）
-  setG({ repaint: paint, expire: () => { if (cached) cached.t = 0; } });
-  paint();
   };
   let post = null;
   const season = twDate().slice(0, 4);
   let cached = store.get('standData', null); // { t: 抓取時間, season, standings, post }
+  // expire：手動更新時把存的資料標成過期，下一次輪詢就會重抓（略過「每天中午才更新」的規則）
+  setG({ repaint: paint, expire: () => { if (cached) cached.t = 0; } });
+  paint();
   const fresh = () => !!cached && cached.season === season && isFreshDaily(cached.t);
   const show = () => { data = cached.standings; post = cached.post; paint(); };
   setPoller(createPoller(
