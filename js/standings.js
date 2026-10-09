@@ -1,5 +1,5 @@
 /* 排名頁：分區／聯盟排名、季後賽、對戰樹 */
-import { TZ, $, $$, esc, dash, twDate } from './util.js';
+import { TZ, $, $$, esc, dash, twDate, store } from './util.js';
 import { TEAMS, teamName, logo, teamAbbr, DIVS, DIV_ORDER, LEAGUE, CLINCH, seriesZh } from './dict.js';
 import { api, createPoller } from './api.js';
 import { S, view, poller, token, setRoute, setPoller, setG } from './state.js';
@@ -282,6 +282,15 @@ export function paintBracket(box, d, st) {
   st.sig = sigNow;
 }
 
+/* 排名資料每天（台灣時間）中午 12 點更新一次：
+ * 開啟時，手上的資料若是「最近一次中午」之前抓的才重抓，否則直接用上次存的；停在這一頁就等到下一個中午再抓 */
+export const lastNoon = (now = Date.now()) => {
+  const t = Date.parse(`${twDate(new Date(now))}T12:00:00+08:00`);
+  return now >= t ? t : t - 864e5;
+};
+export const nextNoon = (now = Date.now()) => lastNoon(now) + 864e5;
+export const isFreshDaily = (t, now = Date.now()) => !!t && t >= lastNoon(now);
+
 export function showStandings() {
   setRoute('standings');
   S.standView = S.standDef;
@@ -306,18 +315,25 @@ export function showStandings() {
   setG({ repaint: paint });
   paint();
   const season = twDate().slice(0, 4);
+  let cached = store.get('standData', null); // { t: 抓取時間, season, standings, post }
+  const fresh = () => !!cached && cached.season === season && isFreshDaily(cached.t);
+  const show = () => { data = cached.standings; post = cached.post; paint(); };
   setPoller(createPoller(
     async () => {
-      const d = await api(`/api/v1/standings?leagueId=103,104&season=${season}&standingsTypes=regularSeason`, { ttl: 60000 });
+      if (!fresh()) {
+        let d;
+        try {
+          d = await api(`/api/v1/standings?leagueId=103,104&season=${season}&standingsTypes=regularSeason`);
+        } catch (e) { if (cached && my === token) show(); throw e; } // 抓不到就先顯示上次存的
+        let p = null;
+        try { p = await api(`/api/v1/schedule/postseason/series?season=${season}&sportId=1`); } catch (e) { /* 季後賽沒抓到：不算更新完成，稍後重試 */ }
+        cached = { t: p ? Date.now() : 0, season, standings: d, post: p || (cached && cached.post) || { series: [] } };
+        store.set('standData', cached);
+      }
       if (my !== token) return;
-      data = d;
-      try {
-        post = await api(`/api/v1/schedule/postseason/series?season=${season}&sportId=1`, { ttl: 30000 });
-      } catch (e) { post = post || { series: [] }; }
-      if (my !== token) return;
-      paint();
+      show();
     },
-    () => (S.standView === 'post' || S.standView === 'bracket' ? 60000 : 300000)
+    () => (fresh() ? nextNoon() - Date.now() + 5000 : 60000) // 資料是新的：等到下一個中午；沒抓成功：一分鐘後重試
   ));
   poller.start();
 }

@@ -50,6 +50,9 @@ export function setStatus(ok) {
   }
 }
 
+/* 下一次輪詢前等多久：失敗越多次等越久（最多 60 秒）；呼叫端要求的間隔本來就比 60 秒長就照它（例如排名頁等到隔天中午） */
+export const pollWait = (base, fails) => Math.min(base * Math.pow(2, Math.min(fails, 4)), Math.max(60000, base));
+
 /* 輪詢：失敗時指數退避、背景分頁暫停、回到前景立即補更新、不重疊執行 */
 export function createPoller(fn, delayFn) {
   let timer = 0, fails = 0, stopped = false, busy = false;
@@ -65,7 +68,7 @@ export function createPoller(fn, delayFn) {
       if (ok) { fails = 0; setStatus(true); } else { fails++; setStatus(false); }
       const base = delayFn();
       if (base == null) return; // 不需要再更新（例如比賽已結束）
-      const wait = Math.min(base * Math.pow(2, Math.min(fails, 4)), 60000);
+      const wait = pollWait(base, fails);
       timer = setTimeout(() => p.run(), wait);
     },
     start() { stopped = false; p.run(); },

@@ -196,7 +196,7 @@ httpd = socketserver.TCPServer(('127.0.0.1', PORT), functools.partial(Q, directo
 PORT = httpd.server_address[1]
 threading.Thread(target=httpd.serve_forever, daemon=True).start()
 
-shots = [('scores', '#/scores', 'light'), ('gametop', '#/game/1', 'light'), ('game', '#/game/1', 'light'), ('box', '#/game/1', 'light', 'box'), ('settings', '#/settings', 'light'), ('yday', '#/scores', 'light'), ('err', '#/scores', 'light'), ('stand', '#/standings', 'light'), ('tset', '#/settings', 'light'), ('post', '#/standings', 'light'), ('br', '#/standings', 'light'), ('fav', '#/scores', 'light'), ('favst', '#/standings', 'light'), ('favset', '#/settings', 'light'), ('favsheet', '#/settings', 'light'), ('pcard', '#/game/1', 'light'), ('wp', '#/game/1', 'light', 'box'), ('rp', '#/game/2', 'light'), ('lv', '#/game/1', 'light', 'live'), ('lvgap', '#/game/3', 'light', 'live')]
+shots = [('scores', '#/scores', 'light'), ('gametop', '#/game/1', 'light'), ('game', '#/game/1', 'light'), ('box', '#/game/1', 'light', 'box'), ('settings', '#/settings', 'light'), ('yday', '#/scores', 'light'), ('err', '#/scores', 'light'), ('stand', '#/standings', 'light'), ('tset', '#/settings', 'light'), ('post', '#/standings', 'light'), ('br', '#/standings', 'light'), ('fav', '#/scores', 'light'), ('favst', '#/standings', 'light'), ('favset', '#/settings', 'light'), ('favsheet', '#/settings', 'light'), ('pcard', '#/game/1', 'light'), ('wp', '#/game/1', 'light', 'box'), ('rp', '#/game/2', 'light'), ('lv', '#/game/1', 'light', 'live'), ('lvgap', '#/game/3', 'light', 'live'), ('sdfresh', '#/standings', 'light'), ('sdstale', '#/standings', 'light')]
 
 failures = []
 with sync_playwright() as p:
@@ -205,19 +205,27 @@ with sync_playwright() as p:
         name, hsh, theme = s[0], s[1], s[2]
         tab = s[3] if len(s) > 3 else 'text'
         ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, locale='zh-TW', timezone_id='Asia/Taipei')
-        ctx.add_init_script("localStorage.setItem('theme', %s); localStorage.setItem('gtab', %s);" % (json.dumps(json.dumps(theme)), json.dumps(json.dumps(tab))) + ("localStorage.setItem('testMode','true');localStorage.setItem('testStart',String(Date.now()-180000));" if name.startswith('t') else '') + ("localStorage.setItem('favs','[147,114,139]');" if name.startswith('fav') else ''))
+        ctx.add_init_script("localStorage.setItem('theme', %s); localStorage.setItem('gtab', %s);" % (json.dumps(json.dumps(theme)), json.dumps(json.dumps(tab))) + ("localStorage.setItem('testMode','true');localStorage.setItem('testStart',String(Date.now()-180000));" if name.startswith('t') else '') + ("localStorage.setItem('favs','[147,114,139]');" if name.startswith('fav') else '') + ("localStorage.setItem('standData', JSON.stringify({t: Date.now() - %s, season: '%d', standings: %s, post: %s}));" % ('1000' if name == 'sdfresh' else '3*864e5', now.year, json.dumps(standings), json.dumps(postseason)) if name in ('sdfresh', 'sdstale') else ''))
         pg = ctx.new_page()
         errs = []
         pg.on('pageerror', lambda e: errs.append(str(e)))
         pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' else None)
         reqs = []
         pg.on('request', lambda r: reqs.append(r.url) if 'statsapi' in r.url else None)
-        pg.route('https://statsapi.mlb.com/**', (lambda r: r.abort()) if name == 'err' or name.startswith('t') and name != 'tbox0' else handler)
+        pg.route('https://statsapi.mlb.com/**', (lambda r: r.abort()) if name == 'err' or name in ('sdfresh', 'sdstale') or name.startswith('t') and name != 'tbox0' else handler)
         pg.goto('http://127.0.0.1:%d/index.html%s' % (PORT, hsh))
         pg.wait_for_timeout(1200)
         if name == 'br': pg.click('[data-sv=bracket]'); pg.wait_for_timeout(3000)
         if name == 'post': pg.click('[data-sv=post]'); pg.wait_for_timeout(600)
         if name == 'favsheet': pg.click('#favOpen'); pg.wait_for_timeout(500)
+        if name in ('sdfresh', 'sdstale'):
+            # 排名每天中午才更新：新的快取不用網路就能顯示；過期的快取抓不到時，先顯示舊資料並跳出失敗橫幅
+            pg.wait_for_timeout(800)
+            rows = pg.evaluate("document.querySelectorAll('#stand .tc').length")
+            banner = pg.evaluate("(function(){var b=document.getElementById('banner');return !!b && !b.hidden;})()")
+            print(name, 'rows:', rows, 'banner:', banner)
+            if rows != 30: failures.append((name, ['沒有顯示存起來的排名：%s 列' % rows]))
+            if banner != (name == 'sdstale'): failures.append((name, ['失敗橫幅的狀態不對：%s' % banner]))
         if name == 'wp':
             pg.evaluate("document.querySelector('#wp').scrollIntoView(); window.scrollBy(0, -170)"); pg.wait_for_timeout(300)
             pg.hover('.wp-c', position={'x': 200, 'y': 60}); pg.wait_for_timeout(200)
@@ -245,7 +253,7 @@ with sync_playwright() as p:
         out = '%s/shot_%s_%s.png' % (OUT, name, theme)
         pg.screenshot(path=out, full_page=(name in ('stand','br')))
         print(out, 'errors:', errs[:3])
-        bad = [e for e in errs if not (name == 'err' and 'ERR_FAILED' in e)]  # err 這張刻意斷網，載入失敗是預期的
+        bad = [e for e in errs if not (name in ('err', 'sdstale') and 'ERR_FAILED' in e)]  # err、sdstale 刻意斷網，載入失敗是預期的
         if bad: failures.append((name, bad[:3]))
         ctx.close()
     b.close()

@@ -4,7 +4,8 @@ import { segLabel, calYears, calTitleHTML } from '../js/shell.js';
 import { evZh, seriesZh } from '../js/dict.js';
 import { gameState, cardHTML } from '../js/scores.js';
 import { headHTML, textHTML, boxHTML, liveHTML, recapTarget } from '../js/game.js';
-import { standingsHTML, bracketHTML } from '../js/standings.js';
+import { standingsHTML, bracketHTML, lastNoon, nextNoon, isFreshDaily } from '../js/standings.js';
+import { pollWait } from '../js/api.js';
 import { S, setG } from '../js/state.js';
 import { pLink, pickStat, playerCardHTML } from '../js/player.js';
 import { wpPoints, wpHTML } from '../js/winprob.js';
@@ -354,5 +355,22 @@ assert.ok(ct.includes('<option value="2026" selected>2026 年</option>') && ct.i
 assert.strictEqual((ct.match(/<option value="\d+" selected>/g) || []).length, 2, '年、月各一個選中');
 assert.strictEqual((ct.match(/<option value="\d+"( selected)?>\d+ 月<\/option>/g) || []).length, 12, '十二個月都有');
 assert.ok(ct.includes('aria-label="年"') && ct.includes('aria-label="月"'), '選單有無障礙標籤');
+
+// 排名頁每天台灣中午 12 點更新一次
+const Z = (s) => Date.parse(s);
+assert.strictEqual(lastNoon(Z('2026-10-09T05:00:00Z')), Z('2026-10-09T04:00:00Z'), '下午一點：最近一次中午是今天 12:00（台灣）');
+assert.strictEqual(lastNoon(Z('2026-10-09T03:59:59Z')), Z('2026-10-08T04:00:00Z'), '上午 11:59:59：最近一次中午是昨天');
+assert.strictEqual(lastNoon(Z('2026-10-09T04:00:00Z')), Z('2026-10-09T04:00:00Z'), '剛好中午 12:00 就算今天');
+assert.strictEqual(lastNoon(Z('2026-10-08T16:30:00Z')), Z('2026-10-08T04:00:00Z'), '台灣凌晨 00:30：台灣日期已經是隔天，但最近一次中午還是前一天');
+assert.strictEqual(nextNoon(Z('2026-10-09T05:00:00Z')), Z('2026-10-10T04:00:00Z'), '下一個中午是明天');
+assert.strictEqual(nextNoon(Z('2026-10-09T03:00:00Z')), Z('2026-10-09T04:00:00Z'), '上午：下一個中午是今天');
+assert.ok(isFreshDaily(Z('2026-10-09T04:00:01Z'), Z('2026-10-09T20:00:00Z')), '中午之後抓的、同一天：新');
+assert.ok(!isFreshDaily(Z('2026-10-09T03:59:59Z'), Z('2026-10-09T04:00:00Z')), '中午之前抓的、現在過了中午：舊');
+assert.ok(isFreshDaily(Z('2026-10-08T05:00:00Z'), Z('2026-10-09T03:00:00Z')), '昨天下午抓的、今天中午前：還是新');
+assert.ok(!isFreshDaily(0) && !isFreshDaily(null), '沒有資料或抓取失敗（時間 0）：舊');
+// 輪詢等待：退避最多 60 秒，但呼叫端要求更長的間隔就照它
+assert.deepStrictEqual([pollWait(1000, 0), pollWait(1000, 3), pollWait(10000, 0), pollWait(10000, 1)], [1000, 8000, 10000, 20000]);
+assert.strictEqual(pollWait(20000, 4), 60000, '失敗退避最多 60 秒');
+assert.strictEqual(pollWait(3 * 3600e3, 0), 3 * 3600e3, '等到隔天中午這種長間隔不被壓成 60 秒');
 
 console.log('all tests passed');
