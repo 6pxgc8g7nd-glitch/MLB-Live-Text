@@ -100,7 +100,9 @@ export function pitchZone(p, zh) {
   }).join('');
   const svg = pos.length
     ? `<svg class="zone" viewBox="0 0 120 150" aria-hidden="true"><rect x="0" y="0" width="120" height="150" rx="8" class="zbg"/><rect x="${zl.toFixed(1)}" y="${zt.toFixed(1)}" width="${(zr - zl).toFixed(1)}" height="${(zb - zt).toFixed(1)}" class="zbox"/>${dots}</svg>` : '';
-  return `<div class="pz">${svg}<ul class="pl2">${rows}</ul></div>`;
+  const anim = p.about && p.about.atBatIndex != null && ps.some((e) => e.pitchData && e.pitchData.coordinates && e.pitchData.coordinates.vY0 != null)
+    ? `<div class="pzb"><button class="anb" data-an="${p.about.atBatIndex}">▶ ${zh ? '動畫重現這個打席' : 'Animate this at-bat'}</button></div>` : '';
+  return `<div class="pz">${svg}<ul class="pl2">${rows}</ul></div>${anim}`;
 }
 export function pitchLine(p, zh, live) {
   const ps = (p.playEvents || []).filter((e) => e && e.isPitch);

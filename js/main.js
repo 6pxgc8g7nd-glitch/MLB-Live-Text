@@ -84,6 +84,14 @@ function boot() {
       G.sig = ''; renderBody();
       return;
     }
+    const anb = e.target.closest('[data-an]'); // 打席動畫：用該打席的真實球路與擊球資料
+    if (anb && G && G.data) {
+      const n = Number(anb.dataset.an);
+      const all = (G.data.liveData && G.data.liveData.plays && G.data.liveData.plays.allPlays) || [];
+      const play = [...all].reverse().find((p) => p.about && p.about.atBatIndex === n);
+      if (play) import('./anim.js').then((mod) => mod.openAnim(play, G.data.gameData)).catch((err) => toast((err && err.message) || '動畫載入失敗'));
+      return;
+    }
     const pmt = e.target.closest('[data-pmt]'); // 球路圖例：只看某一種球種，再點一次回到全部
     if (pmt && G) {
       const id = pmt.closest('.pcw').querySelector('[data-pm]').dataset.pm;

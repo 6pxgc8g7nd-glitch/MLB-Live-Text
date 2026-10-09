@@ -3,6 +3,7 @@ import { twDate, shiftDate, weekdayEn, monthDay } from '../js/util.js';
 import { segLabel, calYears, calTitleHTML } from '../js/shell.js';
 import { evZh, seriesZh } from '../js/dict.js';
 import { gameState, cardHTML } from '../js/scores.js';
+import { pitchPath, hitPlan, hitPos, runnerMoves, buildScript, frameAt } from '../js/anim.js';
 import { pitcherPitches, pitchTypeStats, pitcherMapHTML } from '../js/pitchmap.js';
 import { headHTML, textHTML, boxHTML, liveHTML, recapTarget } from '../js/game.js';
 import { standingsHTML, bracketHTML, lastNoon, nextNoon, isFreshDaily } from '../js/standings.js';
@@ -448,4 +449,48 @@ console.log('all tests passed');
   assert.strictEqual((html.match(/<circle/g) || []).length, 3, '沒有位置的球不畫點');
   assert.strictEqual((pitcherMapHTML(d, 7, 'FF').match(/<circle/g) || []).length, 2, '篩選球種只畫該球種');
   assert.strictEqual(pitcherMapHTML(d, 99, null), '', '沒投球的人不顯示');
+}
+
+// 打席動畫：真實球路、擊球落點、跑者移動、時間表
+{
+  const co = { x0: 1.2, y0: 50, z0: 5.2, vX0: -4.6, vY0: -128, vZ0: -3.2, aX: 15.5, aY: 26.6, aZ: -30, pX: 0.56, pZ: 1.59 };
+  const pp = pitchPath({ coordinates: co, extension: 6.5 });
+  const end = pp.pts[pp.pts.length - 1];
+  assert.ok(pp.pts[0].y > 52 && pp.pts[0].y < 58, '從出手點開始');
+  assert.ok(Math.abs(end.y - 17 / 12) < 0.05, '終點在本壘板前緣');
+  assert.ok(Math.hypot(end.x - 0.56, end.z - 1.59) < 0.1, '終點與記錄的過板位置一致');
+  assert.strictEqual(pitchPath({ coordinates: {} }), null);
+  assert.strictEqual(pitchPath(null), null);
+  const air = hitPlan({ launchSpeed: 100, launchAngle: 30, trajectory: 'fly_ball', coordinates: { coordX: 125.42, coordY: 98.27 } });
+  assert.strictEqual(air.kind, 'air'); assert.ok(Math.abs(air.y - 250) < 0.01 && Math.abs(air.x) < 0.01, '落點換算成呎');
+  assert.ok(hitPos(air, 0.5).z > 10 && hitPos(air, 1).z < 4, '飛球中段最高、落地回到地面');
+  const gr = hitPlan({ launchSpeed: 90, launchAngle: -5, trajectory: 'ground_ball', coordinates: { coordX: 100, coordY: 170 } });
+  assert.strictEqual(gr.kind, 'ground'); assert.ok(hitPos(gr, 0.5).z < 4);
+  assert.strictEqual(hitPlan({ launchSpeed: 90 }), null, '沒有落點座標就不畫擊球');
+  const play = { playEvents: [
+    { isPitch: true, details: { call: { description: 'Called Strike' }, isStrike: true, type: { code: 'FF' } }, count: { balls: 0, strikes: 1 }, pitchData: { startSpeed: 95, coordinates: co } },
+    { isPitch: true, details: { call: { description: 'In play, no out' }, isInPlay: true, type: { code: 'SL' } }, count: { balls: 0, strikes: 1 }, pitchData: { startSpeed: 85, coordinates: co }, hitData: { launchSpeed: 98, launchAngle: 20, trajectory: 'line_drive', coordinates: { coordX: 150, coordY: 120 } } },
+  ], runners: [
+    { movement: { start: null, end: '2B', isOut: false }, details: { runner: { id: 1 } } },
+    { movement: { start: '1B', end: '3B', isOut: false }, details: { runner: { id: 2 } } },
+    { movement: { start: '2B', end: 'score', isOut: false }, details: { runner: { id: 3 } } },
+    { movement: { start: '3B', end: '3B', isOut: false }, details: { runner: { id: 4 } } },
+    { movement: { start: null, end: null, isOut: true, outBase: null }, details: { runner: { id: 5 } } },
+  ] };
+  const rm = runnerMoves(play);
+  assert.deepStrictEqual(rm.map((r) => r.path.join('>')), ['H>1B>2B', '1B>2B>3B', '2B>3B>H'], '只算有移動的跑者，打者從本壘出發');
+  const sc = buildScript(play);
+  assert.strictEqual(sc.segs.filter((s) => s.kind === 'pitch').length, 2);
+  assert.strictEqual(sc.segs.filter((s) => s.kind === 'hit').length, 1);
+  let sawBall = false, sawHit = false;
+  for (let tt = 0; tt <= sc.total; tt += 0.05) {
+    const f = frameAt(sc, tt);
+    if (f.ball) { sawBall = true; assert.ok([f.ball.x, f.ball.y, f.ball.z].every(Number.isFinite)); }
+    if (f.trailCls === 'hit') sawHit = true;
+  }
+  assert.ok(sawBall && sawHit);
+  assert.strictEqual(frameAt(sc, 0).banner, false); assert.strictEqual(frameAt(sc, sc.total).banner, true);
+  assert.strictEqual(frameAt(sc, sc.total).zone.length, 2, '播完後好球帶上有兩球');
+  assert.ok(frameAt(sc, sc.total).runners.length === 3);
+  assert.strictEqual(buildScript({ playEvents: [] }).segs.length, 0, '沒有投球就沒有動畫');
 }
