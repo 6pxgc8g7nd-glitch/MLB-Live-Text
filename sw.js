@@ -1,7 +1,7 @@
 /* Service Worker：只快取「網頁外殼」，MLB 資料一律走網路，不快取。
  * 外殼採「網路優先、離線才用快取」，所以更新網頁後重新開啟就是新版，不會卡在舊版。
  * SHELL 與 VERSION 由 scripts/sw.mjs 維護（提交時 pre-commit hook 自動執行），不需要手動修改。 */
-const VERSION = 'v196';
+const VERSION = 'v197';
 const CACHE = 'mlb-shell-' + VERSION;
 const SHELL = [
   './',
@@ -62,7 +62,9 @@ const SHELL = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // cache: 'reload'：預先快取一定向伺服器要最新的檔案，不要拿瀏覽器暫存（GitHub Pages 會讓暫存留 10 分鐘），
+  // 否則剛部署完馬上開，新版本號的快取裡可能放進舊檔案
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
@@ -85,15 +87,17 @@ self.addEventListener('fetch', (e) => {
     })));
     return;
   }
+  // 快取用「不含網址參數」的位置當 key：index.html?replay=123、?a=1 這類只差參數的變體共用一份，不會一個個存、無限增加
+  const key = url.origin + url.pathname;
   e.respondWith(
     fetch(req, { cache: 'no-cache' })
       .then((res) => {
         if (res && res.ok) {
           const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy));
+          caches.open(CACHE).then((c) => c.put(key, copy));
         }
         return res;
       })
-      .catch(() => caches.match(req).then((hit) => hit || caches.match('index.html')))
+      .catch(() => caches.match(key).then((hit) => hit || caches.match('index.html')))
   );
 });
