@@ -864,8 +864,8 @@ body.replaying .rp-go { display: none; }
 .pm-sl { fill: #2f7fd1; background: #2f7fd1; } .pm-cu { fill: #7a56c4; background: #7a56c4; } .pm-ch { fill: #2e9d6a; background: #2e9d6a; } .pm-ot { fill: #8b95a1; background: #8b95a1; }
 
 /* 打席動畫 */
-.pzb { display: none; margin-top: 8px; } .play.open .pzb { display: block; }
-.anb { border: 1px solid var(--navy); background: none; color: var(--navy); border-radius: 16px; padding: 6px 14px; font-size: 13px; font-weight: 700; }
+.anb { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--navy); background: none; color: var(--navy); border-radius: 14px; padding: 0 12px; height: 28px; font-size: 12.5px; font-weight: 700; }
+.anb svg { width: 10px; height: 10px; fill: currentColor; }
 .anb:active { background: #eaf1f9; }
 .an { position: fixed; inset: 0; z-index: 80; display: flex; flex-direction: column; background: #10202f; color: #fff; padding-top: env(safe-area-inset-top); }
 .an-h { display: flex; align-items: center; gap: 10px; padding: 10px 14px; }

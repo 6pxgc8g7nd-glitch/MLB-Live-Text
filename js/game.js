@@ -72,10 +72,12 @@ export const isKey = (p) => {
 };
 
 
-export function pitchDots(p) {
+export function pitchDots(p, zh = true) {
   const ps = (p.playEvents || []).filter((e) => e && e.isPitch);
   if (!ps.length) return '';
-  return `<div class="pd">${ps.map((e, i) => `<i class="${pitchCls(e)}">${i + 1}</i>`).join('')}</div>`;
+  const can = p.about && p.about.atBatIndex != null && ps.some((e) => e.pitchData && e.pitchData.coordinates && e.pitchData.coordinates.vY0 != null);
+  const play = can ? `<button class="anb" data-an="${p.about.atBatIndex}" aria-label="${zh ? '動畫重現這個打席' : 'Animate this at-bat'}"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.5v9l7.5-4.5z"/></svg>${zh ? '動畫' : 'Play'}</button>` : '';
+  return `<div class="pd">${ps.map((e, i) => `<i class="${pitchCls(e)}">${i + 1}</i>`).join('')}${play}</div>`;
 }
 export function pitchZone(p, zh) {
   const ps = (p.playEvents || []).filter((e) => e && e.isPitch);
@@ -100,9 +102,7 @@ export function pitchZone(p, zh) {
   }).join('');
   const svg = pos.length
     ? `<svg class="zone" viewBox="0 0 120 150" aria-hidden="true"><rect x="0" y="0" width="120" height="150" rx="8" class="zbg"/><rect x="${zl.toFixed(1)}" y="${zt.toFixed(1)}" width="${(zr - zl).toFixed(1)}" height="${(zb - zt).toFixed(1)}" class="zbox"/>${dots}</svg>` : '';
-  const anim = p.about && p.about.atBatIndex != null && ps.some((e) => e.pitchData && e.pitchData.coordinates && e.pitchData.coordinates.vY0 != null)
-    ? `<div class="pzb"><button class="anb" data-an="${p.about.atBatIndex}">▶ ${zh ? '動畫重現這個打席' : 'Animate this at-bat'}</button></div>` : '';
-  return `<div class="pz">${svg}<ul class="pl2">${rows}</ul></div>${anim}`;
+  return `<div class="pz">${svg}<ul class="pl2">${rows}</ul></div>`;
 }
 export function pitchLine(p, zh, live) {
   const ps = (p.playEvents || []).filter((e) => e && e.isPitch);
@@ -191,7 +191,7 @@ export function playHTML(p, gd, opt = {}) {
   const top = cat.label || score
     ? `<div class="p-top">${cat.label ? `<span class="tag">${cat.label}</span>` : '<span></span>'}${score}</div>` : '';
   return `<div class="${cls}" data-k="${ab.atBatIndex}">
-    ${top}<div class="p-body">${body}</div>${pitchDots(p)}${pitchRow}${hit}${subs}${meta ? `<div class="p-meta">${meta}</div>` : ''}${en}${pitchZone(p, zh)}${opt.live && !pitchDots(p) ? `<div class="p-meta">${zh ? '等待第一球' : 'Waiting for the first pitch'}</div>` : ''}</div>`;
+    ${top}<div class="p-body">${body}</div>${pitchDots(p, zh)}${pitchRow}${hit}${subs}${meta ? `<div class="p-meta">${meta}</div>` : ''}${en}${pitchZone(p, zh)}${opt.live && !pitchDots(p) ? `<div class="p-meta">${zh ? '等待第一球' : 'Waiting for the first pitch'}</div>` : ''}</div>`;
 }
 
 export function textHTML(d) {
