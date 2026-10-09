@@ -26,16 +26,16 @@ a { color: inherit; text-decoration: none; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ---------- 頂欄 ---------- */
-:root { --th: 114px; }
+:root { --th: 114px; --sat: calc(env(safe-area-inset-top) + 8px); } /* 頂部安全區（瀏海／狀態列）再多留 8px，頂欄不貼邊 */
 body.nodates { --th: 56px; }
 body.ingame { --th: 148px; }
 body { --bar: 0px; }
 body.haslb { --bar: 52px; }
 .top {
-  position: sticky; top: 0; z-index: 20; padding-top: env(safe-area-inset-top);
+  position: sticky; top: 0; z-index: 20; padding-top: var(--sat);
   filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .3));
 }
-.top::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: env(safe-area-inset-top); background: var(--navy); }
+.top::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: var(--sat); background: var(--navy); }
 .top-in {
   height: var(--th); background: var(--navy); color: #fff; border-radius: 0 0 14px 14px;
 }
@@ -69,7 +69,7 @@ body.ingame .r2, body.nodates .r2 { display: none; }
               radial-gradient(circle 5px at 100% 50%, #0000 98%, #fff) right / 50% 100% no-repeat;
 }
 .dseg.on small { color: var(--sub); }
-.banner { position: sticky; top: calc(var(--th) + env(safe-area-inset-top)); z-index: 19; margin: 0; padding: 8px 12px; background: var(--emph); color: #fff; font-size: 13px; text-align: center; }
+.banner { position: sticky; top: calc(var(--th) + var(--sat)); z-index: 19; margin: 0; padding: 8px 12px; background: var(--emph); color: #fff; font-size: 13px; text-align: center; }
 
 main { max-width: 720px; margin: 0 auto; padding: 12px; }
 .loading, .empty { padding: 32px 0; text-align: center; color: var(--sub); }
@@ -322,13 +322,13 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .pl2 .pt em { font-style: normal; }
 .pl2 .pt span + em { margin-left: 8px; }
 /* S2 半局標題固定 */
-.inn.stk { position: sticky; top: calc(var(--th) + env(safe-area-inset-top) + var(--bar)); z-index: 6; background: var(--bg); margin-top: 10px; padding-top: 8px; }
+.inn.stk { position: sticky; top: calc(var(--th) + var(--sat) + var(--bar)); z-index: 6; background: var(--bg); margin-top: 10px; padding-top: 8px; }
 .inn .rb { margin-left: auto; font-style: normal; font-size: 12px; font-weight: 800; color: #fff; background: var(--emph); border-radius: 6px; padding: 1px 7px; }
 .inn .hs.al { margin-left: auto; }
 .inn .hs b.of { color: var(--emph); font-weight: 800; }
 .inn .hs { margin-left: 0; font-style: normal; font-size: 12px; font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; }
 /* S3 目前打席固定條 */
-.livebar { position: sticky; top: calc(var(--th) + env(safe-area-inset-top)); z-index: 18; margin: 0 -12px 8px; height: 44px; padding: 0 14px; background: var(--navy); color: #fff; display: flex; align-items: center; gap: 12px; border-radius: 0 0 12px 12px; box-shadow: 0 2px 5px rgba(0, 0, 0, .25); }
+.livebar { position: sticky; top: calc(var(--th) + var(--sat)); z-index: 18; margin: 0 -12px 8px; height: 44px; padding: 0 14px; background: var(--navy); color: #fff; display: flex; align-items: center; gap: 12px; border-radius: 0 0 12px 12px; box-shadow: 0 2px 5px rgba(0, 0, 0, .25); }
 .livebar[hidden] { display: none; }
 .livebar .lm { flex: 1; min-width: 0; line-height: 1.25; } .livebar .lm b { display: block; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .livebar .lm span { font-size: 11px; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 .lbs { width: 34px; height: 26px; flex: none; } .lbs rect { fill: rgba(255, 255, 255, .25); } .lbs rect.on { fill: #fff; }
@@ -521,7 +521,7 @@ html, body { touch-action: pan-y pinch-zoom; }
 .pcd-vs b { margin-left: auto; font-size: 18px; color: var(--navy); font-variant-numeric: tabular-nums; }
 .pcd-none { margin: 0; font-size: 13px; color: var(--sub); }
 
-.toast { position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 64px); transform: translate(-50%, -12px); z-index: 70; background: rgba(28, 36, 48, .92); color: #fff; font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 18px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; }
+.toast { position: fixed; left: 50%; top: calc(var(--sat) + 64px); transform: translate(-50%, -12px); z-index: 70; background: rgba(28, 36, 48, .92); color: #fff; font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 18px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 /* ---------- 季後賽對戰樹（門票卡片）---------- */
