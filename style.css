@@ -313,8 +313,14 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .zone .zbg { fill: #f3f5f8; } .zone .zbox { fill: none; stroke: var(--navy); stroke-width: 2; }
 .zone .zp circle { stroke: #fff; stroke-width: 1; } .zone .zp text { font-size: 9px; font-weight: 800; fill: #fff; text-anchor: middle; }
 .zone .zp.b circle { fill: #3a9d5d; } .zone .zp.s circle { fill: #d9a300; } .zone .zp.f circle { fill: #8b95a1; } .zone .zp.x circle { fill: var(--navy); }
-.pl2 { list-style: none; margin: 0; padding: 0; flex: 1; min-width: 0; display: grid; gap: 4px; font-size: 12px; }
-.pl2 li { display: flex; align-items: center; gap: 6px; } .pl2 span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .pl2 em { font-style: normal; color: var(--sub); white-space: nowrap; }
+.pl2 { list-style: none; margin: 0; padding: 0; flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; font-size: 12px; } /* 欄寬一定要限制在容器內，不然最長的一列會把整個清單撐出卡片 */
+.pl2 li { display: flex; align-items: flex-start; gap: 6px; }
+.pl2 i { margin-top: 1px; }
+.pl2 .pt { flex: 1; min-width: 0; line-height: 1.3; }
+.pl2 .pt b { display: block; font-weight: 600; overflow-wrap: anywhere; }
+.pl2 .pt small { display: block; font-size: 11px; color: var(--sub); }
+.pl2 .pt em { font-style: normal; }
+.pl2 .pt span + em { margin-left: 8px; }
 /* S2 半局標題固定 */
 .inn.stk { position: sticky; top: calc(var(--th) + env(safe-area-inset-top) + var(--bar)); z-index: 6; background: var(--bg); margin-top: 10px; padding-top: 8px; }
 .inn .rb { margin-left: auto; font-style: normal; font-size: 12px; font-weight: 800; color: #fff; background: var(--emph); border-radius: 6px; padding: 1px 7px; }

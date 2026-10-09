@@ -246,6 +246,15 @@ with sync_playwright() as p:
             print('pcard switched, vs header:', pg.evaluate("(document.querySelector('#pcdBody .pcd-sec:last-child h4')||{}).innerText"))
         if name in ('stand', 'gametop'):
             n0 = len(reqs); pg.click('#title'); pg.wait_for_timeout(400); print(name, 'refresh requests:', len(reqs) - n0, 'toast:', pg.evaluate("(document.getElementById('toast')||{}).textContent"))
+        if name == 'gametop':
+            # 展開的打席裡，每一球的清單不可以超出清單本身（英文球種名稱長，窄螢幕很容易溢出）；中英文各檢查一次
+            chk = "(() => { document.querySelectorAll('#plays .play').forEach(function(p){p.classList.add('open');}); var bad = []; document.querySelectorAll('#plays .pl2 li').forEach(function(li){ var u = li.parentElement.getBoundingClientRect(), r = li.getBoundingClientRect(); var kids = li.querySelectorAll('*'); for (var i = 0; i < kids.length; i++) { var k = kids[i].getBoundingClientRect(); if (k.width && k.right > u.right + 1) { bad.push(kids[i].tagName + ' ' + Math.round(k.right - u.right)); break; } } if (r.right > u.right + 1) bad.push('LI ' + Math.round(r.right - u.right)); }); return [document.querySelectorAll('#plays .pl2 li').length, bad]; })()"
+            zh_res = pg.evaluate(chk)
+            pg.click('#langBtn'); pg.wait_for_timeout(500)
+            en_res = pg.evaluate(chk)
+            print('pitch list rows / overflow  zh:', zh_res, ' en:', en_res)
+            if not zh_res[0] or zh_res[1] or en_res[1]: failures.append((name, ['每一球的清單超出了容器：zh %s、en %s' % (zh_res, en_res)]))
+            pg.click('#langBtn'); pg.wait_for_timeout(300)
         if name == 'gametop' and pg.evaluate("document.querySelectorAll('#liveBar [data-player]').length"):
             failures.append((name, ['目前打席條不應該點了開球員小卡']))
         if name == 'yday': pg.click('#segL'); pg.wait_for_timeout(800)

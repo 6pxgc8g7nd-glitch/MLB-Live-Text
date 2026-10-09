@@ -104,7 +104,8 @@ export function pitchZone(p, zh) {
     const nm = ty ? (zh ? PITCH_ZH[ty.code] || ty.description : ty.description) : '';
     const sp = e.pitchData && e.pitchData.startSpeed;
     const cnt = e.count ? `${e.count.balls}-${e.count.strikes}` : '';
-    return `<li><i class="${pitchCls(e)}">${i + 1}</i><span>${esc(nm)}${sp ? ' ' + Math.round(sp * 10) / 10 + ' mph' : ''}</span><em>${PCALL[pitchCls(e)]}${cnt ? ' · ' + cnt : ''}</em></li>`;
+    // 兩行：球種／球速＋結果。球速的數字與 mph 之間用不換行空白，窄螢幕只會在球種名稱裡換行
+    return `<li><i class="${pitchCls(e)}">${i + 1}</i><div class="pt"><b>${esc(nm)}</b><small>${sp ? `<span>${Math.round(sp * 10) / 10}&nbsp;mph</span>` : ''}<em>${PCALL[pitchCls(e)]}${cnt ? ' · ' + cnt : ''}</em></small></div></li>`;
   }).join('');
   const svg = pos.length
     ? `<svg class="zone" viewBox="0 0 120 150" aria-hidden="true"><rect x="0" y="0" width="120" height="150" rx="8" class="zbg"/><rect x="${zl.toFixed(1)}" y="${zt.toFixed(1)}" width="${(zr - zl).toFixed(1)}" height="${(zb - zt).toFixed(1)}" class="zbox"/>${dots}</svg>` : '';

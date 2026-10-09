@@ -206,7 +206,14 @@ const lv = liveHTML(lvFeed);
 assert.ok(!lv.includes('lv-sit') && !lv.includes('class="bases"'), '局數／壘包／球數大卡已移除（目前打席條已有）');
 assert.ok(lv.includes('data-player="30"') && lv.includes('data-player="20"'), '打者與投手可開小卡');
 assert.ok(lv.includes('用球數 <b>77</b>') && lv.includes('今日 5.0 局'), '投手今日用球數');
-assert.ok(lv.includes('滑球') && lv.includes('class="pz"'), '本打席的每一球');
+assert.ok(lv.includes('<b>滑球</b>') && lv.includes('85.2&nbsp;mph') && lv.includes('class="pz"'), '本打席的每一球：第一行球種、第二行球速與結果');
+assert.ok(lv.includes('<em>壞球 · 1-0</em>'), '結果與球數');
+{ // 英文：長的球種名稱照樣完整出現，沒有球速時只剩結果
+  T.S.lang = 'en';
+  const en = liveHTML(lvFeed);
+  assert.ok(en.includes('<b>Slider</b>'), '英文球種名稱');
+  T.S.lang = 'zh';
+}
 assert.ok(lv.includes('class="play live open"') && lv.includes('進行中'), '進行中的打席用文字轉播的卡片樣式，固定展開');
 assert.ok(lv.includes('class="pd"') && lv.includes('上一球') && !lv.includes('決勝球'), '每一球的圓點與「上一球」摘要（進行中不叫決勝球）');
 const noPitch = JSON.parse(JSON.stringify(lvFeed)); noPitch.liveData.plays.allPlays[1].playEvents = [];
