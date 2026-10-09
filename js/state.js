@@ -10,7 +10,7 @@ export const S = {
   standView: 'division',
   gtab: store.get('gtab', 'text'),
   autoFollow: store.get('autoFollow', false),
-  gFold: store.get('gFold', false),
+  gFold: false, // 比賽頁工具列：每次進入都是展開，收合只在這一次停留有效
   favs: store.get('favs', []),
 };
 export let view = null;

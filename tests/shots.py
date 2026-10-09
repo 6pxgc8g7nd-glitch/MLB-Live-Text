@@ -246,6 +246,23 @@ with sync_playwright() as p:
             print('pcard switched, vs header:', pg.evaluate("(document.querySelector('#pcdBody .pcd-sec:last-child h4')||{}).innerText"))
         if name in ('stand', 'gametop'):
             n0 = len(reqs); pg.click('#title'); pg.wait_for_timeout(400); print(name, 'refresh requests:', len(reqs) - n0, 'toast:', pg.evaluate("(document.getElementById('toast')||{}).textContent"))
+        if name in ('gametop', 'box', 'lv'):
+            # 比賽頁工具列預設展開
+            got = pg.evaluate("[document.querySelector('#gCtl').classList.contains('fold'), getComputedStyle(document.querySelector('#gCtl .tk')).display]")
+            print(name, 'toolbar default:', got)
+            if got[0] or got[1] == 'none': failures.append((name, ['工具列預設應該展開：%s' % got]))
+        if name == 'gametop':
+            # 點把手收起（把手寫目前分頁名稱）／再點展開；離開再進來又是展開
+            pg.click('#gFold'); pg.wait_for_timeout(200)
+            closed = pg.evaluate("[document.querySelector('#gCtl').classList.contains('fold'), getComputedStyle(document.querySelector('#gCtl .tk')).display, (document.querySelector('#gFold .lm') || {}).textContent]")
+            pg.click('#gFold'); pg.wait_for_timeout(200)
+            opened = pg.evaluate("[document.querySelector('#gCtl').classList.contains('fold'), document.querySelectorAll('#gTabs button:not([hidden])').length]")
+            print('toolbar toggle: closed', closed, 'open', opened)
+            pg.click('#gFold'); pg.wait_for_timeout(200)
+            gh = pg.evaluate('location.hash'); pg.evaluate("location.hash = '#/scores'"); pg.wait_for_timeout(600); pg.evaluate('h => { location.hash = h; }', gh); pg.wait_for_timeout(1200)
+            again = pg.evaluate("document.querySelector('#gCtl').classList.contains('fold')")
+            if again: failures.append((name, ['離開再進比賽頁，工具列應該回到展開']))
+            if closed != [True, 'none', '文字轉播'] or opened[0] or opened[1] < 2: failures.append((name, ['工具列收起／展開不正常：%s %s' % (closed, opened)]))
         if name == 'gametop':
             # 展開的打席裡，每一球的清單不可以超出清單本身（英文球種名稱長，窄螢幕很容易溢出）；中英文各檢查一次
             chk = "(() => { document.querySelectorAll('#plays .play').forEach(function(p){p.classList.add('open');}); var bad = []; document.querySelectorAll('#plays .pl2 li').forEach(function(li){ var u = li.parentElement.getBoundingClientRect(), r = li.getBoundingClientRect(); var kids = li.querySelectorAll('*'); for (var i = 0; i < kids.length; i++) { var k = kids[i].getBoundingClientRect(); if (k.width && k.right > u.right + 1) { bad.push(kids[i].tagName + ' ' + Math.round(k.right - u.right)); break; } } if (r.right > u.right + 1) bad.push('LI ' + Math.round(r.right - u.right)); }); return [document.querySelectorAll('#plays .pl2 li').length, bad]; })()"

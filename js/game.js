@@ -576,6 +576,8 @@ function renderWp() {
   }).catch(() => { /* 沒有勝率資料就不顯示，下次輪詢再試 */ }).finally(() => { wp.busy = false; });
 }
 
+const TAB_NAME = { text: '文字轉播', box: '數據', live: 'LIVE' };
+
 export function renderBody() {
   const body = $('#gBody');
   if (!body || !G.data) return;
@@ -585,6 +587,8 @@ export function renderBody() {
   const lvBtn = $('#gTabs [data-t="live"]');
   if (lvBtn) lvBtn.hidden = !isLive;
   const tab = S.gtab === 'live' && !isLive ? 'text' : S.gtab;
+  const handle = $('#gFold .lm');
+  if (handle) handle.textContent = TAB_NAME[tab] || '更多'; // 工具列收起時，把手上寫著目前在看哪個分頁
   if (G.bodyTab !== tab) {
     G.bodyTab = tab;
     G.sig = '';
@@ -749,6 +753,7 @@ export function renderGame() {
 
 export function showGame(pk) {
   setRoute('game');
+  S.gFold = false; // 每次進入比賽頁，工具列都先展開
   setHeader('比賽', true, null);
   const my = token;
   setG({ pk, data: null, filter: 'all', side: 'away', limit: 60, sig: '', headSig: '', bodyTab: '', lastTotal: 0, open: new Set(), shut: new Set() });
@@ -759,7 +764,7 @@ export function showGame(pk) {
       <div class="seg" id="gTabs"><button data-t="text">文字轉播</button><button data-t="box">數據</button><button data-t="live" class="lv-tab" hidden>LIVE</button></div>
       <div class="tr"></div>
       <div id="gChips"></div>
-    </div><button class="fbt" id="gFold" aria-label="收合或展開工具列"><span class="fl lc">收合</span><span class="fl lm">更多</span><svg viewBox="0 0 16 10" aria-hidden="true"><path d="M2 8l6-6 6 6"/></svg></button></div>
+    </div><button class="fbt" id="gFold" aria-label="收合或展開工具列"><span class="fl lc">收合</span><span class="fl lm">${TAB_NAME[S.gtab] || '更多'}</span><svg viewBox="0 0 16 10" aria-hidden="true"><path d="M2 8l6-6 6 6"/></svg></button></div>
     <div id="gBody"></div>
     <button id="newChip" class="fab" hidden></button>`;
   window.scrollTo(0, 0);
