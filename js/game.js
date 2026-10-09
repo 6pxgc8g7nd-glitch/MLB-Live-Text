@@ -674,10 +674,13 @@ export function gameHeader(d) {
       const offT = (gd.teams && gd.teams[offSide]) || {};
       const half = zh ? `${ls.currentInning} 局${HALF[ls.inningState] || ''}` : `${ls.inningState === 'Top' ? 'Top' : 'Bot'} ${ls.currentInning}`;
       const ov = fx.half ? `<div class="lov"><em>${esc(half)}</em>${esc(teamAbbr(offT))} ${zh ? '進攻' : 'batting'}</div>` : '';
-      lbEl.innerHTML = `<div class="lm${fx.bat ? ' in' : ''}"><b>${zh ? '打' : 'AB'} ${esc(bat.fullName || '–')}</b><span>${zh ? '投' : 'P'} ${esc((def.pitcher && def.pitcher.fullName) || '–')}</span></div>${mid}<div class="lbr">${bs}<div class="lc"><b${fx.cnt ? ' class="pop"' : ''}>${dash(ls.balls)}-${dash(ls.strikes)}</b><span>${dash(ls.outs)} ${zh ? '出局' : 'out'}</span></div></div>${ov}`;
+      const lbHTML = `<div class="lm${fx.bat ? ' in' : ''}"><b>${zh ? '打' : 'AB'} ${esc(bat.fullName || '–')}</b><span>${zh ? '投' : 'P'} ${esc((def.pitcher && def.pitcher.fullName) || '–')}</span></div>${mid}<div class="lbr">${bs}<div class="lc"><b${fx.cnt ? ' class="pop"' : ''}>${dash(ls.balls)}-${dash(ls.strikes)}</b><span>${dash(ls.outs)} ${zh ? '出局' : 'out'}</span></div></div>${ov}`;
+      if (lbEl._sig !== lbHTML) { lbEl.innerHTML = lbHTML; lbEl._sig = lbHTML; }
     }
   }
-  $('#gameRow').innerHTML = `<div class="gstrip">${blk(aT)}<div class="gm">${showN ? `<b class="gn ${st.k}">${run('away')}<i class="cn"></i>${run('home')}</b>` : '<b class="gn vs">VS</b>'}<small>${esc(st.txt)}</small></div>${blk(hT)}</div>`;
+  const rowHTML = `<div class="gstrip">${blk(aT)}<div class="gm">${showN ? `<b class="gn ${st.k}">${run('away')}<i class="cn"></i>${run('home')}</b>` : '<b class="gn vs">VS</b>'}<small>${esc(st.txt)}</small></div>${blk(hT)}</div>`;
+  const gr = $('#gameRow');
+  if (gr._sig !== rowHTML || !gr.firstChild) { gr.innerHTML = rowHTML; gr._sig = rowHTML; } // 換頁清空過就要重畫
 }
 /* ---- 全壘打煙火（進行中的比賽出現新全壘打時播放，約 3.5 秒，不擋操作）---- */
 export function playHR(info) {
@@ -769,7 +772,7 @@ export function showGame(pk) {
     () => {
       const st = G.data && G.data.gameData && G.data.gameData.status;
       const k = st ? gameState(st, G.data.liveData && G.data.liveData.linescore).k : 'live';
-      if (k === 'live') return 10000;
+      if (k === 'live') return S.gtab === 'live' ? 1000 : 10000; // LIVE 分頁開著：每秒更新
       if (k === 'upcoming') return 30000;
       return null; // 已結束或延賽：不再輪詢
     }

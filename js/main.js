@@ -96,6 +96,7 @@ function boot() {
       S.gtab = b.dataset.t;
       store.set('gtab', S.gtab);
       renderBody();
+      if (poller) poller.kick(); // 切到 LIVE 分頁就馬上換成 1 秒的節奏
     } else if (b.dataset.af) {
       S.autoFollow = !S.autoFollow;
       store.set('autoFollow', S.autoFollow);
