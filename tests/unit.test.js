@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import { twDate, shiftDate, weekdayEn } from '../js/util.js';
-import { segLabel } from '../js/shell.js';
+import { segLabel, calYears, calTitleHTML } from '../js/shell.js';
 import { evZh, seriesZh } from '../js/dict.js';
 import { gameState, cardHTML } from '../js/scores.js';
 import { headHTML, textHTML, boxHTML, liveHTML, recapTarget } from '../js/game.js';
@@ -344,5 +344,15 @@ assert.strictEqual(weekdayEn('2026-10-10'), 'Sat', '以台灣日期算星期');
 assert.strictEqual(segLabel('2020-01-11', 0).name, '1/11 Sat', '不是今天：月/日 加英文星期');
 assert.strictEqual(segLabel(twDate(), 0).name, 'Today');
 assert.deepStrictEqual([segLabel('2020-01-11', -1).name, segLabel('2020-01-11', 1).name], ['‹', '›']);
+
+// 日曆標題的年、月選單
+assert.deepStrictEqual([calYears(2026, 2026)[0], calYears(2026, 2026).at(-1), calYears(2026, 2026).length], [2008, 2027, 20], '2008 到明年');
+assert.strictEqual(calYears(2005, 2026)[0], 2005, '看的年份比下限早也補進去');
+assert.strictEqual(calYears(2031, 2026).at(-1), 2031, '看的年份比上限晚也補進去');
+const ct = calTitleHTML(2026, 9, 2026);
+assert.ok(ct.includes('<option value="2026" selected>2026 年</option>') && ct.includes('<option value="9" selected>9 月</option>'), '目前的年、月是選中的');
+assert.strictEqual((ct.match(/<option value="\d+" selected>/g) || []).length, 2, '年、月各一個選中');
+assert.strictEqual((ct.match(/<option value="\d+"( selected)?>\d+ 月<\/option>/g) || []).length, 12, '十二個月都有');
+assert.ok(ct.includes('aria-label="年"') && ct.includes('aria-label="月"'), '選單有無障礙標籤');
 
 console.log('all tests passed');

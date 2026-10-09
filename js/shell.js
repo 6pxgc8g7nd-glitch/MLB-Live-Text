@@ -27,6 +27,19 @@ export function renderSegs() {
 }
 /* 長按今天：跳出日曆，點日期直接切換 */
 export const calDays = new Map();
+/* 日曆標題的年、月下拉選單。年份從 2008（有逐球位置資料）到明年；正在看的年份若超出範圍也會補進去 */
+const CAL_MIN_YEAR = 2008;
+export function calYears(y, nowYear) {
+  const from = Math.min(CAL_MIN_YEAR, y), to = Math.max(nowYear + 1, y);
+  return Array.from({ length: to - from + 1 }, (_, i) => from + i);
+}
+export function calTitleHTML(y, m, nowYear) {
+  const opt = (v, cur, unit) => `<option value="${v}"${v === cur ? ' selected' : ''}>${v} ${unit}</option>`;
+  const ys = calYears(y, nowYear).map((v) => opt(v, y, '年')).join('');
+  const ms = Array.from({ length: 12 }, (_, i) => opt(i + 1, m, '月')).join('');
+  return `<span class="cal-sel"><select class="cal-y" aria-label="年">${ys}</select><select class="cal-mo" aria-label="月">${ms}</select></span>`;
+}
+
 export function openCal(sel, onPick) {
   const old = document.getElementById('cal'); if (old) old.remove();
   const today = twDate();
@@ -65,7 +78,7 @@ export function openCal(sel, onPick) {
       cells += `<button data-d="${iso}" class="${iso === sel ? 'sel' : ''}${iso === today ? ' now' : ''}${has.has(iso) ? ' hv' : ''}">${d}</button>`;
     }
     wrap.innerHTML = `<div class="cal-bg"></div><div class="cal-box" role="dialog" aria-label="選擇日期">
-      <div class="cal-h"><button class="cal-nav" data-m="-1" aria-label="上個月">‹</button><b>${y} 年 ${m} 月</b><button class="cal-nav" data-m="1" aria-label="下個月">›</button></div>
+      <div class="cal-h"><button class="cal-nav" data-m="-1" aria-label="上個月">‹</button>${calTitleHTML(y, m, +today.slice(0, 4))}<button class="cal-nav" data-m="1" aria-label="下個月">›</button></div>
       <div class="cal-w"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
       <div class="cal-g">${cells}</div>
       <div class="cal-lg"><i></i>有比賽</div>
@@ -77,6 +90,14 @@ export function openCal(sel, onPick) {
     if (n) { m += +n.dataset.m; if (m < 1) { m = 12; y--; } if (m > 12) { m = 1; y++; } draw(); return loadMonth(); }
     const d = e.target.closest('[data-d]');
     if (d) { close(); onPick(d.dataset.d); }
+  });
+  wrap.addEventListener('change', (e) => { // 直接選年或月
+    const t = e.target;
+    if (t.classList.contains('cal-y')) y = +t.value;
+    else if (t.classList.contains('cal-mo')) m = +t.value;
+    else return;
+    draw();
+    loadMonth();
   });
   draw();
   loadMonth();
