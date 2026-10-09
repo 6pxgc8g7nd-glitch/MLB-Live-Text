@@ -232,6 +232,8 @@ with sync_playwright() as p:
             print('pcard switched, vs header:', pg.evaluate("(document.querySelector('#pcdBody .pcd-sec:last-child h4')||{}).innerText"))
         if name in ('stand', 'gametop'):
             n0 = len(reqs); pg.click('#title'); pg.wait_for_timeout(400); print(name, 'refresh requests:', len(reqs) - n0, 'toast:', pg.evaluate("(document.getElementById('toast')||{}).textContent"))
+        if name == 'gametop' and pg.evaluate("document.querySelectorAll('#liveBar [data-player]').length"):
+            failures.append((name, ['目前打席條不應該點了開球員小卡']))
         if name == 'yday': pg.click('#segL'); pg.wait_for_timeout(800)
         if name == 'game': pg.evaluate('window.scrollTo(0, 560)'); pg.wait_for_timeout(200)
         if name == 'stand':

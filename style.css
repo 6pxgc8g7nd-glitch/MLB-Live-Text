@@ -525,10 +525,10 @@ html, body { touch-action: pan-y pinch-zoom; }
 .g-tm { position: relative; }
 
 /* 球員名字（可點開小卡）與球員小卡 */
-.pl-n, .pl-u, .pcs .pc[data-player] .nm { text-decoration: underline dotted; text-decoration-thickness: 1px; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); }
+.pl-n, .pcs .pc[data-player] .nm { text-decoration: underline dotted; text-decoration-thickness: 1px; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); }
 .pl-n { cursor: pointer; padding: 8px 2px; margin: 0 -2px; } /* 行內元素的上下 padding 不影響排版，只把點擊範圍加大 */
 [data-player] { cursor: pointer; }
-.livebar .lm[data-player]:active, .pcs .pc[data-player]:active, .pcd-sw:active { opacity: .7; }
+.pcs .pc[data-player]:active, .pcd-sw:active { opacity: .7; }
 .pcd { padding-bottom: calc(14px + env(safe-area-inset-bottom)); }
 .pcd-h { display: flex; align-items: center; gap: 12px; padding: 2px 2px 10px; border-bottom: 1px dashed var(--line); }
 .pcd-h .pcd-l { width: 44px; height: 44px; object-fit: contain; margin: 0; flex: none; }
