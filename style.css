@@ -286,8 +286,7 @@ table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nu
 .cal-nav { width: 40px; height: 36px; border: 0; background: transparent; color: var(--navy); font-size: 26px; font-weight: 700; border-radius: 10px; }
 .cal-nav:active { background: #e6e6e6; }
 .cal-sel { display: flex; align-items: center; gap: 2px; }
-.cal-sel select { -webkit-appearance: none; appearance: none; border: 0; border-radius: 10px; padding: 6px 20px 6px 8px; cursor: pointer; text-align-last: center; font: inherit; font-weight: 800; color: var(--navy);
-  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23004B93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 6px center / 9px; }
+.cal-sel select { -webkit-appearance: none; appearance: none; border: 0; border-radius: 10px; padding: 6px 8px; cursor: pointer; text-align-last: center; font: inherit; font-weight: 800; color: var(--navy); background: transparent; }
 .cal-sel select:active, .cal-sel select:focus-visible { background-color: #e6e6e6; outline: none; }
 .cal-w, .cal-g { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; }
 .cal-w { margin: 8px 0 4px; padding-bottom: 6px; border-bottom: 2px dashed #cfcfcf; font-size: 12px; color: var(--sub); }
