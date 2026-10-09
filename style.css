@@ -26,7 +26,7 @@ a { color: inherit; text-decoration: none; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ---------- 頂欄 ---------- */
-:root { --th: 114px; --sat: calc(env(safe-area-inset-top) + 8px); } /* 頂部安全區（瀏海／狀態列）再多留 8px，頂欄不貼邊 */
+:root { --th: 114px; --sat: calc(env(safe-area-inset-top) + 4px); } /* 頂部安全區（瀏海／狀態列）再多留 4px，頂欄不貼邊 */
 body.nodates { --th: 56px; }
 body.ingame { --th: 148px; }
 body { --bar: 0px; }
