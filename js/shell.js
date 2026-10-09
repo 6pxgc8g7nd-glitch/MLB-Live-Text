@@ -78,7 +78,7 @@ export function openCal(sel, onPick) {
       cells += `<button data-d="${iso}" class="${iso === sel ? 'sel' : ''}${iso === today ? ' now' : ''}${has.has(iso) ? ' hv' : ''}">${d}</button>`;
     }
     wrap.innerHTML = `<div class="cal-bg"></div><div class="cal-box" role="dialog" aria-label="選擇日期">
-      <div class="cal-h"><button class="cal-nav" data-m="-1" aria-label="上個月">‹</button>${calTitleHTML(y, m, +today.slice(0, 4))}<button class="cal-nav" data-m="1" aria-label="下個月">›</button></div>
+      <div class="cal-h">${calTitleHTML(y, m, +today.slice(0, 4))}</div>
       <div class="cal-w"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
       <div class="cal-g">${cells}</div>
       <div class="cal-lg"><i></i>有比賽</div>
@@ -86,8 +86,6 @@ export function openCal(sel, onPick) {
   };
   wrap.addEventListener('click', (e) => {
     if (e.target.classList.contains('cal-bg')) return close();
-    const n = e.target.closest('[data-m]');
-    if (n) { m += +n.dataset.m; if (m < 1) { m = 12; y--; } if (m > 12) { m = 1; y++; } draw(); return loadMonth(); }
     const d = e.target.closest('[data-d]');
     if (d) { close(); onPick(d.dataset.d); }
   });
