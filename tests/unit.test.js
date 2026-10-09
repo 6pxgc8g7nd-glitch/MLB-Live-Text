@@ -1,5 +1,6 @@
 import assert from 'node:assert';
-import { twDate, shiftDate } from '../js/util.js';
+import { twDate, shiftDate, weekdayEn } from '../js/util.js';
+import { segLabel } from '../js/shell.js';
 import { evZh, seriesZh } from '../js/dict.js';
 import { gameState, cardHTML } from '../js/scores.js';
 import { headHTML, textHTML, boxHTML, liveHTML, recapTarget } from '../js/game.js';
@@ -336,5 +337,12 @@ assert.ok(won.includes('--la:var(--navy)') && won.includes('--ld:var(--navy)') &
 T.S.favs = [139]; // 最愛球隊已被淘汰
 assert.strictEqual(lit(bracketHTML(bracketData, false)), 0, '最愛球隊被淘汰：線不亮');
 T.S.favs = [];
+
+// 日期票的星期：英文縮寫
+assert.deepStrictEqual(['2020-01-05', '2020-01-06', '2020-01-07', '2020-01-08', '2020-01-09', '2020-01-10', '2020-01-11'].map(weekdayEn), ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
+assert.strictEqual(weekdayEn('2026-10-10'), 'Sat', '以台灣日期算星期');
+assert.strictEqual(segLabel('2020-01-11', 0).name, '1/11 Sat', '不是今天：月/日 加英文星期');
+assert.strictEqual(segLabel(twDate(), 0).name, 'Today');
+assert.deepStrictEqual([segLabel('2020-01-11', -1).name, segLabel('2020-01-11', 1).name], ['‹', '›']);
 
 console.log('all tests passed');

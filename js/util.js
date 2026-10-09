@@ -41,3 +41,6 @@ export const shiftDate = (s, n) => {
 export const fmtTime = (x) => (x ? fmtHM.format(new Date(x)) : '–');
 export const fmtClock = (x) => fmtHMS.format(new Date(x));
 export const dayLabel = (s) => fmtDay.format(new Date(`${s}T12:00:00+08:00`));
+// 星期的英文縮寫（Mon、Tue、Wed、Thu、Fri、Sat、Sun），標題欄的日期票用
+const fmtWkEn = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short' });
+export const weekdayEn = (s) => fmtWkEn.format(new Date(`${s}T12:00:00+08:00`));

@@ -1,5 +1,5 @@
 /* 外框：標題欄日期、日曆、路由、提示訊息 */
-import { $, $$, twDate, shiftDate, dayLabel } from './util.js';
+import { $, $$, twDate, shiftDate, dayLabel, weekdayEn } from './util.js';
 import { api } from './api.js';
 import { S, route$, stopPoller, nextToken, setG } from './state.js';
 import { showScores } from './scores.js';
@@ -11,7 +11,7 @@ import { closePlayer } from './player.js';
 /* 標題欄日期：三張小票（前一天 / 目前日期 / 後一天） */
 export function segLabel(d, offset) {
   const dl = dayLabel(d);
-  const md = (dl.match(/\d+\/\d+/) || [''])[0]; let wk = (dl.match(/週(.)/) || ['', ''])[1];
+  const md = (dl.match(/\d+\/\d+/) || [''])[0], wk = weekdayEn(d);
   if (offset < 0) return { small: '', name: '‹' };
   if (offset > 0) return { small: '', name: '›' };
   return d === twDate() ? { small: '', name: 'Today' } : { small: '', name: `${md} ${wk}`.trim() };
