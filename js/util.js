@@ -44,3 +44,27 @@ export const dayLabel = (s) => fmtDay.format(new Date(`${s}T12:00:00+08:00`));
 // 星期的英文縮寫（Mon、Tue、Wed、Thu、Fri、Sat、Sun），標題欄的日期票用
 const fmtWkEn = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short' });
 export const weekdayEn = (s) => fmtWkEn.format(new Date(`${s}T12:00:00+08:00`));
+
+/* 把新的 HTML 套進容器：只更新有變的文字與屬性，沒變的節點（尤其是隊徽圖片）原封不動。
+ * 整塊 innerHTML 重寫會讓隊徽重新載入，畫面就會閃一下 */
+export function morph(el, html) {
+  const t = document.createElement('template');
+  t.innerHTML = html;
+  patchKids(el, t.content);
+}
+const sameNode = (a, b) => a.nodeType === b.nodeType && a.nodeName === b.nodeName && !(a.nodeName === 'IMG' && a.getAttribute('src') !== b.getAttribute('src'));
+function patchKids(a, b) {
+  const an = Array.from(a.childNodes), bn = Array.from(b.childNodes);
+  bn.forEach((y, i) => {
+    const x = an[i];
+    if (!x) a.appendChild(y);
+    else if (!sameNode(x, y)) a.replaceChild(y, x);
+    else if (x.nodeType !== 1) { if (x.nodeValue !== y.nodeValue) x.nodeValue = y.nodeValue; }
+    else { patchAttrs(x, y); patchKids(x, y); }
+  });
+  for (let i = bn.length; i < an.length; i++) a.removeChild(an[i]);
+}
+function patchAttrs(a, b) {
+  for (const { name } of Array.from(a.attributes)) if (!b.hasAttribute(name)) a.removeAttribute(name);
+  for (const { name, value } of Array.from(b.attributes)) if (a.getAttribute(name) !== value) a.setAttribute(name, value);
+}

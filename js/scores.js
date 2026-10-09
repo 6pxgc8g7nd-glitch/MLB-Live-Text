@@ -1,5 +1,5 @@
 /* 比分頁：賽程、比賽卡片、骨架畫面 */
-import { $, esc, dash, twDate, shiftDate, fmtTime } from './util.js';
+import { $, esc, dash, twDate, shiftDate, fmtTime, morph } from './util.js';
 import { logo, HALF, seriesZh } from './dict.js';
 import { api, createPoller } from './api.js';
 import { S, view, poller, token, setRoute, setPoller } from './state.js';
@@ -130,7 +130,7 @@ export function renderGames(games) {
     .map((k) => `<h2 class="grp">${titles[k]}<small>${groups[k].length}</small></h2>${groups[k].map(cardHTML).join('')}`)
     .join('');
   // 內容沒變就不重畫，避免隊徽被重新載入而閃爍
-  if (html !== box._sig) { box.innerHTML = html; box._sig = html; }
+  if (html !== box._sig) { morph(box, html); box._sig = html; }
   loadPitStats(games);
 }
 

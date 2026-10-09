@@ -1,5 +1,5 @@
 /* 單場頁：局數表、文字轉播、數據、目前打席條、全壘打動畫 */
-import { $, $$, esc, dash } from './util.js';
+import { $, $$, esc, dash, morph } from './util.js';
 import { teamName, logo, teamAbbr, HALF, HIT_EVENTS, KEY_EVENTS, evZh } from './dict.js';
 import { api, createPoller } from './api.js';
 import { S, view, poller, token, G, setRoute, setPoller, setG } from './state.js';
@@ -680,7 +680,7 @@ export function gameHeader(d) {
   }
   const rowHTML = `<div class="gstrip">${blk(aT)}<div class="gm">${showN ? `<b class="gn ${st.k}">${run('away')}<i class="cn"></i>${run('home')}</b>` : '<b class="gn vs">VS</b>'}<small>${esc(st.txt)}</small></div>${blk(hT)}</div>`;
   const gr = $('#gameRow');
-  if (gr._sig !== rowHTML || !gr.firstChild) { gr.innerHTML = rowHTML; gr._sig = rowHTML; } // 換頁清空過就要重畫
+  if (gr._sig !== rowHTML || !gr.firstChild) { morph(gr, rowHTML); gr._sig = rowHTML; } // 換頁清空過就要重畫
 }
 /* ---- 全壘打煙火（進行中的比賽出現新全壘打時播放，約 3.5 秒，不擋操作）---- */
 export function playHR(info) {
@@ -733,7 +733,7 @@ export function renderGame() {
   if (head && html !== G.headSig) {
     const sc0 = head.querySelector('.ls-s');
     const keep = sc0 ? sc0.scrollLeft : null, prevCur = sc0 ? head.querySelector('.ls3').dataset.cur : null;
-    head.innerHTML = html; G.headSig = html;
+    morph(head, html); G.headSig = html;
     const sc1 = head.querySelector('.ls-s');
     if (sc1) {
       const cur = head.querySelector('.ls3').dataset.cur;

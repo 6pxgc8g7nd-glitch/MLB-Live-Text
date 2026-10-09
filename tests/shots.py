@@ -221,6 +221,12 @@ with sync_playwright() as p:
         if name in ('sdfresh', 'sdstale'):
             # 排名每天中午才更新：新的快取不用網路就能顯示；過期的快取抓不到時，先顯示舊資料並跳出失敗橫幅
             pg.wait_for_timeout(800)
+            pg.evaluate("document.querySelectorAll('#stand img.tl').forEach(function(i){i.__keep = true;})")
+            for _ in range(3):  # 回到畫面會重新跑一次輪詢（資料沒變）
+                pg.evaluate("document.dispatchEvent(new Event('visibilitychange'))"); pg.wait_for_timeout(300)
+            kept = pg.evaluate("[document.querySelectorAll('#stand img.tl').length, document.querySelectorAll('#stand img.tl').length && [].filter.call(document.querySelectorAll('#stand img.tl'), function(i){return i.__keep;}).length]")
+            print(name, 'logos / kept after 3 refreshes:', kept)
+            if not kept[0] or kept[0] != kept[1]: failures.append((name, ['資料沒變的更新把隊徽重建了（會閃）：%s' % kept]))
             rows = pg.evaluate("document.querySelectorAll('#stand .tc').length")
             banner = pg.evaluate("(function(){var b=document.getElementById('banner');return !!b && !b.hidden;})()")
             print(name, 'rows:', rows, 'banner:', banner)
@@ -248,6 +254,18 @@ with sync_playwright() as p:
             pg.evaluate('window.scrollTo(0, 700)'); pg.wait_for_timeout(500); print('nonav after scroll:', pg.evaluate("document.body.classList.contains('nonav')"))
             pg.evaluate('window.scrollBy(0, -60)'); pg.wait_for_timeout(500); print('nonav after scroll up:', pg.evaluate("document.body.classList.contains('nonav')"))
             pg.evaluate('window.scrollTo(0,0)'); pg.wait_for_timeout(300)
+        if name == 'scores':
+            ok = pg.evaluate("""async () => {
+              const m = await import('/js/util.js'); const box = document.createElement('div'); document.body.appendChild(box);
+              m.morph(box, '<div class="a"><img src="logos/147.svg"><b>1</b><i></i></div>');
+              const img = box.querySelector('img'); img.__keep = true;
+              m.morph(box, '<div class="a x"><img src="logos/147.svg"><b>2</b></div>');
+              const kept = box.querySelector('img').__keep === true && box.querySelector('b').textContent === '2' && box.querySelector('.a').className === 'a x' && !box.querySelector('i');
+              m.morph(box, '<div class="a x"><img src="logos/139.svg"><b>2</b></div>');
+              const swapped = box.querySelector('img').__keep !== true && box.querySelector('img').getAttribute('src') === 'logos/139.svg';
+              box.remove(); return kept && swapped; }""")
+            print('morph keeps unchanged nodes:', ok)
+            if not ok: failures.append((name, ['morph 沒有保留沒變的節點、或沒有更新有變的內容']))
         if name == 'scores':
             n0 = len(reqs); pg.click('#title'); pg.wait_for_timeout(600); print('refresh requests after title click:', len(reqs) - n0)
         out = '%s/shot_%s_%s.png' % (OUT, name, theme)

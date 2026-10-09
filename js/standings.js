@@ -1,5 +1,5 @@
 /* 排名頁：分區／聯盟排名、季後賽、對戰樹 */
-import { TZ, $, $$, esc, dash, twDate, store } from './util.js';
+import { TZ, $, $$, esc, dash, twDate, store, morph } from './util.js';
 import { TEAMS, teamName, logo, teamAbbr, DIVS, DIV_ORDER, LEAGUE, CLINCH, seriesZh } from './dict.js';
 import { api, createPoller } from './api.js';
 import { S, view, poller, token, setRoute, setPoller, setG } from './state.js';
@@ -278,7 +278,7 @@ export function paintBracket(box, d, st) {
   const html = bracketHTML(d, !st.sig);
   const sigNow = bracketHTML(d, false);
   if (sigNow === st.sig && box.querySelector('.bk2')) return;
-  box.innerHTML = html;
+  morph(box, html);
   st.sig = sigNow;
 }
 
@@ -306,10 +306,10 @@ export function showStandings() {
     $$('[data-sv]').forEach((b) => b.classList.toggle('on', b.dataset.sv === S.standView));
     if (S.standView !== 'bracket') bk.sig = '';
     if (S.standView === 'post') {
-      if (post) $('#stand').innerHTML = postHTML(post);
+      if (post) morph($('#stand'), postHTML(post));
     } else if (S.standView === 'bracket') {
       if (post) paintBracket($('#stand'), post, bk);
-    } else if (data) $('#stand').innerHTML = standingsHTML(data);
+    } else if (data) morph($('#stand'), standingsHTML(data));
   };
   let post = null;
   setG({ repaint: paint });
