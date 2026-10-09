@@ -7,6 +7,8 @@ import { gameState, seriesLbl } from './scores.js';
 import { setHeader } from './shell.js';
 import { pLink, pAttrs } from './player.js';
 import { wpPoints, wpHTML, bindWp } from './winprob.js';
+import { PITCH_ZH, pitchCls, PCALL } from './pitches.js';
+import { pitcherMapHTML } from './pitchmap.js';
 
 export function headHTML(d) {
   const gd = d.gameData || {};
@@ -70,17 +72,6 @@ export const isKey = (p) => {
 };
 
 
-export const PITCH_ZH = { FF: '四縫線速球', SI: '伸卡球', FT: '二縫線速球', FA: '速球', FC: '切球', SL: '滑球', ST: '橫掃球', SV: '大滑球', CU: '曲球', KC: '指節曲球', CS: '慢曲球', CH: '變速球', FS: '指叉球', FO: '指叉球', KN: '蝴蝶球', SC: '螺旋球', EP: '慢速球' };
-/* 每球結果：b 壞球 / s 好球 / f 界外 / x 打進場內 */
-export const pitchCls = (e) => {
-  const d = e.details || {}, c = (d.call && d.call.description) || d.description || '';
-  if (d.isInPlay) return 'x';
-  if (/foul/i.test(c)) return 'f';
-  if (d.isBall) return 'b';
-  if (d.isStrike) return 's';
-  return 'b';
-};
-export const PCALL = { b: '壞球', s: '好球', f: '界外', x: '擊出' };
 export function pitchDots(p) {
   const ps = (p.playEvents || []).filter((e) => e && e.isPitch);
   if (!ps.length) return '';
@@ -533,11 +524,16 @@ export function boxHTML(d, side) {
     return `<div class="pc${sub ? ' sub' : ''}${!lineupOnly && !hit ? ' z' : ''}${isCur ? ' cur' : ''}"${pAttrs(p.person, 'b')}><span class="ord${sub ? ' s' : ''}">${ord}</span><div><div><span class="nm">${name}</span> <span class="ps">${pos}</span>${tagC}</div>${ln}</div><div class="av">${dash(avg)}<small>AVG</small></div></div>`;
   }).join('');
 
+  const pm = (G && G.pm) || {};
   const pRows = (t.pitchers || []).map(get).filter(Boolean).map((p) => {
     const s = (p.stats && p.stats.pitching) || {};
     const era = p.seasonStats && p.seasonStats.pitching && p.seasonStats.pitching.era;
-    return `<div class="pc"${pAttrs(p.person, 'p')}><div><div><span class="nm">${esc((p.person && p.person.fullName) || '')}</span></div>
-      <div class="ln"><span class="hl">${dash(s.inningsPitched)} 局</span> ・ ${dash(s.hits)} 被安 ・ ${dash(s.earnedRuns)} 責失 ・ ${dash(s.strikeOuts)} 三振${more ? ` ・ ${dash(s.runs)} 失分 ・ ${dash(s.baseOnBalls)} 四壞 ・ ${dash(s.pitchesThrown ?? s.numberOfPitches)} 球` : ''}</div></div><div class="av">${dash(era)}<small>ERA</small></div></div>`;
+    const pid = p.person && p.person.id;
+    const open = pid != null && pm[pid] !== undefined;
+    const map = open ? pitcherMapHTML(d, pid, pm[pid]) : '';
+    const can = pid != null && !lineupOnly && (s.pitchesThrown ?? s.numberOfPitches ?? 1) !== 0;
+    return `<div class="pcw${open && map ? ' open' : ''}"><div class="pc${can ? ' pcx' : ''}"${can ? ` role="button" tabindex="0" data-pm="${pid}" aria-expanded="${open}"` : ''}><div><div><span class="nm">${pLink(p.person, 'p')}</span></div>
+      <div class="ln"><span class="hl">${dash(s.inningsPitched)} 局</span> ・ ${dash(s.hits)} 被安 ・ ${dash(s.earnedRuns)} 責失 ・ ${dash(s.strikeOuts)} 三振${more ? ` ・ ${dash(s.runs)} 失分 ・ ${dash(s.baseOnBalls)} 四壞 ・ ${dash(s.pitchesThrown ?? s.numberOfPitches)} 球` : ''}</div></div><div class="av">${dash(era)}<small>ERA</small></div>${can ? '<svg class="pcc" viewBox="0 0 16 10" aria-hidden="true"><path d="M2 2l6 6 6-6"/></svg>' : ''}</div>${map}</div>`;
   }).join('');
 
   return `
@@ -756,7 +752,7 @@ export function showGame(pk) {
   S.gFold = false; // 每次進入比賽頁，工具列都先展開
   setHeader('比賽', true, null);
   const my = token;
-  setG({ pk, data: null, filter: 'all', side: 'away', limit: 60, sig: '', headSig: '', bodyTab: '', lastTotal: 0, open: new Set(), shut: new Set() });
+  setG({ pk, data: null, pm: {}, filter: 'all', side: 'away', limit: 60, sig: '', headSig: '', bodyTab: '', lastTotal: 0, open: new Set(), shut: new Set() });
   view.innerHTML = `
     <div id="liveBar" class="livebar" hidden></div>
     <div id="gHead" class="ghead"><div class="loading">載入中…</div></div>

@@ -840,3 +840,25 @@ body.replaying .rp-go { display: none; }
 .rc-l li.ev { display: block; padding: 0; border-top: 0; }
 .rc-l li.ev .chg { margin: 4px 0; }
 .rc-l li.more { display: block; padding: 6px 0; font-size: 12px; color: var(--sub); text-align: center; }
+
+/* 投手球路：整場投球分布圖＋球種表 */
+.pcw { border-bottom: 1px dashed var(--line); } .pcw:last-child { border-bottom: 0; }
+.pcw .pc { border-bottom: 0; }
+.pcx { cursor: pointer; }
+.pcc { width: 14px; height: 9px; flex: none; fill: none; stroke: var(--sub); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .15s; }
+.pcw.open .pcc { transform: rotate(180deg); }
+.pm { padding: 0 14px 12px; }
+.pmt { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: flex-start; }
+.pmzw { flex: none; width: 120px; text-align: center; } .pmzw small { display: block; margin-top: 4px; font-size: 10px; color: var(--sub); }
+.pmz { width: 120px; height: 150px; display: block; }
+.pmz .zbg { fill: #f3f5f8; } .pmz .zbox { fill: none; stroke: var(--navy); stroke-width: 1.6; }
+.pmz circle { stroke: #fff; stroke-width: .8; fill-opacity: .88; }
+.pms { flex: 1 1 190px; min-width: 0; border-collapse: collapse; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.pms th { color: var(--sub); font-weight: 500; font-size: 10px; text-align: right; padding: 0 0 4px 4px; white-space: nowrap; } .pms th:first-child, .pms td:first-child { text-align: left; padding-left: 0; }
+.pms td { text-align: right; padding: 4px 0 4px 4px; border-top: 1px dashed var(--line); white-space: nowrap; } .pms td:first-child { overflow: hidden; text-overflow: ellipsis; max-width: 84px; font-weight: 600; }
+.pmcs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.pmc { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 14px; padding: 5px 10px; font-size: 12px; font-weight: 600; }
+.pmc.on { background: var(--navy); border-color: var(--navy); color: #fff; }
+.pms i, .pmc i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; } .pmc i { margin-right: 0; }
+.pm-fb { fill: #d6453d; background: #d6453d; } .pm-si { fill: #e8863a; background: #e8863a; } .pm-ct { fill: #8c6a4f; background: #8c6a4f; }
+.pm-sl { fill: #2f7fd1; background: #2f7fd1; } .pm-cu { fill: #7a56c4; background: #7a56c4; } .pm-ch { fill: #2e9d6a; background: #2e9d6a; } .pm-ot { fill: #8b95a1; background: #8b95a1; }

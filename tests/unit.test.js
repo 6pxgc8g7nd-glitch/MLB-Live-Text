@@ -3,6 +3,7 @@ import { twDate, shiftDate, weekdayEn, monthDay } from '../js/util.js';
 import { segLabel, calYears, calTitleHTML } from '../js/shell.js';
 import { evZh, seriesZh } from '../js/dict.js';
 import { gameState, cardHTML } from '../js/scores.js';
+import { pitcherPitches, pitchTypeStats, pitcherMapHTML } from '../js/pitchmap.js';
 import { headHTML, textHTML, boxHTML, liveHTML, recapTarget } from '../js/game.js';
 import { standingsHTML, bracketHTML, lastNoon, nextNoon, isFreshDaily } from '../js/standings.js';
 import { pollWait, nextWait, createPoller } from '../js/api.js';
@@ -428,3 +429,23 @@ assert.ok(!playerCardHTML({ ...hitter, currentTeam: { id: 534 } }, 'b', null, nu
 assert.ok(playerCardHTML({ ...hitter, currentTeam: { id: 534 } }, 'b', null, 145).includes('logos/145.svg'), '退役／下放的球員仍顯示他在這場比賽的球隊');
 
 console.log('all tests passed');
+
+// 投手球路：彙整球種、顏色、篩選、缺資料
+{
+  const pe = (code, desc, speed, x, z, call, extra) => ({ isPitch: true, details: { type: { code, description: desc }, call: { description: call }, isStrike: /strike|foul/i.test(call), isBall: /^ball/i.test(call), ...extra }, pitchData: { startSpeed: speed, coordinates: x == null ? {} : { pX: x, pZ: z }, strikeZoneTop: 3.4, strikeZoneBottom: 1.6 } });
+  const d = { liveData: { plays: { allPlays: [
+    { matchup: { pitcher: { id: 7 } }, playEvents: [pe('FF', 'Four-Seam Fastball', 96, 0.1, 2.5, 'Called Strike'), pe('SL', 'Slider', 87, -0.5, 1.2, 'Swinging Strike'), pe('FF', 'Four-Seam Fastball', 98, 1.2, 3.9, 'Ball'), { isPitch: false, details: {} }] },
+    { matchup: { pitcher: { id: 8 } }, playEvents: [pe('CU', 'Curveball', 80, 0, 2, 'Ball')] },
+    { matchup: { pitcher: { id: 7 } }, playEvents: [pe('SL', 'Slider', 86, null, null, 'Foul')] },
+  ] } } };
+  const ps = pitcherPitches(d, 7);
+  assert.strictEqual(ps.length, 4, '只算這位投手的球，不算換人與其他投手');
+  const st = pitchTypeStats(ps);
+  assert.deepStrictEqual(st.map((r) => [r.code, r.n, r.pct, r.whiff]), [['FF', 2, 50, 0], ['SL', 2, 50, 1]]);
+  assert.strictEqual(st[0].max, 98); assert.strictEqual(Math.round(st[0].avg), 97);
+  const html = pitcherMapHTML(d, 7, null);
+  assert.ok(html.includes('四縫線速球') && html.includes('滑球') && html.includes('data-pmt="FF"') && html.includes('1 球無位置'));
+  assert.strictEqual((html.match(/<circle/g) || []).length, 3, '沒有位置的球不畫點');
+  assert.strictEqual((pitcherMapHTML(d, 7, 'FF').match(/<circle/g) || []).length, 2, '篩選球種只畫該球種');
+  assert.strictEqual(pitcherMapHTML(d, 99, null), '', '沒投球的人不顯示');
+}

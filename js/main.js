@@ -77,6 +77,20 @@ function boot() {
       openPlayer(fromEl(pl));
       return;
     }
+    const pmx = e.target.closest('[data-pm]'); // 數據頁：點投手列展開／收起球路
+    if (pmx && G) {
+      const id = pmx.dataset.pm;
+      if (G.pm[id] !== undefined) delete G.pm[id]; else G.pm[id] = null; // null = 全部球種
+      G.sig = ''; renderBody();
+      return;
+    }
+    const pmt = e.target.closest('[data-pmt]'); // 球路圖例：只看某一種球種，再點一次回到全部
+    if (pmt && G) {
+      const id = pmt.closest('.pcw').querySelector('[data-pm]').dataset.pm;
+      G.pm[id] = G.pm[id] === pmt.dataset.pmt ? null : pmt.dataset.pmt;
+      G.sig = ''; renderBody();
+      return;
+    }
     const play = e.target.closest('.play');
     if (play && G && G.open && !play.closest('#lv')) { // LIVE 分頁的打席卡固定展開
       const k = Number(play.dataset.k);

@@ -251,6 +251,14 @@ with sync_playwright() as p:
             got = pg.evaluate("[document.querySelector('#gCtl').classList.contains('fold'), getComputedStyle(document.querySelector('#gCtl .tk')).display]")
             print(name, 'toolbar default:', got)
             if got[0] or got[1] == 'none': failures.append((name, ['工具列預設應該展開：%s' % got]))
+        if name == 'box':
+            # 投手球路：點投手列展開、圖例可篩選、不超出螢幕
+            if pg.evaluate("document.querySelectorAll('[data-pm]').length") == 0: print('box: no pitcher row with pitch data (mock)')
+            else:
+                pg.click('[data-pm]'); pg.wait_for_timeout(300)
+                got = pg.evaluate("[document.querySelectorAll('.pcw.open .pmz').length, document.querySelectorAll('.pmc').length, [...document.querySelectorAll('.pm *')].filter(e => e.getBoundingClientRect().right > innerWidth).length]")
+                print('pitch map:', got)
+                if got[0] != 1 or got[1] < 1 or got[2]: failures.append((name, ['投手球路展開不正常：%s' % got]))
         if name == 'gametop':
             # 點把手收起（把手寫目前分頁名稱）／再點展開；離開再進來又是展開
             pg.click('#gFold'); pg.wait_for_timeout(200)
