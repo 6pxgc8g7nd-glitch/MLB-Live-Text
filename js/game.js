@@ -7,7 +7,6 @@ import { gameState, seriesLbl } from './scores.js';
 import { setHeader } from './shell.js';
 import { pLink, pAttrs } from './player.js';
 import { wpPoints, wpHTML, bindWp } from './winprob.js';
-import { loadLiveFeed } from './livefeed.js';
 
 export function headHTML(d) {
   const gd = d.gameData || {};
@@ -762,16 +761,15 @@ export function showGame(pk) {
   window.scrollTo(0, 0);
   setPoller(createPoller(
     async () => {
-      // LIVE 模式（每秒更新）改抓差異：只下載上次之後變動的部分
-      const { data } = await loadLiveFeed(api, pk, G, !!G.liveMode);
+      const d = await api(`/api/v1.1/game/${pk}/feed/live`);
       if (my !== token) return;
-      G.data = data;
+      G.data = d;
       renderGame();
     },
     () => {
       const st = G.data && G.data.gameData && G.data.gameData.status;
       const k = st ? gameState(st, G.data.liveData && G.data.liveData.linescore).k : 'live';
-      if (k === 'live') return G.liveMode ? 1000 : 10000; // 三連點比分列開啟 LIVE 模式：每秒更新
+      if (k === 'live') return 10000;
       if (k === 'upcoming') return 30000;
       return null; // 已結束或延賽：不再輪詢
     }

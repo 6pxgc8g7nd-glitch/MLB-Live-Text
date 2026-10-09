@@ -1,6 +1,5 @@
 /* 資料層：API 請求、狀態橫幅、輪詢 */
 import { API, $, fmtClock } from './util.js';
-import { G } from './state.js';
 
 export const cache = new Map(); // path -> { t, d }  只用來避免短時間內重複請求
 let override = null; // 重播模式（js/replay.js）會換掉部分請求；平常一律直接抓 API
@@ -15,7 +14,7 @@ export async function apiReal(path, { ttl = 0, timeout = 12000 } = {}) {
     const r = await fetch(API + path, { signal: ctl.signal, cache: 'no-store' });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
-    if (ttl > 0) cache.set(path, { t: Date.now(), d }); // 不需要快取的請求（例如每秒的差異更新）不要存，免得越積越多
+    if (ttl > 0) cache.set(path, { t: Date.now(), d }); // 沒有設 ttl 的請求（例如比賽頁每 10 秒的更新）不存，免得越積越多
     return d;
   } finally {
     clearTimeout(to);
@@ -30,7 +29,7 @@ export function setStatus(ok) {
     lastOk = Date.now();
     b.hidden = true;
     const u = $('#updated');
-    if (u) u.textContent = (G && G.liveMode ? 'LIVE ・ ' : '') + '更新 ' + fmtClock(lastOk);
+    if (u) u.textContent = '更新 ' + fmtClock(lastOk);
   } else {
     const ld = document.querySelector('#view .loading');
     if (ld) {

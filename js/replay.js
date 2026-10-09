@@ -52,7 +52,7 @@ export async function startReplay(pk, api, { onStatus } = {}) {
   const R = { vt: start, speed: 10, playing: true, idx: -1, snap: null };
 
   setApiOverride((path, opts, real) => {
-    if (path === base || path.startsWith(`${base}/diffPatch`)) { // 歷史比賽沒有差異可抓，一律回該時間點的整份
+    if (path === base) { // 一律回目前重播時間點的整份快照
       const tc = tcs[stampAt(ms, R.vt)];
       return real(`${base}?timecode=${tc}`, { ttl: 864e5 }).then((d) => { R.snap = d; report(); return d; });
     }

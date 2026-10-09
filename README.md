@@ -95,7 +95,6 @@ js/                   主程式，原生 ES modules，不需建置
   state.js            共用狀態（其他模組透過 setG / setPoller 等函式改值）
   scores.js           比分頁
   game.js             單場頁：局數表、文字轉播、LIVE 分頁、數據、目前打席條、全壘打動畫
-  livefeed.js         LIVE 模式的差異更新（diffPatch / JSON Patch，失敗時退回抓整份）
   player.js           球員小卡
   winprob.js          勝率走勢圖
   standings.js        排名、季後賽、對戰樹
@@ -110,7 +109,6 @@ manifest.webmanifest  PWA 設定
 icons/                App 圖示（192、512、apple-touch、maskable）
 logos/                球隊 logo 副本（見 logos/README.md）
 scripts/sw.mjs        維護 sw.js 的快取清單（SHELL）與 VERSION
-scripts/verify-diffpatch.mjs  比賽進行中驗證差異更新是否與整份資料一致
 eslint.config.js      ESLint 設定
 package.json          開發工具（ESLint）與 npm 指令；網站本身沒有任何相依套件
 .githooks/            pre-commit hook（自動執行 scripts/sw.mjs）
