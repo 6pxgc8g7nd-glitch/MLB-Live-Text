@@ -891,3 +891,6 @@ body.replaying .rp-go { display: none; }
 .pm-s-hr { stroke: #f2c94c; stroke-width: 5; } .pv-ring.s { stroke: #f2c94c; } .pv-ring.b { stroke: #3fc18a; } .pv-ring.f { stroke: #b0b8c2; } .pv-ring.x { stroke: #4a9be8; }
 .an-bn.hr b { color: #f2c94c; font-size: 44px; letter-spacing: 3px; }
 .an-fd.act { fill: #f2c94c; } .an-tr2 { stroke: #fff; stroke-width: 2; stroke-dasharray: 4 4; opacity: .9; }
+.an-hud { position: absolute; top: 10px; right: 10px; min-width: 112px; padding: 8px 12px; border-radius: 12px; background: rgba(8, 16, 26, .72); font-variant-numeric: tabular-nums; pointer-events: none; }
+.an-hud[hidden] { display: none; } .an-hud div { display: flex; align-items: baseline; gap: 5px; line-height: 1.5; } .an-hud small { flex: 1; font-size: 11px; color: rgba(255, 255, 255, .65); } .an-hud b { font-size: 17px; font-weight: 800; } .an-hud i { font-style: normal; font-size: 10px; color: rgba(255, 255, 255, .65); min-width: 20px; }
+.an-hud em { display: block; margin-top: 4px; font-style: normal; font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #b0b8c2; }
