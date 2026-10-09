@@ -1,11 +1,11 @@
 import assert from 'node:assert';
-import { twDate, shiftDate, weekdayEn } from '../js/util.js';
+import { twDate, shiftDate, weekdayEn, monthDay } from '../js/util.js';
 import { segLabel, calYears, calTitleHTML } from '../js/shell.js';
 import { evZh, seriesZh } from '../js/dict.js';
 import { gameState, cardHTML } from '../js/scores.js';
 import { headHTML, textHTML, boxHTML, liveHTML, recapTarget } from '../js/game.js';
 import { standingsHTML, bracketHTML, lastNoon, nextNoon, isFreshDaily } from '../js/standings.js';
-import { pollWait, nextWait } from '../js/api.js';
+import { pollWait, nextWait, createPoller } from '../js/api.js';
 import { S, setG } from '../js/state.js';
 import { pLink, pickStat, playerCardHTML } from '../js/player.js';
 import { wpPoints, wpHTML } from '../js/winprob.js';
@@ -380,5 +380,29 @@ assert.strictEqual(nextWait(1000, 0, 1600), 200, '下載比間隔還久：至少
 assert.strictEqual(nextWait(1000, 0, 0), 1000, '沒花時間就等滿');
 assert.strictEqual(nextWait(1000, 2, 370), 4000, '失敗時照退避、不扣時間');
 assert.strictEqual(nextWait(3 * 3600e3, 0, 500), 3 * 3600e3 - 500, '很長的間隔（排名等到隔天中午）也照算');
+
+// 排名資料的時鐘保護：存的時間比現在晚（手機時鐘被調過）就當過期
+assert.ok(!isFreshDaily(Z('2026-10-09T10:00:00Z'), Z('2026-10-09T06:00:00Z')), '抓取時間在未來 4 小時：過期');
+assert.ok(isFreshDaily(Z('2026-10-09T06:03:00Z'), Z('2026-10-09T06:00:00Z')), '只差 3 分鐘的誤差：還是新的');
+assert.strictEqual(monthDay('2026-10-08'), '10/8', 'monthDay');
+
+// 輪詢：已經沒事可更新（例如比賽結束）時，自動觸發的 kick 不再重抓；force 才抓
+globalThis.document = { hidden: false, querySelector: () => null };
+const mkPoller = (delay) => { let n = 0; const p = createPoller(async () => { n++; }, () => delay); return { p, calls: () => n }; };
+{
+  const done = mkPoller(null);
+  done.p.start(); await new Promise((r) => setTimeout(r, 30));
+  assert.strictEqual(done.calls(), 1, 'start 抓一次');
+  await done.p.kick(); await done.p.kick();
+  assert.strictEqual(done.calls(), 1, '比賽結束：回到畫面／切分頁的 kick 不再重抓');
+  await done.p.kick(true);
+  assert.strictEqual(done.calls(), 2, 'force 一定抓（重播換時間點）');
+  done.p.stop();
+  const live = mkPoller(60000);
+  live.p.start(); await new Promise((r) => setTimeout(r, 30));
+  await live.p.kick(); await live.p.kick();
+  assert.strictEqual(live.calls(), 3, '還在更新的：kick 照常立刻抓');
+  live.p.stop();
+}
 
 console.log('all tests passed');

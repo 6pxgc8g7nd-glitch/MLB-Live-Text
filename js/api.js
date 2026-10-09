@@ -1,5 +1,5 @@
 /* 資料層：API 請求、狀態橫幅、輪詢 */
-import { API, $, fmtClock } from './util.js';
+import { API, $, fmtClock, twDate, monthDay } from './util.js';
 
 export const cache = new Map(); // path -> { t, d }  只用來避免短時間內重複請求
 let override = null; // 重播模式（js/replay.js）會換掉部分請求；平常一律直接抓 API
@@ -22,14 +22,18 @@ export async function apiReal(path, { ttl = 0, timeout = 12000 } = {}) {
 }
 
 export let lastOk = 0;
-export function setStatus(ok) {
+/* at：資料實際的抓取時間（例如排名頁用的是中午存的資料）；不是今天就加上月/日，免得誤以為是剛更新的 */
+export function setStatus(ok, at) {
   const b = $('#banner');
   if (!b) return;
   if (ok) {
     lastOk = Date.now();
     b.hidden = true;
     const u = $('#updated');
-    if (u) u.textContent = '更新 ' + fmtClock(lastOk);
+    if (u) {
+      const t = at || lastOk, day = twDate(new Date(t));
+      u.textContent = '更新 ' + (day === twDate() ? '' : monthDay(day) + ' ') + fmtClock(t);
+    }
   } else {
     const ld = document.querySelector('#view .loading');
     if (ld) {
@@ -60,8 +64,8 @@ export const MIN_GAP = 200;
 export const nextWait = (base, fails, elapsed) => (fails ? pollWait(base, fails) : Math.max(MIN_GAP, pollWait(base, 0) - elapsed));
 
 /* 輪詢：失敗時指數退避、背景分頁暫停、回到前景立即補更新、不重疊執行 */
-export function createPoller(fn, delayFn) {
-  let timer = 0, fails = 0, stopped = false, busy = false;
+export function createPoller(fn, delayFn, atFn) {
+  let timer = 0, fails = 0, stopped = false, busy = false, idle = false;
   const p = {
     async run() {
       clearTimeout(timer);
@@ -73,14 +77,16 @@ export function createPoller(fn, delayFn) {
       const elapsed = performance.now() - t0;
       busy = false;
       if (stopped) return;
-      if (ok) { fails = 0; setStatus(true); } else { fails++; setStatus(false); }
+      if (ok) { fails = 0; setStatus(true, atFn && atFn()); } else { fails++; setStatus(false); }
       const base = delayFn();
-      if (base == null) return; // 不需要再更新（例如比賽已結束）
+      idle = base == null;
+      if (idle) return; // 不需要再更新（例如比賽已結束）
       const wait = nextWait(base, fails, elapsed);
       timer = setTimeout(() => p.run(), wait);
     },
-    start() { stopped = false; p.run(); },
-    kick() { return (!stopped && !busy) ? p.run() : Promise.resolve(); },
+    start() { stopped = false; idle = false; p.run(); },
+    // 立刻更新一次。已經沒事可更新（比賽結束）時，回到畫面、切分頁這類自動觸發的不再重抓；force 才一定抓（重播換時間點用）
+    kick(force) { return (!stopped && !busy && (force === true || !idle)) ? p.run() : Promise.resolve(); },
     stop() { stopped = true; clearTimeout(timer); },
   };
   return p;

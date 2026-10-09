@@ -26,10 +26,11 @@ function boot() {
     if (G && G.data) { G.sig = ''; renderGame(); }
   };
   const manualRefresh = async () => {
-    if (route$ !== 'scores') return;
+    if (route$ !== 'scores' && route$ !== 'standings') return;
     const ic = $('#ballIc'); if (ic) { ic.classList.remove('pulse'); void ic.offsetWidth; ic.classList.add('pulse'); }
     if (!poller) return;
     cache.clear();
+    if (G && G.expire) G.expire(); // 排名頁：略過「每天中午才更新」，這次一定重抓
     toast('更新中…', true);
     const u = $('#updated'); if (u) u.textContent = '更新中…';
     try { await poller.kick(); } catch (e) { /* 失敗由橫幅顯示 */ }

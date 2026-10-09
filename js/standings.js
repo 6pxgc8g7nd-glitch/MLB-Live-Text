@@ -289,7 +289,8 @@ export const lastNoon = (now = Date.now()) => {
   return now >= t ? t : t - 864e5;
 };
 export const nextNoon = (now = Date.now()) => lastNoon(now) + 864e5;
-export const isFreshDaily = (t, now = Date.now()) => !!t && t >= lastNoon(now);
+// 抓取時間比「現在」還晚（手機時鐘被調過）就當作過期，不然會一直被當成新的；容許 5 分鐘的誤差
+export const isFreshDaily = (t, now = Date.now()) => !!t && t >= lastNoon(now) && t <= now + 5 * 60e3;
 
 export function showStandings() {
   setRoute('standings');
@@ -310,10 +311,11 @@ export function showStandings() {
     } else if (S.standView === 'bracket') {
       if (post) paintBracket($('#stand'), post, bk);
     } else if (data) morph($('#stand'), standingsHTML(data));
+  // expire：手動更新時把存的資料標成過期，下一次輪詢就會重抓（略過「每天中午才更新」的規則）
+  setG({ repaint: paint, expire: () => { if (cached) cached.t = 0; } });
+  paint();
   };
   let post = null;
-  setG({ repaint: paint });
-  paint();
   const season = twDate().slice(0, 4);
   let cached = store.get('standData', null); // { t: 抓取時間, season, standings, post }
   const fresh = () => !!cached && cached.season === season && isFreshDaily(cached.t);
@@ -333,7 +335,8 @@ export function showStandings() {
       if (my !== token) return;
       show();
     },
-    () => (fresh() ? nextNoon() - Date.now() + 5000 : 60000) // 資料是新的：等到下一個中午；沒抓成功：一分鐘後重試
+    () => (fresh() ? nextNoon() - Date.now() + 5000 : 60000), // 資料是新的：等到下一個中午；沒抓成功：一分鐘後重試
+    () => cached && cached.t // 更新時間顯示資料實際的抓取時間
   ));
   poller.start();
 }

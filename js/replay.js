@@ -77,7 +77,7 @@ export async function startReplay(pk, api, { onStatus } = {}) {
     if (onStatus) onStatus(s);
     if (parentWin) parentWin.postMessage({ type: 'replay-status', ...s }, location.origin);
   }
-  const refresh = () => { if (poller) poller.kick(); };
+  const refresh = () => { if (poller) poller.kick(true); };
   // 往前或往後跳：清掉「已看過的全壘打」與勝率快取，避免一次補播多支全壘打動畫
   const seek = (t) => {
     R.vt = Math.max(start, Math.min(end, t));
