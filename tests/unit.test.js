@@ -7,7 +7,8 @@ import { headHTML, textHTML, boxHTML, liveHTML, recapTarget } from '../js/game.j
 import { standingsHTML, bracketHTML, lastNoon, nextNoon, isFreshDaily } from '../js/standings.js';
 import { pollWait, nextWait, createPoller } from '../js/api.js';
 import { S, setG } from '../js/state.js';
-import { pLink, pickStat, playerCardHTML } from '../js/player.js';
+import { pLink, pickStat, playerCardHTML, teamInGame } from '../js/player.js';
+import { logo } from '../js/dict.js';
 import { wpPoints, wpHTML } from '../js/winprob.js';
 import { tcToMs, stampAt, halfStarts, barLabel } from '../js/replay.js';
 
@@ -404,5 +405,19 @@ const mkPoller = (delay) => { let n = 0; const p = createPoller(async () => { n+
   assert.strictEqual(live.calls(), 3, '還在更新的：kick 照常立刻抓');
   live.p.stop();
 }
+
+// 隊徽：只有大聯盟球隊；小卡的隊徽優先用「這場比賽」所屬的球隊
+assert.ok(logo({ id: 147 }).includes('logos/147.svg'), '大聯盟球隊有隊徽');
+assert.strictEqual(logo({ id: 534 }), '', '三 A 球隊（Rochester）沒有隊徽檔，不放，免得 404');
+assert.strictEqual(logo({ id: 159 }), '', '明星賽隊伍也不放');
+assert.strictEqual(logo(null), '');
+assert.strictEqual(teamInGame(feed, 10), 114, '客隊名單裡的球員 → 客隊');
+assert.strictEqual(teamInGame(feed, 999), null, '名單裡找不到 → null');
+assert.strictEqual(teamInGame(null, 10), null);
+const hb = { ...hitter, currentTeam: { id: 119 } }; // 現在的球隊是道奇
+assert.ok(playerCardHTML(hb, 'b', null, 145).includes('logos/145.svg') && !playerCardHTML(hb, 'b', null, 145).includes('logos/119.svg'), '優先顯示這場比賽的球隊（白襪），不是現在的球隊');
+assert.ok(playerCardHTML(hb, 'b', null, null).includes('logos/119.svg'), '不知道這場的球隊：退回目前球隊');
+assert.ok(!playerCardHTML({ ...hitter, currentTeam: { id: 534 } }, 'b', null, null).includes('<img'), '目前球隊在小聯盟、又不知道這場的球隊：不放隊徽');
+assert.ok(playerCardHTML({ ...hitter, currentTeam: { id: 534 } }, 'b', null, 145).includes('logos/145.svg'), '退役／下放的球員仍顯示他在這場比賽的球隊');
 
 console.log('all tests passed');

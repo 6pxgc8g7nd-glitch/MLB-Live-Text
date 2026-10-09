@@ -14,7 +14,7 @@ export const ABBR = {
   146: 'MIA', 147: 'NYY', 158: 'MIL',
 };
 export const teamName = (t) => (t && TEAMS[t.id]) || (t && t.name) || '—'; // 查不到就用 API 的英文名
-export const logo = (t, c) => (t && t.id ? `<img class="tl ${c || ''}" src="logos/${t.id}.svg" alt="" loading="lazy" onerror="this.remove()">` : '');
+export const logo = (t, c) => (t && t.id && TEAMS[t.id] ? `<img class="tl ${c || ''}" src="logos/${t.id}.svg" alt="" loading="lazy" onerror="this.remove()">` : '');
 export const teamAbbr = (t) => (t && ABBR[t.id]) || (t && (t.abbreviation || t.teamName)) || '';
 
 export const DIVS = { 201: '美聯東區', 202: '美聯中區', 200: '美聯西區', 204: '國聯東區', 205: '國聯中區', 203: '國聯西區' };

@@ -1,7 +1,8 @@
 /* 球員小卡：點文字轉播、目前打席條或數據頁的球員名字，從下方滑出本季／生涯數據與打者對投手的對戰紀錄 */
 import { esc, dash } from './util.js';
-import { logo } from './dict.js';
+import { logo, TEAMS } from './dict.js';
 import { api } from './api.js';
+import { G } from './state.js';
 
 const POS_ZH = {
   P: '投手', C: '捕手', '1B': '一壘手', '2B': '二壘手', '3B': '三壘手', SS: '游擊手',
@@ -23,6 +24,17 @@ export const pLink = (person, role, opp) => {
   return `<span class="pl-n"${pAttrs(person, role, opp)}>${nm}</span>`;
 };
 
+
+// 這位球員在這場比賽屬於哪一隊（從這場的名單找）；找不到就回傳 null
+export function teamInGame(d, id) {
+  const bt = d && d.liveData && d.liveData.boxscore && d.liveData.boxscore.teams;
+  const gt = d && d.gameData && d.gameData.teams;
+  for (const side of ['away', 'home']) {
+    const pl = bt && bt[side] && bt[side].players;
+    if (pl && pl['ID' + id]) return (gt && gt[side] && gt[side].id) || null;
+  }
+  return null;
+}
 
 // 季中被交易的球員會有多筆 split（各隊＋合計），優先取沒有 team 的合計那筆
 export function pickStat(stats, type, group) {
@@ -49,7 +61,8 @@ function vsLine(v) {
 }
 
 /* p：people API 的球員；role：'b' 打者 / 'p' 投手；vs：{ id, name, stat } 對戰資料（打者觀點） */
-export function playerCardHTML(p, role, vs) {
+/* gameTeamId：這場比賽他所屬的球隊。隊徽優先用它（看舊比賽時，球員「現在」的球隊可能已經不同，甚至在小聯盟），沒有才用目前球隊 */
+export function playerCardHTML(p, role, vs, gameTeamId) {
   if (!p) return '<div class="empty">找不到球員資料</div>';
   const pos = (p.primaryPosition && p.primaryPosition.abbreviation) || '';
   const bats = p.batSide && (p.batSide.code === 'S' ? '左右開弓、' : `${HAND[p.batSide.code] || ''}打`);
@@ -65,7 +78,7 @@ export function playerCardHTML(p, role, vs) {
   // 對手的名字做成按鈕，點了直接換成對手的小卡（從目前打席條只點得到打者，靠這裡看投手）
   const opp = vs && vs.id ? `<span class="pcd-sw"${pAttrs({ id: vs.id, fullName: vs.name }, role === 'p' ? 'b' : 'p', p)}>${esc(vs.name || '')} ›</span>` : esc((vs && vs.name) || '');
   const vsSec = vs ? `<div class="pcd-sec"><h4>${role === 'p' ? '對打者' : '對上投手'} ${opp}<small>生涯對戰</small></h4>${vsLine(vs)}</div>` : '';
-  return `<div class="pcd-h">${logo(p.currentTeam, 'pcd-l')}<div><b>${esc(p.fullName || '')}</b><small>${meta}</small></div></div>
+  return `<div class="pcd-h">${logo(TEAMS[gameTeamId] ? { id: gameTeamId } : p.currentTeam, 'pcd-l')}<div><b>${esc(p.fullName || '')}</b><small>${meta}</small></div></div>
     ${sec(`${sea && sea.season ? sea.season + ' ' : ''}本季${group === 'pitching' ? '投球' : '打擊'}`, sea)}
     ${sec(`生涯${group === 'pitching' ? '投球' : '打擊'}`, car)}
     ${vsSec}`;
@@ -110,7 +123,7 @@ export function openPlayer({ id, role, vs, vsName }) {
     if (!wrap.isConnected || wrap._t !== ticket) return;
     const s = m && m.stats && m.stats[0] && m.stats[0].splits;
     const v = vs ? { id: vs, name: vsName, stat: (s && s[0] && s[0].stat) || {} } : null;
-    wrap.querySelector('#pcdBody').innerHTML = playerCardHTML(d && d.people && d.people[0], role, v);
+    wrap.querySelector('#pcdBody').innerHTML = playerCardHTML(d && d.people && d.people[0], role, v, teamInGame(G && G.data, id));
   }).catch(() => {
     if (wrap.isConnected && wrap._t === ticket) wrap.querySelector('#pcdBody').innerHTML = '<div class="empty">資料載入失敗，請稍後再試</div>';
   });
