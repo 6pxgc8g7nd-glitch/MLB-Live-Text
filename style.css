@@ -890,3 +890,4 @@ body.replaying .rp-go { display: none; }
 .an-bar button[aria-pressed=true] { background: #f2c94c; color: #14202e; }
 .pm-s-hr { stroke: #f2c94c; stroke-width: 5; } .pv-ring.s { stroke: #f2c94c; } .pv-ring.b { stroke: #3fc18a; } .pv-ring.f { stroke: #b0b8c2; } .pv-ring.x { stroke: #4a9be8; }
 .an-bn.hr b { color: #f2c94c; font-size: 44px; letter-spacing: 3px; }
+.an-fd.act { fill: #f2c94c; } .an-tr2 { stroke: #fff; stroke-width: 2; stroke-dasharray: 4 4; opacity: .9; }

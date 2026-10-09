@@ -491,7 +491,8 @@ console.log('all tests passed');
   assert.ok(sawBall && sawHit);
   assert.strictEqual(frameAt(sc, 0).banner, false); assert.strictEqual(frameAt(sc, sc.total).banner, true);
   assert.strictEqual(frameAt(sc, sc.total).zone.length, 2, '播完後好球帶上有兩球');
-  assert.ok(frameAt(sc, sc.total).runners.length === 3);
+  assert.strictEqual(frameAt(sc, sc.total).runners.length, 2, '得分的跑者跑回本壘後就消失，其餘留在壘上');
+  assert.strictEqual(frameAt(sc, 0).runners.length, 2, '要跑的壘上跑者一開始就站在原本的壘包，打者在跑之前不顯示');
   // 捕手視角：透視、場景切換、全壘打
   assert.ok(Math.abs(persp(1, 17 / 12, 3).x - 1) < 1e-9 && Math.abs(persp(0, 17 / 12, 3).y) < 1e-9, '本壘板前緣處 1 單位 = 1 呎，眼高處 y=0');
   assert.ok(persp(1, 55, 3).s < persp(1, 5, 3).s / 5, '越遠越小');
@@ -511,5 +512,36 @@ console.log('all tests passed');
   assert.strictEqual(frameAt(hsc, hseg.cross.t + 0.3).fx !== null, true);
   assert.strictEqual(frameAt(hsc, hseg.t0 + 0.1).fx, null);
   assert.ok(DP > 7);
+  // 守備與跑者：刺殺的傳球、壘上原有跑者、盜壘、打者被接殺不跑
+  const mkRun = (id, mv, cr, pe) => ({ movement: mv, details: { runner: { id }, playIndex: pe, event: 'x' }, credits: (cr || []).map(([c, p]) => ({ credit: c, position: { abbreviation: p } })) });
+  const gPlay = { about: { inning: 1, halfInning: 'top', atBatIndex: 5 }, result: { event: 'Groundout' }, playEvents: [{ index: 0, isPitch: true, details: { call: { description: 'In play, out(s)' }, isInPlay: true, type: { code: 'FF' } }, count: { balls: 0, strikes: 0 }, pitchData: { startSpeed: 90, coordinates: co }, hitData: { launchSpeed: 90, launchAngle: -5, trajectory: 'ground_ball', coordinates: { coordX: 100, coordY: 170 } } }],
+    runners: [mkRun(9, { start: null, end: null, outBase: '1B', isOut: true, outNumber: 1 }, [['f_assist', 'SS'], ['f_putout', '1B']], 0)] };
+  const gsc = buildScript(gPlay, null);
+  const gseg = gsc.segs.find((s) => s.kind === 'hit');
+  assert.strictEqual(gseg.legs.length, 1); assert.strictEqual(gseg.legs[0].kind, 'throw');
+  const bat = gsc.ents.find((e) => e.id === 9).moves[0];
+  assert.ok(bat.t0 + bat.dur > gseg.legs[0].t1, '打者在球傳到一壘之後才到壘（才算出局）');
+  const gf = frameAt(gsc, gseg.legs[0].t0 + 0.1);
+  assert.ok(Math.hypot(gf.ball.x - gseg.hp.x, gf.ball.y - gseg.hp.y) > 5, '傳球開始後球離開接球點');
+  const fin = frameAt(gsc, gsc.total).fielders.find((q) => q.pos === '1B');
+  assert.ok(Math.abs(fin.x - 63.6) < 1 && Math.abs(fin.y - 63.6) < 1, '一壘手最後站在一壘壘包上');
+  const fly = { ...gPlay, runners: [mkRun(9, { start: null, end: null, outBase: '1B', isOut: true, outNumber: 1 }, [['f_putout', 'RF']], 0)] };
+  assert.strictEqual(buildScript(fly, null).ents.length, 0, '被接殺的打者不跑');
+  assert.strictEqual(buildScript({ ...gPlay, runners: [mkRun(9, { start: null, end: null, outBase: '1B', isOut: true, outNumber: 1 }, [], 0)] }, null).ents.length, 0, '三振的打者不跑');
+  const prev = { about: { inning: 1, halfInning: 'top', atBatIndex: 4 }, matchup: { postOnFirst: { id: 77 }, postOnThird: { id: 78 } } };
+  const onb = buildScript(gPlay, prev);
+  assert.deepStrictEqual(frameAt(onb, 0).runners.map((r) => [Math.round(r.x), Math.round(r.y)]).sort(), [[-64, 64], [64, 64]], '一開始 1、3 壘有人');
+  assert.strictEqual(buildScript(gPlay, { ...prev, about: { inning: 1, halfInning: 'bottom' } }).ents.length, 1, '上一個打席不同半局：壘上沒人');
+  const steal = { about: { inning: 1, halfInning: 'top', atBatIndex: 5 }, result: { event: 'Strikeout' }, playEvents: [
+    { index: 0, isPitch: true, details: { call: { description: 'Called Strike' }, isStrike: true, type: { code: 'FF' } }, count: { balls: 0, strikes: 1 }, pitchData: { startSpeed: 90, coordinates: co } },
+    { index: 1, isPitch: false, details: { event: 'Stolen Base 2B' } },
+    { index: 2, isPitch: true, details: { call: { description: 'Swinging Strike' }, isStrike: true, type: { code: 'FF' } }, count: { balls: 0, strikes: 2 }, pitchData: { startSpeed: 90, coordinates: co } },
+  ], runners: [mkRun(77, { start: '1B', end: '2B', isOut: false }, [], 1)] };
+  const ssc = buildScript(steal, prev);
+  const pl = ssc.segs.filter((s) => s.kind === 'play');
+  assert.strictEqual(pl.length, 1); assert.ok(pl[0].t0 > ssc.segs[0].t1 && pl[0].t1 < ssc.segs.filter((s) => s.kind === 'pitch')[1].t0, '盜壘發生在兩球之間');
+  assert.strictEqual(frameAt(ssc, pl[0].t0 + 0.2).scene, 'field'); assert.strictEqual(frameAt(ssc, pl[0].t0 + 0.2).evcap, '盜二壘成功');
+  const mid = frameAt(ssc, pl[0].t0 + 0.3 + 0.45).runners.find((r) => r.y > 70 && r.y < 120);
+  assert.ok(mid && mid.x < 63, '跑者在往二壘途中');
   assert.strictEqual(buildScript({ playEvents: [] }).segs.length, 0, '沒有投球就沒有動畫');
 }

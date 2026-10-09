@@ -64,19 +64,24 @@ export function hitPos(hp, u) {
   return { x: hp.x * ue, y: hp.y * ue, z: 0.3 + Math.abs(Math.sin(Math.PI * u * hops)) * h0 * Math.pow(1 - u, 1.5) };
 }
 
-// 這個打席裡有哪些跑者要移動：路徑是經過的壘包，out 表示跑到那裡被刺殺
+// 這個打席裡有哪些跑者要移動：路徑是經過的壘包，out 表示跑到那裡被刺殺；idx 是這次移動發生在第幾個 playEvent
 export function runnerMoves(play) {
   const out = [];
   for (const r of (play && play.runners) || []) {
     const m = r.movement || {};
-    const id = (r.details && r.details.runner && r.details.runner.id) || null;
+    const d = r.details || {};
+    const id = (d.runner && d.runner.id) || null;
+    const credits = (r.credits || []).map((c) => ({ cr: c.credit, pos: c.position && c.position.abbreviation }));
     const s0 = m.start || m.originBase || null;
     const s = s0 ? ORDER.indexOf(s0) : 0;
     let e;
     if (m.isOut) e = m.outBase ? (m.outBase === 'Home' ? 4 : ORDER.indexOf(m.outBase)) : -1;
     else e = m.end ? (m.end === 'score' ? 4 : ORDER.indexOf(m.end)) : -1;
-    if (s < 0 || e <= s) continue;
-    out.push({ id, path: ORDER.slice(s, e + 1), out: !!m.isOut, batter: !s0 });
+    if (s < 0 || e < s) continue;
+    // 打者被接殺／三振出局：他根本沒跑出去（有助殺或在一壘被刺殺才算跑）
+    if (!s0 && m.isOut && !credits.some((c) => c.cr === 'f_assist' || (c.cr === 'f_putout' && c.pos === '1B'))) continue;
+    if (e === s && !(m.isOut && s0)) continue; // 沒有移動（站在原地的跑者）
+    out.push({ id, path: e === s ? [ORDER[s], ORDER[s]] : ORDER.slice(s, e + 1), out: !!m.isOut, batter: !s0, idx: d.playIndex, ev: d.event || '', credits, outNumber: m.outNumber || 0 });
   }
   return out;
 }
@@ -95,6 +100,7 @@ export const persp = (x, y, z) => { const s = DP / (y + DCAM); return { x: x * s
 // 全壘打牆離本壘的距離（依方向，左右外野線約 330 呎、中外野約 410 呎，與畫面上的牆一致）
 export const wallR = (x, y) => { const th = Math.abs((Math.atan2(x, y) * 180) / Math.PI); return 410 - 81 * Math.pow(Math.min(th, 45) / 45, 2); };
 
+const FIELD_CAM = { cx: 0, y0: -50, y1: 170, minW: 230 };
 const hitCam = (hp) => {
   const top = Math.max(150, hp.y + hp.apex + 70);
   return { cx: hp.x * 0.35, y0: -60, y1: top, minW: Math.max(280, 2 * (Math.abs(hp.x) + 60)) };
@@ -110,61 +116,167 @@ const callZh = (e) => {
   return { ...{ b: { zh: '壞球', en: 'Ball' }, s: { zh: '好球', en: 'Strike' }, f: { zh: '界外', en: 'Foul', swing: true }, x: { zh: '擊出', en: 'In play', swing: true } }[k] };
 };
 
-// 把一個打席排成時間表（秒）。回傳的東西只有資料，frameAt 依時間算出每一格的畫面狀態
-export function buildScript(play) {
-  const evs = ((play && play.playEvents) || []).filter((e) => e && e.isPitch);
-  const segs = [], caps = [], zone = [];
-  let t = 0.5, hitStart = null, hitDur = 0, hrCross = null, zTop = null, zBot = null;
+const POS = { P: [0, MOUND_Y], C: [0, -7], '1B': [72, 80], '2B': [30, 137], '3B': [-72, 80], SS: [-30, 137], LF: [-150, 250], CF: [0, 290], RF: [150, 250] };
+export const FIELD_POS = POS;
+const baseSpot = (b) => (b === 'Home' || b === 'H' ? [0, 0] : BASE_XY[b]);
+const dist2 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+
+// 守備：誰接到球、傳給誰、在哪裡刺殺。資料來自每位跑者的 credits（f_fielded_ball / f_assist / f_putout）
+function fieldPlan(play, hp, tHit, tLand) {
+  const runners = (play && play.runners) || [];
+  const cr = (r) => (r.credits || []).map((c) => ({ cr: c.credit, pos: c.position && c.position.abbreviation })).filter((c) => POS[c.pos]);
+  const outs = runners.filter((r) => r.movement && r.movement.isOut && cr(r).some((c) => c.cr === 'f_putout')).sort((a, b) => (a.movement.outNumber || 0) - (b.movement.outNumber || 0));
+  let first = null;
+  for (const r of runners) { const c = cr(r).find((x) => x.cr === 'f_fielded_ball'); if (c) { first = c.pos; break; } }
+  if (!first && outs.length) first = cr(outs[0])[0].pos;
+  if (!first) return null;
+  const spot0 = [hp.x, hp.y];
+  const seq = [{ pos: first, spot: spot0 }];
+  const putRid = [];
+  for (const r of outs) {
+    const cs = cr(r).filter((c) => c.cr === 'f_assist' || c.cr === 'f_putout');
+    const rid = (r.details && r.details.runner && r.details.runner.id) || null;
+    const lastS = () => seq[seq.length - 1];
+    cs.forEach((c, k) => {
+      const put = c.cr === 'f_putout';
+      if (put && cs.length === 1 && c.pos === lastS().pos) { putRid.push({ rid, at: seq.length - 1 }); return; } // 外野接殺：球就在他手上
+      if (!put && k === 0 && c.pos === lastS().pos) return;
+      const spot = put && r.movement.outBase ? baseSpot(r.movement.outBase) : POS[c.pos];
+      if (put && c.pos === lastS().pos && dist2(spot, lastS().spot) < 1) { putRid.push({ rid, at: seq.length - 1 }); return; }
+      seq.push({ pos: c.pos, spot });
+      if (put) putRid.push({ rid, at: seq.length - 1 });
+    });
+  }
+  const moves = [], legs = [], cur = {};
+  const go = (pos, to, ta, tb) => { const from = cur[pos] || POS[pos]; moves.push({ pos, from, to, t0: ta, t1: tb }); cur[pos] = to; };
+  go(first, spot0, tHit, tLand);
+  let tc = tLand + 0.2;
+  const arr = new Map();
+  const when = [tLand];
+  for (let i = 1; i < seq.length; i++) {
+    const a = seq[i - 1], b = seq[i], d = dist2(a.spot, b.spot);
+    if (a.pos === b.pos) { const dur = clamp(d / 22, 0.3, 1.4); legs.push({ kind: 'carry', t0: tc, t1: tc + dur, from: a.spot, to: b.spot }); go(b.pos, b.spot, tc, tc + dur); tc += dur + 0.1; }
+    else { const dur = clamp(d / 120, 0.35, 0.8); legs.push({ kind: 'throw', t0: tc, t1: tc + dur, from: a.spot, to: b.spot }); go(b.pos, b.spot, tHit + 0.1, tc + dur - 0.05); tc += dur + 0.12; }
+    when[i] = legs[legs.length - 1].t1;
+  }
+  putRid.forEach((p) => arr.set(p.rid, when[p.at]));
+  return { moves, legs, arrive: arr, end: tc };
+}
+
+// 把一個打席排成時間表（秒）。prev 是同一個半局的上一個打席（用來知道一開始壘上有誰）。
+// 回傳的東西只有資料，frameAt 依時間算出每一格的畫面狀態
+export function buildScript(play, prev) {
+  const evAll = ((play && play.playEvents) || []).filter(Boolean);
+  const segs = [], caps = [], zone = [], evcaps = [], ents = new Map();
+  let t = 0.5, hitStart = null, hitDur = 0, hrCross = null, zTop = null, zBot = null, endT = 0, plan = null;
   const isHR = !!(play && play.result && play.result.event === 'Home Run');
-  evs.forEach((e, i) => {
+  const idxOf = (e, k) => (e.index != null ? e.index : k);
+  const idxSet = new Set(evAll.map(idxOf));
+  const lastPitch = [...evAll].reverse().find((e) => e.isPitch);
+  const lastPitchIx = lastPitch ? idxOf(lastPitch, evAll.indexOf(lastPitch)) : null;
+  const moves = runnerMoves(play).map((m) => ({ ...m, idx: idxSet.has(m.idx) ? m.idx : lastPitchIx }));
+  // 一開始壘上的跑者（上一個打席結束時的狀態）
+  const sameHalf = prev && prev.about && play && play.about && prev.about.inning === play.about.inning && prev.about.halfInning === play.about.halfInning;
+  const pm = (sameHalf && prev.matchup) || {};
+  [['1B', pm.postOnFirst], ['2B', pm.postOnSecond], ['3B', pm.postOnThird]].forEach(([base, p]) => { if (p && p.id) ents.set(p.id, { id: p.id, base, moves: [] }); });
+  const addMove = (m, t0, dur) => {
+    let ent = ents.get(m.id);
+    if (!ent) {
+      const b0 = m.path[0];
+      if (b0 !== 'H') for (const [k, v] of ents) if (v.base === b0 && !v.moves.length) ents.delete(k); // 代跑換人：舊的那個不留
+      ent = { id: m.id, base: b0 === 'H' ? null : b0, moves: [] }; ents.set(m.id != null ? m.id : 'm' + ents.size, ent);
+    }
+    ent.moves.push({ path: m.path, t0, dur, out: m.out, scored: m.path[m.path.length - 1] === 'H' && m.path.length > 1 });
+    endT = Math.max(endT, t0 + dur);
+  };
+  const dur0 = (m) => Math.max(0.9, (m.path.length - 1) * 0.65);
+  // 不是擊出球的跑者移動（盜壘、牽制、保送、暴投…）：切到球場畫面，跑者跑完再回去
+  const playSeg = (ms, label) => {
+    const d = ms.reduce((mx, m) => Math.max(mx, dur0(m)), 0);
+    const t0 = t;
+    segs.push({ kind: 'play', t0, t1: t0 + d + 0.6, cam0: FIELD_CAM, cam1: FIELD_CAM, ct0: t0, ct1: t0 + 1, until: t0 + d + 0.9 });
+    ms.forEach((m) => addMove(m, t0 + 0.3, dur0(m)));
+    if (label) evcaps.push({ t0, t1: t0 + d + 0.9, text: label });
+    t = t0 + d + 1.2;
+  };
+  evAll.forEach((e, k) => {
+    const ix = idxOf(e, k);
+    const ms = moves.filter((m) => m.idx === ix);
+    if (!e.isPitch) {
+      if (ms.length) playSeg(ms, evZh(e.details && e.details.event) || (e.details && e.details.description) || '');
+      return;
+    }
     const pp = pitchPath(e.pitchData);
     const dp = pp ? clamp(pp.dur * 3.3, 1.1, 2.1) : 0.9;
-    const last = i === evs.length - 1;
-    const prevCount = i ? evs[i - 1].count : { balls: 0, strikes: 0 };
+    const prevCount = caps.length ? caps[caps.length - 1].count : { balls: 0, strikes: 0 };
     const pc = pitchCls(e), pd = e.pitchData || {};
     if (zTop == null && pd.strikeZoneTop) { zTop = pd.strikeZoneTop; zBot = pd.strikeZoneBottom; }
     const call = callZh(e);
-    const cap = { t0: t, t1: t + dp, n: i + 1, code: (e.details && e.details.type && e.details.type.code) || '', name: (e.details && e.details.type && e.details.type.description) || '', speed: pd.startSpeed, call, swing: !!call.swing, cls: pc, count: e.count, prevCount };
-    caps.push(cap);
-    segs.push({ kind: 'pitch', t0: t, t1: t + dp, pp, cls: pc, code: cap.code });
+    caps.push({ t0: t, t1: t + dp, n: caps.length + 1, code: (e.details && e.details.type && e.details.type.code) || '', name: (e.details && e.details.type && e.details.type.description) || '', speed: pd.startSpeed, call, swing: !!call.swing, cls: pc, count: e.count, prevCount });
+    segs.push({ kind: 'pitch', t0: t, t1: t + dp, pp, cls: pc, code: caps[caps.length - 1].code });
     const co = pd.coordinates;
-    if (co && co.pX != null && co.pZ != null) zone.push({ t: t + dp, x: co.pX, z: co.pZ, cls: pc, code: cap.code });
+    if (co && co.pX != null && co.pZ != null) zone.push({ t: t + dp, x: co.pX, z: co.pZ, cls: pc, code: caps[caps.length - 1].code });
     t += dp;
+    const last = ix === lastPitchIx;
     const hp = hitPlan(e.hitData);
     if (hp) {
       t += 0.35; // 打擊瞬間停一下，讓人看到球在好球帶的位置
-      const hr = last && isHR;
-      const seg = { kind: 'hit', t0: t, t1: t + hp.dur, hp, foul: pc === 'f', hr, cam0: hitCam(hp), cam1: hitCam(hp), ct0: t, ct1: t + 1, until: last ? Infinity : t + hp.dur + 0.5 };
-      if (hr) { // 全壘打：球飛出牆外時鏡頭追著球走，並在過牆瞬間放煙火
+      const hr = last && isHR, inPlay = pc === 'x';
+      const seg = { kind: 'hit', t0: t, t1: t + hp.dur, hp, foul: pc === 'f', hr, cam0: hitCam(hp), cam1: hitCam(hp), ct0: t, ct1: t + 1, until: last ? Infinity : t + hp.dur + 0.5, legs: null };
+      if (hr) { // 全壘打：球飛出牆外時鏡頭追著球走，並在過牆瞬間放火花
+        const u = clamp(wallR(hp.x, hp.y) / hp.D, 0.2, 1);
         seg.cam1 = { cx: hp.x, y0: Math.max(-60, hp.y - 170), y1: hp.y + 170, minW: 320 };
         seg.ct0 = t + hp.dur * 0.15; seg.ct1 = t + hp.dur * 0.8;
-        hrCross = t + hp.dur * clamp(wallR(hp.x, hp.y) / hp.D, 0.2, 1);
-        seg.cross = { t: hrCross, x: hp.x * clamp(wallR(hp.x, hp.y) / hp.D, 0.2, 1), y: hp.y * clamp(wallR(hp.x, hp.y) / hp.D, 0.2, 1) };
+        hrCross = t + hp.dur * u;
+        seg.cross = { t: hrCross, x: hp.x * u, y: hp.y * u };
+      }
+      let extra = 0;
+      if (inPlay && !hr && last) {
+        plan = fieldPlan(play, hp, t, t + hp.dur);
+        if (plan) { seg.legs = plan.legs; seg.fieldMoves = plan.moves; seg.until = Infinity; extra = plan.end - (t + hp.dur); }
       }
       segs.push(seg);
-      if (last) { hitStart = t; hitDur = hp.dur; }
-      t += hp.dur + 0.5;
+      if (inPlay) ms.forEach((m) => {
+        const natural = dur0(m);
+        const arrive = plan && plan.arrive.get(m.id);
+        addMove(m, t + 0.15, arrive ? Math.max(natural, arrive - (t + 0.15) + 0.1) : natural);
+      });
+      if (last) { hitStart = t; hitDur = hp.dur + Math.max(0, extra); }
+      t += hp.dur + 0.5 + Math.max(0, extra);
       if (!last) t += 0.8;
-    } else t += 0.7;
+      if (!inPlay && ms.length) playSeg(ms, evZh(play.result && play.result.event));
+    } else {
+      t += 0.7;
+      if (ms.length) playSeg(ms, evZh((play.result && last && play.result.event) || (ms[0] && ms[0].ev)));
+    }
   });
-  const lastEv = evs[evs.length - 1];
-  const moves = lastEv && !/foul/i.test(callZh(lastEv).en) ? runnerMoves(play) : [];
   const rt0 = hitStart != null ? hitStart + 0.15 : t;
-  const runners = moves.map((m) => ({ ...m, t0: rt0, dur: Math.max(1.1, (m.path.length - 1) * 0.65) }));
-  const rEnd = runners.reduce((mx, r) => Math.max(mx, r.t0 + r.dur), 0);
   const contactEnd = hitStart != null ? hitStart + hitDur : t;
-  const bannerT = hrCross != null ? hrCross : hitStart != null ? Math.max(contactEnd - 0.2, rt0 + 0.6) : t;
-  const total = Math.max(t, rEnd, bannerT) + 1.8;
-  return { segs, caps, zone, runners, bannerT, total, hr: isHR && hrCross != null, zTop: zTop || 3.4, zBot: zBot || 1.6 };
+  const bannerT = hrCross != null ? hrCross : hitStart != null ? Math.max(contactEnd - 0.2, Math.min(endT, rt0 + 0.6)) : t;
+  const total = Math.max(t, endT, bannerT) + 1.8;
+  return { segs, caps, evcaps, zone, ents: [...ents.values()], bannerT, total, hr: isHR && hrCross != null, zTop: zTop || 3.4, zBot: zBot || 1.6 };
 }
+
+const entPos = (ent, t) => {
+  // 還沒開始跑：站在原本的壘包（打者在移動前不顯示）
+  let cur = ent.base ? { ...{ x: BASE_XY[ent.base][0], y: BASE_XY[ent.base][1] } } : null;
+  let gone = false;
+  for (const mv of ent.moves) {
+    if (t < mv.t0) { if (!cur) { const b = BASE_XY[mv.path[0]]; if (mv.path[0] !== 'H') cur = { x: b[0], y: b[1] }; } break; }
+    const u = (t - mv.t0) / mv.dur;
+    cur = runnerPos(mv.path, u);
+    gone = (mv.out || mv.scored) && u >= 1;
+  }
+  return cur && !gone ? cur : null;
+};
 
 // 在時間 t 的畫面狀態；scene 是 'pitch'（捕手後方視角）或 'field'（球場俯視）
 export function frameAt(sc, t) {
   let hs = null;
-  for (const s of sc.segs) if (s.kind === 'hit' && t >= s.t0 && t <= s.until) hs = s;
+  for (const s of sc.segs) if ((s.kind === 'hit' || s.kind === 'play') && t >= s.t0 && t <= s.until) hs = s;
   const scene = hs ? 'field' : 'pitch';
   const cam = hs ? lerpCam(hs.cam0, hs.cam1, ease(clamp((t - hs.ct0) / (hs.ct1 - hs.ct0), 0, 1))) : null;
-  let ball = null, trail = null, trailCls = '';
+  let ball = null, trail = null, trailCls = '', trail2 = null, fm = null;
   for (let i = 0; i < sc.segs.length; i++) {
     const s = sc.segs[i];
     if (t < s.t0) break;
@@ -179,28 +291,47 @@ export function frameAt(sc, t) {
       const n = 24, list = [];
       for (let j = 0; j <= Math.round(u * n); j++) list.push(hitPos(s.hp, j / n));
       ball = hitPos(s.hp, u); trail = list.concat([ball]); trailCls = s.hr ? 'hr' : s.foul ? 'foul' : 'hit';
+      if (s.legs && t > s.t1) { // 野手接到球之後的傳球
+        let p = { x: s.hp.x, y: s.hp.y, z: 0.5 };
+        for (const lg of s.legs) {
+          if (t < lg.t0) break;
+          const k = clamp((t - lg.t0) / (lg.t1 - lg.t0), 0, 1), arc = lg.kind === 'throw' ? 4 * k * (1 - k) * Math.min(14, dist2(lg.from, lg.to) / 8) : 0;
+          p = { x: lg.from[0] + (lg.to[0] - lg.from[0]) * k, y: lg.from[1] + (lg.to[1] - lg.from[1]) * k, z: 3 + arc };
+          if (lg.kind === 'throw') trail2 = [{ x: lg.from[0], y: lg.from[1], z: 3 }, p];
+        }
+        ball = p;
+      }
+      if (s.fieldMoves) fm = s.fieldMoves;
     }
   }
   let cap = null;
   for (const c of sc.caps) if (t >= c.t0) cap = { ...c, done: t >= c.t1 };
+  let evcap = null;
+  for (const c of sc.evcaps) if (t >= c.t0 && t <= c.t1) evcap = c.text;
   const zone = sc.zone.filter((z) => t >= z.t);
   const lastZ = zone[zone.length - 1];
   const impact = lastZ && t - lastZ.t < 0.9 ? { x: lastZ.x, z: lastZ.z, cls: lastZ.cls, k: (t - lastZ.t) / 0.9 } : null;
   const swing = cap && cap.swing ? clamp((t - (cap.t1 - 0.2)) / 0.3, 0, 1) : 0;
-  const runners = sc.runners.filter((r) => t >= r.t0).map((r) => {
-    const u = (t - r.t0) / r.dur;
-    return { ...runnerPos(r.path, u), batter: r.batter, gone: r.out && u >= 1 };
+  const runners = sc.ents.map((e) => { const p = entPos(e, t); return p ? { ...p, batter: !e.base && e.moves[0] && e.moves[0].path[0] === 'H' } : null; }).filter(Boolean);
+  // 野手：預設站位，有任務的在時間內移動；act 表示正在動
+  const fielders = Object.keys(POS).map((pos) => {
+    let p = POS[pos], act = false;
+    for (const m of (fm || []).filter((x) => x.pos === pos)) {
+      if (t >= m.t1) p = m.to;
+      else if (t > m.t0) { const k = ease((t - m.t0) / (m.t1 - m.t0)); p = [m.from[0] + (m.to[0] - m.from[0]) * k, m.from[1] + (m.to[1] - m.from[1]) * k]; act = true; break; }
+      else break;
+    }
+    return { pos, x: p[0], y: p[1], act };
   });
   const cr = hs && hs.cross;
   const fx = cr && t >= cr.t && t - cr.t < 1.5 ? { x: cr.x, y: cr.y, k: (t - cr.t) / 1.5 } : null;
-  return { scene, cam, ball, trail, trailCls, cap, zone, impact, swing, runners, fx, banner: t >= sc.bannerT, hr: sc.hr };
+  return { scene, cam, ball, trail, trailCls, trail2, cap, evcap, zone, impact, swing, runners, fielders, fx, banner: t >= sc.bannerT, hr: sc.hr };
 }
 
 /* ───────── 畫面 ───────── */
 const ZH = () => S.lang !== 'en';
 const L = (zh, en) => (ZH() ? zh : en);
 
-const FIELDERS = [[-72, 80], [72, 80], [-30, 137], [30, 137], [-150, 250], [0, 290], [150, 250], [0, MOUND_Y], [0, -7]];
 const fieldSVG = () => `<g transform="scale(1,-1)">
   <rect x="-900" y="-500" width="1800" height="1500" fill="#2f6d3f"/>
   <path d="M-900 233 L-233 233 Q-205 405 0 410 Q205 405 233 233 L900 233 L900 1000 L-900 1000 Z" fill="#1b2f44"/>
@@ -246,9 +377,10 @@ function pitchSceneSVG(rightie, top, bot) {
   <circle id="pvBall" class="an-bc" r=".1"/>`;
 }
 
-export function openAnim(play, gd) {
+export function openAnim(play, gd, allPlays) {
   if (!play || document.getElementById('an')) return null;
-  const sc = buildScript(play);
+  const prevPlay = allPlays && play.about ? [...allPlays].reverse().find((p) => p.about && p.about.atBatIndex === play.about.atBatIndex - 1) : null;
+  const sc = buildScript(play, prevPlay);
   if (!sc.segs.length) return null;
   const m = play.matchup || {}, bat = (m.batter && m.batter.fullName) || '', pit = (m.pitcher && m.pitcher.fullName) || '';
   const R = play.result || {};
@@ -258,9 +390,9 @@ export function openAnim(play, gd) {
   el.innerHTML = `<div class="an-h"><div class="an-who"><b>${esc(bat)}</b><span>vs ${esc(pit)}</span></div><button class="an-x" aria-label="${L('關閉', 'Close')}">✕</button></div>
     <div class="an-st"><svg id="anPv" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${pitchSceneSVG(rightie, sc.zTop, sc.zBot)}</svg>
       <svg id="anSvg" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${fieldSVG()}
-      <g id="anFd">${FIELDERS.map(([x, y]) => `<circle class="an-fd" cx="${x}" cy="${-y}" r="3"/>`).join('')}</g>
+      <g id="anFd">${Object.keys(POS).map((p) => `<circle class="an-fd" data-pos="${p}" cx="${POS[p][0]}" cy="${-POS[p][1]}" r="3"/>`).join('')}</g>
       <circle id="anBt" class="an-bt" cx="${rightie ? -4.2 : 4.2}" cy="0" r="3"/>
-      <polyline id="anTr" class="an-tr" fill="none" vector-effect="non-scaling-stroke"/>
+      <polyline id="anTr" class="an-tr" fill="none" vector-effect="non-scaling-stroke"/><polyline id="anTr2" class="an-tr2" fill="none" vector-effect="non-scaling-stroke"/>
       <g id="anFx"></g><g id="anRn"></g>
       <g id="anBall"><ellipse id="anSh" class="an-sh"/><circle id="anBc" class="an-bc"/></g></svg>
       <div class="an-cap"><div class="an-cl"></div><div class="an-ct"></div></div>
@@ -310,8 +442,8 @@ export function openAnim(play, gd) {
     const cy = cam.y0 + hh / 2; // 下緣固定，視窗比需要的高時多出來的留在上方
     svg.setAttribute('viewBox', `${(cam.cx - wv / 2).toFixed(2)} ${(-cy - hh / 2).toFixed(2)} ${wv.toFixed(2)} ${hh.toFixed(2)}`);
     const k = wv / Math.max(1, st.clientWidth); // 1 px 對應幾呎
-    el.querySelectorAll('.an-fd').forEach((c) => c.setAttribute('r', (4 * k).toFixed(2)));
-    $e('#anBt').setAttribute('r', (6 * k).toFixed(2));
+    f.fielders.forEach((q) => { const c = $e(`.an-fd[data-pos="${q.pos}"]`); c.setAttribute('cx', q.x.toFixed(1)); c.setAttribute('cy', (-q.y).toFixed(1)); c.setAttribute('r', ((q.act ? 5 : 4) * k).toFixed(2)); c.classList.toggle('act', q.act); });
+    $e('#anBt').setAttribute('r', (6 * k).toFixed(2)); $e('#anBt').style.display = f.scene === 'field' ? 'none' : '';
     const P = (p) => `${p.x.toFixed(2)},${(-p.y - p.z).toFixed(2)}`;
     const ball = $e('#anBall');
     if (f.ball && f.scene === 'field') {
@@ -322,6 +454,7 @@ export function openAnim(play, gd) {
     } else ball.style.display = 'none';
     const tr = $e('#anTr');
     tr.setAttribute('points', f.trail && f.scene === 'field' ? f.trail.map(P).join(' ') : '');
+    $e('#anTr2').setAttribute('points', f.trail2 && f.scene === 'field' ? f.trail2.map(P).join(' ') : '');
     tr.setAttribute('class', 'an-tr pm-s-' + (f.trailCls === 'hit' || f.trailCls === 'foul' || f.trailCls === 'hr' ? f.trailCls : pitchGroup(f.trailCls)));
     $e('#anRn').innerHTML = f.runners.filter((r) => !r.gone).map((r) => `<circle class="an-rn${r.batter ? ' b' : ''}" cx="${r.x.toFixed(1)}" cy="${(-r.y).toFixed(1)}" r="${(5.5 * k).toFixed(2)}"/>`).join('');
     // 全壘打過牆瞬間：往四周擴散的火花（角度固定，不用亂數，重播時一樣）
@@ -334,7 +467,8 @@ export function openAnim(play, gd) {
     pv.style.opacity = f.scene === 'pitch' ? 1 : 0; svg.style.opacity = f.scene === 'field' ? 1 : 0;
     applyPitch(f); applyField(f);
     const c = f.cap;
-    if (c) {
+    if (f.evcap) { $e('.an-cl').textContent = f.evcap; $e('.an-ct').innerHTML = ''; }
+    else if (c) {
       const nm = ZH() ? PITCH_ZH[c.code] || c.name : c.name;
       $e('.an-cl').textContent = `${L('第', 'Pitch ')}${c.n}${L(' 球', '')}　${nm}${c.speed ? '　' + Math.round(c.speed * 10) / 10 + ' mph' : ''}`;
       const cnt = c.done ? c.count : c.prevCount;

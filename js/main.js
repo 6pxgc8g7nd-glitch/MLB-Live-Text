@@ -89,7 +89,7 @@ function boot() {
       const n = Number(anb.dataset.an);
       const all = (G.data.liveData && G.data.liveData.plays && G.data.liveData.plays.allPlays) || [];
       const play = [...all].reverse().find((p) => p.about && p.about.atBatIndex === n);
-      if (play) import('./anim.js').then((mod) => mod.openAnim(play, G.data.gameData)).catch((err) => toast((err && err.message) || '動畫載入失敗'));
+      if (play) import('./anim.js').then((mod) => mod.openAnim(play, G.data.gameData, all)).catch((err) => toast((err && err.message) || '動畫載入失敗'));
       return;
     }
     const pmt = e.target.closest('[data-pmt]'); // 球路圖例：只看某一種球種，再點一次回到全部
