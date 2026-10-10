@@ -908,3 +908,9 @@ body.replaying .rp-go { display: none; }
 .pre-l ol { list-style: none; margin: 0; padding: 0; } .pre-l li { display: flex; align-items: baseline; gap: 6px; padding: 5px 0; font-size: 13px; border-bottom: 1px dashed var(--line); min-width: 0; } .pre-l li:last-child { border-bottom: 0; }
 .pre-l li i { font-style: normal; width: 14px; color: var(--sub); font-size: 11px; flex: none; } .pre-l li .pl-n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .pre-l li span:last-child { flex: none; font-size: 11px; color: var(--sub); }
 .tkw.pre-hide { display: none; }
+
+/* 內嵌 SVG 圖示（js/icons.js） */
+.ic { width: 1.1em; height: 1.1em; flex: none; display: inline-block; vertical-align: -0.18em; }
+.an-x { display: flex; align-items: center; justify-content: center; } .an-x .ic { width: 20px; height: 20px; }
+.an-bt2 button { display: flex; align-items: center; justify-content: center; gap: 6px; } .an-bt2 .ic { width: 20px; height: 20px; } .an-bt2 .an-re .ic { width: 18px; height: 18px; }
+.rp-pp { display: flex; align-items: center; justify-content: center; } .rp-pp .ic { width: 18px; height: 18px; } .rp-go .ic { width: 16px; height: 16px; }

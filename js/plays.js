@@ -203,7 +203,7 @@ export function renderText(d) {
       if (S.autoFollow) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
-        chip.textContent = `↑ ${added} 則新事件`;
+        chip.textContent = `${added} 則新事件`;
         chip.hidden = false;
       }
     }

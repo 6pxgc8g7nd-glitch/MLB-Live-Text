@@ -3,6 +3,7 @@ import { esc } from './util.js';
 import { evZh } from './dict.js';
 import { S } from './state.js';
 import { PITCH_ZH } from './pitches.js';
+import { IC } from './icons.js';
 import { pitchGroup } from './pitchmap.js';
 import { PLATE_Y, camAt, project, projectPoly, GROUND } from './cam3d.js';
 import { BASE_XY, FIELD_POS as POS, MOUND_Y, buildScript, frameAt, batPose, clamp } from './anim-script.js';
@@ -38,7 +39,7 @@ export function openAnim(play, gd, allPlays) {
   const rightie = !(m.batSide && m.batSide.code === 'L');
   const el = document.createElement('div');
   el.id = 'an'; el.className = 'an'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
-  el.innerHTML = `<div class="an-h"><div class="an-who"><b>${esc(bat)}</b><span>vs ${esc(pit)}</span></div><button class="an-x" aria-label="${L('關閉', 'Close')}">✕</button></div>
+  el.innerHTML = `<div class="an-h"><div class="an-who"><b>${esc(bat)}</b><span>vs ${esc(pit)}</span></div><button class="an-x" aria-label="${L('關閉', 'Close')}">${IC.close}</button></div>
     <div class="an-st"><svg id="anPv" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
       <svg id="anSvg" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${fieldSVG()}
       <g id="anFd">${Object.keys(POS).map((p) => `<circle class="an-fd" data-pos="${p}" cx="${POS[p][0]}" cy="${-POS[p][1]}" r="3"/>`).join('')}</g>
@@ -50,7 +51,7 @@ export function openAnim(play, gd, allPlays) {
       <div class="an-cap"><div class="an-cl"></div><div class="an-ct"></div></div>
       <div class="an-bn" hidden><b></b><small></small></div></div>
     <div class="an-bar"><div class="an-sc"><input class="an-rg" type="range" min="0" max="1000" step="1" value="0" aria-label="${L('動畫時間軸', 'Timeline')}"><span class="an-tm">0.0 / 0.0</span></div>
-      <div class="an-bt2"><button class="an-pv" aria-label="${L('上一球', 'Previous pitch')}">⏮</button><button class="an-pp" aria-label="${L('暫停', 'Pause')}" aria-pressed="false">⏸</button><button class="an-nx" aria-label="${L('下一球', 'Next pitch')}">⏭</button><button class="an-re">↻ ${L('重播', 'Replay')}</button><button class="an-sp" aria-pressed="false">${L('慢動作', 'Slow')} 1×</button></div></div>`;
+      <div class="an-bt2"><button class="an-pv" aria-label="${L('上一球', 'Previous pitch')}">${IC.prev}</button><button class="an-pp" aria-label="${L('暫停', 'Pause')}" aria-pressed="false">${IC.pause}</button><button class="an-nx" aria-label="${L('下一球', 'Next pitch')}">${IC.next}</button><button class="an-re">${IC.replay}${L('重播', 'Replay')}</button><button class="an-sp" aria-pressed="false">${L('慢動作', 'Slow')} 1×</button></div></div>`;
   document.body.appendChild(el);
   const $e = (s) => el.querySelector(s);
   const svg = $e('#anSvg'), pv = $e('#anPv'), st = $e('.an-st');
@@ -94,7 +95,7 @@ export function openAnim(play, gd, allPlays) {
         + (f.impact ? (() => { const s = project(c, [f.impact.x, zy, f.impact.z]); return s ? `<circle class="pv-ring ${f.impact.cls}" cx="${f2(s.x)}" cy="${f2(s.y)}" r="${f2(((0.2 + 0.45 * f.impact.k) * c.F) / s.d)}" opacity="${f2(1 - f.impact.k)}" fill="none" stroke-width="3" vector-effect="non-scaling-stroke"/>` : ''; })() : '') + '</g>';
     }
     // 野手：近處是站著的人，拉遠後縮成跟 2D 球場一樣的圓點
-    const sorted = f.fielders.map((q) => ({ q, s: project(c, [q.x, q.y, 0]) })).filter((o) => o.s).sort((u, v) => v.s.d - u.s.d);
+    const sorted = f.fielders.map((q) => ({ q, s: project(c, [q.x, q.y, 0]) })).filter((o) => o.s && o.s.d > 4).sort((u, v) => v.s.d - u.s.d);
     for (const { q, s } of sorted) {
       const top = project(c, [q.x, q.y, 5.6 * (1 - k) + 0.3]);
       const r = (0.45 * c.F / s.d) * (1 - k) + (q.act ? 5 : 4) * pxN * k;
@@ -180,7 +181,7 @@ export function openAnim(play, gd, allPlays) {
   const ui = () => {
     rg.value = String(Math.round((t / sc.total) * 1000));
     tm.textContent = `${t.toFixed(1)} / ${sc.total.toFixed(1)}`;
-    pp.textContent = playing ? '⏸' : '▶'; pp.setAttribute('aria-pressed', String(!playing)); pp.setAttribute('aria-label', playing ? L('暫停', 'Pause') : L('播放', 'Play'));
+    pp.innerHTML = playing ? IC.pause : IC.play; pp.setAttribute('aria-pressed', String(!playing)); pp.setAttribute('aria-label', playing ? L('暫停', 'Pause') : L('播放', 'Play'));
   };
   const draw = () => {
     const f = frameAt(sc, t);

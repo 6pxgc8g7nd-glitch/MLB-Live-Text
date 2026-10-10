@@ -9,6 +9,7 @@ import { wpPoints, wpHTML, bindWp } from './winprob.js';
 import { renderText, playCat } from './plays.js';
 import { liveHTML } from './live.js';
 import { preGameHTML, ensurePre } from './preview.js';
+import { IC } from './icons.js';
 import { boxHTML } from './box.js';
 
 // 拆檔後，其他模組與測試仍從 game.js 匯入這些名稱
@@ -55,7 +56,7 @@ export function headHTML(d) {
 
   const extra = ''; // 賽前的先發投手改放在下面的賽前資訊面板（preview.js）
   // 已結束的比賽可以當作直播重播（按鈕由 main.js 處理，重播程式需要時才載入）
-  const replay = st.k === 'final' ? '<button class="rp-go" id="rpStart"><span aria-hidden="true">▶</span> 重播這場比賽</button>' : '';
+  const replay = st.k === 'final' ? `<button class="rp-go" id="rpStart">${IC.play}重播這場比賽</button>` : '';
   return `
     <div class="hero">
       ${lsHTML}

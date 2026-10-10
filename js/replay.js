@@ -5,6 +5,7 @@
 import { setApiOverride } from './api.js';
 import { G, poller } from './state.js';
 import { esc } from './util.js';
+import { IC } from './icons.js';
 
 // '20261007_205955'（UTC）→ 毫秒
 export const tcToMs = (tc) => Date.UTC(+tc.slice(0, 4), +tc.slice(4, 6) - 1, +tc.slice(6, 8), +tc.slice(9, 11), +tc.slice(11, 13), +tc.slice(13, 15));
@@ -174,7 +175,7 @@ export async function startInApp(pk, api, route) {
       rg.onchange = () => { dragging = false; const t = ctl.status(); ctl.seek(t.start + (rg.value / 1000) * (t.end - t.start)); };
       bar.querySelector('.rp-x').onclick = () => { end(); route(); }; // 回到這場比賽的最終結果
     }
-    bar.querySelector('.rp-pp').textContent = s.playing && !s.done ? '❚❚' : '▶';
+    bar.querySelector('.rp-pp').innerHTML = s.playing && !s.done ? IC.pause : IC.play;
     bar.querySelector('.rp-l b').textContent = barLabel(s);
     bar.querySelector('.rp-l small').innerHTML = `重播・${esc(tw.format(new Date(s.vt)))}`;
     if (!dragging) bar.querySelector('.rp-rg').value = Math.round(((s.vt - s.start) / (s.end - s.start || 1)) * 1000);
