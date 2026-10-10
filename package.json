@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node tests/unit.test.js",
+    "test": "node tests/unit.test.js && node tests/anim.test.js",
     "check": "node scripts/sw.mjs check",
     "sync": "node scripts/sw.mjs sync"
   },

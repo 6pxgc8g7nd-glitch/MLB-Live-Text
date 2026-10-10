@@ -30,6 +30,9 @@ jobs:
       - name: 單元測試
         run: node tests/unit.test.js
 
+      - name: 打席動畫測試（真實打席 fixture）
+        run: node tests/anim.test.js
+
       - name: 檢查 sw.js（快取清單與版本號）
         env:
           BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}

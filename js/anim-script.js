@@ -266,10 +266,10 @@ export function buildScript(play, prev) {
       if (last) { hitStart = t; hitDur = hp.dur + Math.max(0, extra); }
       t += hp.dur + 0.5 + Math.max(0, extra);
       if (!last) t += 0.8;
-      if (!inPlay && ms.length) playSeg(ms, evZh(play.result && play.result.event));
+      if (!inPlay && ms.length) playSeg(ms, evZh((ms[0] && ms[0].ev) || (play.result && play.result.event)));
     } else {
       t += 0.7;
-      if (ms.length) playSeg(ms, evZh((play.result && last && play.result.event) || (ms[0] && ms[0].ev)));
+      if (ms.length) playSeg(ms, evZh((ms[0] && ms[0].ev) || (last && play.result && play.result.event)));
     }
   });
   const rt0 = hitStart != null ? hitStart + 0.15 : t;

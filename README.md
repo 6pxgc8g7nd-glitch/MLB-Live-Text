@@ -79,7 +79,7 @@ python3 -m http.server 8000
 **測試**：
 
 ```bash
-npm test                     # 單元測試
+npm test                     # 單元測試＋打席動畫測試
 npx eslint .                 # 程式碼檢查
 node scripts/sw.mjs check    # 檢查 sw.js 的快取清單與版本號
 python3 tests/shots.py       # 截圖測試（模擬 API，需先安裝 Playwright）
@@ -124,7 +124,7 @@ eslint.config.js      ESLint 設定
 package.json          開發工具（ESLint）與 npm 指令；網站本身沒有任何相依套件
 .githooks/            pre-commit hook（自動執行 scripts/sw.mjs）
 .github/workflows/    CI：ESLint、單元測試、sw.js 檢查、截圖檢查，全過才部署
-tests/                單元測試、截圖檢查、全壘打回放
+tests/                單元測試、打席動畫測試（fixtures/ 是真實打席精簡檔）、截圖檢查、全壘打回放
 ```
 
 ## 使用技術

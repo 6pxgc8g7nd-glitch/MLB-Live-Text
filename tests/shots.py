@@ -84,6 +84,14 @@ plays = [
 ]
 for i in range(8, 40):
     plays.insert(0, P(i - 60, 1 + (i % 4), 'top' if i % 2 else 'bottom', 'Groundout', 'Filler grounds out.', 'Filler %d' % i, 'Pitcher', outs=1))
+# 球路的物理資料（出手點、初速、加速度）與擊球落點：動畫與投手球路圖需要，沒有的話 CI 完全跑不到這些功能
+for _p in plays:
+    for _e in _p.get('playEvents', []):
+        _pd = _e.get('pitchData')
+        if _pd and 'coordinates' in _pd:
+            _pd['coordinates'].update({'x0': 1.2, 'y0': 50, 'z0': 5.4, 'vX0': -4.6, 'vY0': -128, 'vZ0': -4.5, 'aX': 15.5, 'aY': 26.6, 'aZ': -30})
+        if _e.get('hitData'):
+            _e['hitData'].update({'trajectory': 'fly_ball', 'coordinates': {'coordX': 150, 'coordY': 60}})
 plays.sort(key=lambda p: p['about']['atBatIndex'])
 
 def bat(i, nm, pos, order, ab, r, h, rbi, bb, so, avg):
@@ -117,7 +125,7 @@ def feed(state, det, ls_state='Top'):
                           'offense': {'first': {'id': 1}, 'third': {'id': 2}, 'batter': {'id': 4, 'fullName': 'Brayan Rocchio'}, 'onDeck': {'id': 3}},
                           'defense': {'pitcher': {'fullName': 'Grant Taylor'}}},
             'plays': {'allPlays': plays},
-            'boxscore': {'teams': {'away': {'batters': [1, 2, 3, 4, 5], 'pitchers': [9, 10], 'players': players},
+            'boxscore': {'teams': {'away': {'batters': [1, 2, 3, 4, 5], 'pitchers': [9, 10, 2012], 'players': players},
                                    'home': {'batters': [], 'pitchers': [], 'players': {}}}},
             'decisions': {}}}
 
@@ -253,12 +261,29 @@ with sync_playwright() as p:
             if got[0] or got[1] == 'none': failures.append((name, ['工具列預設應該展開：%s' % got]))
         if name == 'box':
             # 投手球路：點投手列展開、圖例可篩選、不超出螢幕
-            if pg.evaluate("document.querySelectorAll('[data-pm]').length") == 0: print('box: no pitcher row with pitch data (mock)')
+            if pg.evaluate("document.querySelectorAll('[data-pm]').length") == 0: failures.append((name, ['數據頁沒有可展開球路的投手列']))
             else:
                 pg.click('[data-pm]'); pg.wait_for_timeout(300)
                 got = pg.evaluate("[document.querySelectorAll('.pcw.open .pmz').length, document.querySelectorAll('.pmc').length, [...document.querySelectorAll('.pm *')].filter(e => e.getBoundingClientRect().right > innerWidth).length]")
                 print('pitch map:', got)
                 if got[0] != 1 or got[1] < 1 or got[2]: failures.append((name, ['投手球路展開不正常：%s' % got]))
+        if name == 'gametop':
+            # 打席動畫：點卡片上的「動畫」鈕 → 開啟 → 在捕手視角、轉場中、球場畫面各畫一格 → 關閉；過程不能有主控台錯誤（錯誤會被下面的 errs 檢查抓到）
+            n_btn = pg.evaluate("document.querySelectorAll('.anb').length")
+            if n_btn == 0: failures.append((name, ['打席卡上沒有動畫鈕']))
+            else:
+                pg.evaluate("document.querySelector('.anb[data-an=\"5\"]').click()"); pg.wait_for_timeout(400)
+                info = pg.evaluate("""() => { const el = document.getElementById('an'); if (!el) return null; const c = el._ctl, h = c.sc.segs.find((s) => s.kind === 'hit'); const out = [];
+                  for (const t of [c.sc.caps[1].t1 - 0.3, h.t0 + 0.45, h.t0 + 1.5, c.total]) { c.seek(t); out.push([document.getElementById('anPv').style.opacity, document.getElementById('anSvg').style.opacity, document.getElementById('anPv').innerHTML.length]); }
+                  return { out, hud: !document.querySelector('.an-hud').hidden, banner: !document.querySelector('.an-bn').hidden }; }""")
+                print('anim:', info)
+                if not info: failures.append((name, ['點動畫鈕沒有開出動畫']))
+                else:
+                    o = info['out']
+                    if o[0][0] != '1' or o[2][1] != '1' or o[3][1] != '1' or o[0][2] < 2000 or not info['hud'] or not info['banner']:
+                        failures.append((name, ['動畫畫面不正常：%s' % info]))
+                    pg.click('.an-x'); pg.wait_for_timeout(200)
+                    if pg.evaluate("!!document.getElementById('an')"): failures.append((name, ['動畫關不掉']))
         if name == 'gametop':
             # 點把手收起（把手寫目前分頁名稱）／再點展開；離開再進來又是展開
             pg.click('#gFold'); pg.wait_for_timeout(200)
