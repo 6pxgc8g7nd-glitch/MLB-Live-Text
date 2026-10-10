@@ -113,6 +113,7 @@ export function openAnim(play, gd, allPlays) {
         + (poly.length > 2 ? `<polygon points="${poly.map(P).join(' ')}" fill="#10202f" stroke="#5d7a99" stroke-width="1" vector-effect="non-scaling-stroke"/>` : '')
         + `${ln({ x: p.sh.x - p.ws * 0.6, z: 4.8 }, p.hands, 0.28, '#1b3350')}${ln({ x: p.sh.x + p.ws * 0.6, z: 4.8 }, p.hands, 0.28, '#1b3350')}`
         + (hd ? `<circle cx="${f2(hd.x)}" cy="${f2(hd.y)}" r="${f2((0.42 * c.F) / hd.d)}" fill="#10202f" stroke="#5d7a99" stroke-width="1" vector-effect="non-scaling-stroke"/>` : '')
+        + [3, 2, 1].map((g) => { if (f.bat.type === 'take' || f.bat.k < 0.12 || f.bat.k > 0.96) return ''; const q = batPose(f.bat.load, Math.max(0, f.bat.k - g * 0.07), f.bat.type, f.bat.z); return ln(q.hands, q.tip, 0.09, `rgba(217,178,124,${(0.38 / g).toFixed(2)})`); }).join('') // 揮棒的殘影，看得出速度
         + `${ln(p.hands, p.tip, 0.11, '#d9b27c')}</g>`;
     }
     // 跑者
@@ -125,6 +126,21 @@ export function openAnim(play, gd, allPlays) {
       if (sh && f.ball.z > 0.6) out += `<ellipse cx="${f2(sh.x)}" cy="${f2(sh.y)}" rx="${f2((0.45 * c.F) / sh.d)}" ry="${f2((0.22 * c.F * c.v) / sh.d * Math.max(0.35, Math.sin(Math.atan2(c.f[2] * -1, c.f[1]))))}" fill="rgba(0,0,0,.35)"/>`;
       out += dot([f.ball.x, f.ball.y, f.ball.z], 0.19, 2.4 + 2.6 * k, 'class="an-bc"');
     }
+    // 擊中瞬間：往外噴的火花與閃光（位置是球過本壘的地方，隨鏡頭轉場一起移動）
+    const ct = f.contact;
+    if (ct) {
+      const cs = project(c, [ct.x, PLATE_Y, ct.z]);
+      if (cs) {
+        const fade = 1 - ct.k, R = (0.35 + 1.1 * ct.strength * Math.sqrt(ct.k)) * c.F / cs.d;
+        out += `<circle cx="${f2(cs.x)}" cy="${f2(cs.y)}" r="${f2(R * 0.55)}" fill="#fff" opacity="${f2(Math.max(0, fade - 0.35))}"/>`;
+        for (let i = 0; i < 14; i++) {
+          const an = (i / 14) * Math.PI * 2 + 0.3, r0 = R * 0.45, r1 = R * (0.9 + 0.5 * (i % 3) / 2);
+          out += `<line x1="${f2(cs.x + Math.cos(an) * r0)}" y1="${f2(cs.y + Math.sin(an) * r0)}" x2="${f2(cs.x + Math.cos(an) * r1)}" y2="${f2(cs.y + Math.sin(an) * r1)}" stroke="${ct.foul ? '#d3dae2' : '#ffe27a'}" stroke-width="${i % 2 ? 2 : 3}" stroke-linecap="round" vector-effect="non-scaling-stroke" opacity="${f2(fade)}"/>`;
+        }
+      }
+      const amp = 7 * ct.strength * (1 - ct.k) * (1 - ct.k);
+      pv.style.transform = `translate(${(Math.sin(ct.k * 55) * amp).toFixed(1)}px, ${(Math.cos(ct.k * 47) * amp).toFixed(1)}px)`;
+    } else if (pv.style.transform) pv.style.transform = '';
     pv.innerHTML = out;
   };
   const applyPitch = drawPitch;

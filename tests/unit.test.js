@@ -524,6 +524,15 @@ console.log('all tests passed');
   const tk = batPose(0.6, 0, 'take', 2.5);
   assert.ok(tk.hands.x < 0.35 && tk.tip.z > tk.hands.z, '不揮的球只做蓄力：手往後、棒仍朝上');
   assert.strictEqual(frameAt(sc, 0).bat.type, 'take');
+  // 擊中瞬間的效果、揮空時身體被帶出去
+  const cap1 = sc.caps[1];
+  assert.strictEqual(frameAt(sc, cap1.t1 - 0.05).contact, null, '球還沒到不會有火花');
+  const hitFx = frameAt(sc, cap1.t1 + 0.1).contact;
+  assert.ok(hitFx && hitFx.k > 0 && hitFx.k < 0.5 && hitFx.strength > 0.5 && !hitFx.foul, '擊出的瞬間有火花，力道依初速（98 mph）');
+  assert.strictEqual(frameAt(sc, cap1.t1 + 0.6).contact, null, '0.45 秒後效果結束');
+  assert.ok(frameAt(sc, 0.8).contact === null, '好球、壞球沒有火花');
+  const wf = batPose(1, 1, 'whiff', 2.6), ct2 = batPose(1, 1, 'contact', 2.6);
+  assert.ok(wf.head.z < ct2.head.z - 0.3 && wf.head.x > ct2.head.x, '揮空後頭壓低、重心前傾');
   const cap2 = sc.caps[1];
   assert.strictEqual(frameAt(sc, cap2.t1).bat.type, 'contact'); assert.ok(Math.abs(frameAt(sc, cap2.t1).bat.k - 0.5) < 0.01, '球到本壘的瞬間正好是揮棒的 0.5');
   assert.strictEqual(frameAt(sc, 0).hud, null);

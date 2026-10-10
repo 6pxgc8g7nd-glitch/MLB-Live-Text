@@ -181,8 +181,9 @@ export function batPose(load, k, type, z) {
   const phi = swing ? (sw1 * 70 + sw2 * 35) : 0; // 身體轉動
   const ws = 0.15 + 0.75 * Math.abs(Math.cos(((phi + 15) * Math.PI) / 180));
   const wh = 0.15 + 0.55 * Math.abs(Math.cos(((phi * 0.7) * Math.PI) / 180));
-  const lean = -0.25 * ld + 0.35 * sw1 - 0.25 * sw2;
-  return { hands, tip, ws, wh, head: { x: lean * 0.6, z: 5.8 }, sh: { x: lean * 0.4, z: 4.9 }, hip: { x: 0, z: 3.0 }, footB: { x: -0.55 - 0.1 * sw1, z: 0 }, footF: { x: 0.45 + 0.55 * ld + 0.2 * sw1, z: 0 }, tipZ: tip.z };
+  const lean = -0.25 * ld + 0.35 * sw1 - 0.25 * sw2 + (type === 'whiff' ? 0.4 * sw2 : 0); // 揮空：重心被帶出去
+  const dip = type === 'whiff' ? 0.45 * sw2 : 0;
+  return { hands, tip, ws, wh, head: { x: lean * 0.6, z: 5.8 - dip }, sh: { x: lean * 0.4, z: 4.9 }, hip: { x: 0, z: 3.0 }, footB: { x: -0.55 - 0.1 * sw1, z: 0 }, footF: { x: 0.45 + 0.55 * ld + 0.2 * sw1, z: 0 }, tipZ: tip.z };
 }
 
 // 把一個打席排成時間表（秒）。prev 是同一個半局的上一個打席（用來知道一開始壘上有誰）。
@@ -234,7 +235,7 @@ export function buildScript(play, prev) {
     const pc = pitchCls(e), pd = e.pitchData || {};
     if (zTop == null && pd.strikeZoneTop) { zTop = pd.strikeZoneTop; zBot = pd.strikeZoneBottom; }
     const call = callZh(e);
-    caps.push({ t0: t, t1: t + dp, n: caps.length + 1, code: (e.details && e.details.type && e.details.type.code) || '', name: (e.details && e.details.type && e.details.type.description) || '', speed: pd.startSpeed, pz: pd.coordinates && pd.coordinates.pZ, call, swing: !!call.swing, cls: pc, count: e.count, prevCount });
+    caps.push({ t0: t, t1: t + dp, n: caps.length + 1, code: (e.details && e.details.type && e.details.type.code) || '', name: (e.details && e.details.type && e.details.type.description) || '', speed: pd.startSpeed, ev: e.hitData && e.hitData.launchSpeed, pz: pd.coordinates && pd.coordinates.pZ, call, swing: !!call.swing, cls: pc, count: e.count, prevCount });
     segs.push({ kind: 'pitch', t0: t, t1: t + dp, pp, cls: pc, code: caps[caps.length - 1].code });
     const co = pd.coordinates;
     if (co && co.pX != null && co.pZ != null) zone.push({ t: t + dp, x: co.pX, z: co.pZ, cls: pc, code: caps[caps.length - 1].code });
@@ -363,5 +364,11 @@ export function frameAt(sc, t) {
   }
   const cr = hs && hs.cross;
   const fx = cr && t >= cr.t && t - cr.t < 1.5 ? { x: cr.x, y: cr.y, k: (t - cr.t) / 1.5 } : null;
-  return { scene, m, endCam: isHit ? hs.cam0 : null, cam, ball, trail, trailCls, trail2, cap, evcap, zone, impact, bat, hud, runners, fielders, fx, banner: t >= sc.bannerT, hr: sc.hr };
+  // 球棒碰到球的瞬間（擊出或界外）：火花、畫面震動、閃光；力道依擊球初速
+  let contact = null;
+  if (cap && cap.swing && (cap.cls === 'x' || cap.cls === 'f') && t >= cap.t1 && t - cap.t1 < 0.45) {
+    const z = sc.zone.find((q) => q.t === cap.t1);
+    contact = { k: (t - cap.t1) / 0.45, x: z ? z.x : 0, z: z ? z.z : 2.6, strength: clamp(((cap.ev || 85) - 60) / 50, 0.25, 1) * (cap.cls === 'f' ? 0.6 : 1), foul: cap.cls === 'f' };
+  }
+  return { contact, scene, m, endCam: isHit ? hs.cam0 : null, cam, ball, trail, trailCls, trail2, cap, evcap, zone, impact, bat, hud, runners, fielders, fx, banner: t >= sc.bannerT, hr: sc.hr };
 }
