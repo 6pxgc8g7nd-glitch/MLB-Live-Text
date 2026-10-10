@@ -94,9 +94,9 @@ export function openCal(sel, onPick) {
   draw();
   loadMonth();
 }
-/* 日期小票：左右滑動換日（往左滑＝後一天、往右滑＝前一天，日期文字跟著手指移動）、單擊回到今天、長按（約 0.5 秒）開啟日期選擇器 */
+/* 日期小票：左右滑動換日（往左滑＝後一天、往右滑＝前一天，文字不動）、單擊回到今天、長按（約 0.5 秒）開啟日期選擇器 */
 export function bindSegs() {
-  const c = $('#segC'), txt = c.querySelector('b');
+  const c = $('#segC');
   let timer = null, longDone = false, st = null, mute = 0;
   const clear = () => { clearTimeout(timer); timer = null; };
   const go = (date) => {
@@ -107,14 +107,12 @@ export function bindSegs() {
   };
   const step = (n) => {
     go(shiftDate(S.date, n));
-    txt.classList.remove('sl', 'sr'); void txt.offsetWidth; txt.classList.add(n > 0 ? 'sl' : 'sr'); // 新日期從滑動的反方向滑進來
   };
   const openPicker = () => {
     longDone = true;
     if (route$ !== 'scores') return;
     openCal(S.date, go);
   };
-  const rest = () => { txt.style.transition = ''; txt.style.transform = ''; txt.style.opacity = ''; };
   c.addEventListener('pointerdown', (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     longDone = false; clear();
@@ -128,11 +126,9 @@ export function bindSegs() {
     if (!st.moved) {
       if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
       if (Math.abs(dy) > Math.abs(dx)) { st = null; clear(); return; }
-      st.moved = true; clear(); txt.style.transition = 'none'; // 開始滑動就取消長按
+      st.moved = true; clear(); // 開始滑動就取消長按
     }
     st.dx = dx;
-    txt.style.transform = `translateX(${dx * 0.6}px)`;
-    txt.style.opacity = String(1 - Math.min(0.6, Math.abs(dx) / Math.max(1, c.clientWidth)));
   });
   const end = (e) => {
     if (!st || e.pointerId !== st.id) return;
@@ -141,7 +137,6 @@ export function bindSegs() {
     mute = Date.now() + 350; // 滑完放開不要當成點擊（回到今天）
     const v = Math.abs(s.dx) / Math.max(1, e.timeStamp - s.t);
     const commit = e.type === 'pointerup' && (Math.abs(s.dx) > c.clientWidth * 0.25 || (Math.abs(s.dx) > 30 && v > 0.4));
-    rest();
     if (commit) step(s.dx < 0 ? 1 : -1);
   };
   c.addEventListener('pointerup', end);

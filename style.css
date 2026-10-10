@@ -61,11 +61,6 @@ body.ingame .r2, body.nodates .r2 { display: none; }
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation;
 }
 #segC { touch-action: pan-y; } /* 左右留給日期滑動，上下仍可捲動頁面 */
-#segC b { display: inline-block; transition: transform .18s, opacity .18s; }
-#segC b.sl { animation: segIn .22s ease-out; } #segC b.sr { animation: segIn .22s ease-out; animation-name: segInR; }
-@keyframes segIn { from { transform: translateX(45%); opacity: 0; } to { transform: none; opacity: 1; } }
-@keyframes segInR { from { transform: translateX(-45%); opacity: 0; } to { transform: none; opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { #segC b { transition: none; } #segC b.sl, #segC b.sr { animation: none; } }
 .dseg small { display: block; font-size: 10px; color: rgba(255, 255, 255, .7); font-variant-numeric: tabular-nums; }
 .dseg b { font-size: 15px; font-weight: 800; }
 .dseg:active { opacity: .6; }
