@@ -3,6 +3,7 @@ import { twDate, shiftDate, weekdayEn, monthDay } from '../js/util.js';
 import { segLabel, calYears, calTitleHTML } from '../js/shell.js';
 import { evZh, seriesZh } from '../js/dict.js';
 import { gameState, cardHTML } from '../js/scores.js';
+import { windZh, weatherZh, preGameHTML } from '../js/preview.js';
 import { camAt, project, projectPoly } from '../js/cam3d.js';
 import { pitchPath, hitPlan, hitPos, runnerMoves, buildScript, frameAt, persp, wallR, DP, batPose } from '../js/anim.js';
 import { pitcherPitches, pitchTypeStats, pitcherMapHTML } from '../js/pitchmap.js';
@@ -581,4 +582,27 @@ console.log('all tests passed');
   const poly = projectPoly(camAt(0, a, end), [[-4000, -4, 0], [4000, -4, 0], [4000, 6000, 0], [-4000, 6000, 0]]);
   assert.ok(poly.length >= 4 && poly.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y)), '很大的地面多邊形也能正確裁切');
   for (let m = 0; m <= 1; m += 0.1) { const c = camAt(m, a, end); assert.ok(Number.isFinite(c.F) && c.P.every(Number.isFinite)); }
+}
+
+// 賽前資訊：風向、天氣換算、缺資料時的顯示
+{
+  assert.strictEqual(windZh('8 mph, Out To CF'), '8 mph・往中外野吹');
+  assert.strictEqual(windZh('12 mph, In From LF'), '12 mph・從左外野吹向本壘');
+  assert.strictEqual(windZh('5 mph, L To R'), '5 mph・由左向右');
+  assert.strictEqual(windZh('0 mph, None'), '無風');
+  assert.strictEqual(windZh('Calm'), '無風');
+  assert.strictEqual(windZh('7 mph, Varies'), '7 mph・Varies');
+  assert.strictEqual(windZh(''), '');
+  assert.strictEqual(weatherZh({ condition: 'Partly Cloudy', temp: '86', wind: '8 mph, Out To RF' }), '86°F（30°C）\u3000局部多雲\u3000風 8 mph・往右外野吹');
+  assert.strictEqual(weatherZh({ condition: 'Dome', temp: '', wind: '' }), '室內球場');
+  assert.strictEqual(weatherZh({}), '');
+  assert.strictEqual(weatherZh(null), '');
+  const d = { gameData: { teams: { away: { id: 147, name: 'New York Yankees' }, home: { id: 139, name: 'Tampa Bay Rays' } }, venue: { name: 'Tropicana Field' }, weather: {},
+    probablePitchers: { away: { id: 1, fullName: 'Gerrit Cole' } }, players: { ID1: { pitchHand: { code: 'R' }, primaryNumber: '45' } } },
+    liveData: { boxscore: { teams: { away: { battingOrder: [10], players: { ID10: { person: { id: 10, fullName: 'Aaron Judge' }, position: { abbreviation: 'RF' } } } }, home: { battingOrder: [], players: {} } } } } };
+  const loading = preGameHTML(d, undefined), loaded = preGameHTML(d, { 1: { wins: 15, losses: 4, era: '2.63', inningsPitched: '200.0', strikeOuts: 222 } }), none = preGameHTML(d, {});
+  assert.ok(loading.includes('載入中') && loading.includes('Gerrit Cole') && loading.includes('先發投手未定'), '主客場各一張卡，沒有人選就寫未定');
+  assert.ok(loaded.includes('15-4') && loaded.includes('2.63') && loaded.includes('右投') && loaded.includes('#45'));
+  assert.ok(none.includes('本季尚無成績'));
+  assert.ok(loaded.includes('Aaron Judge') && loaded.includes('打線尚未公布') && loaded.includes('Tropicana Field') && loaded.includes('尚無資料'));
 }

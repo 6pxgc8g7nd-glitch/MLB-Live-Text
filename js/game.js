@@ -8,6 +8,7 @@ import { setHeader } from './shell.js';
 import { wpPoints, wpHTML, bindWp } from './winprob.js';
 import { renderText, playCat } from './plays.js';
 import { liveHTML } from './live.js';
+import { preGameHTML, ensurePre } from './preview.js';
 import { boxHTML } from './box.js';
 
 // 拆檔後，其他模組與測試仍從 game.js 匯入這些名稱
@@ -103,7 +104,9 @@ export function renderBody() {
   if (!body || !G.data) return;
   // LIVE 分頁只在比賽進行中出現；選了 LIVE 但比賽沒在進行時，先顯示文字轉播（偏好保留，下次進行中再切回）
   const gs = G.data.gameData && G.data.gameData.status;
-  const isLive = !!gs && gameState(gs, G.data.liveData && G.data.liveData.linescore).k === 'live';
+  const gk = gs ? gameState(gs, G.data.liveData && G.data.liveData.linescore, G.data.gameData.datetime && G.data.gameData.datetime.dateTime).k : '';
+  const isLive = gk === 'live';
+  const upcoming = gk === 'upcoming';
   const lvBtn = $('#gTabs [data-t="live"]');
   if (lvBtn) lvBtn.hidden = !isLive;
   const tab = S.gtab === 'live' && !isLive ? 'text' : S.gtab;
@@ -139,10 +142,19 @@ export function renderBody() {
     const html = liveHTML(G.data);
     const el = $('#lv');
     if (el && html !== G.sig) { el.innerHTML = html; G.sig = html; }
+  } else if (upcoming) {
+    // 還沒開打：文字轉播與數據都顯示賽前資訊（先發投手、球場天氣、預定打線）
+    ensurePre(G.data, () => { G.sig = ''; renderBody(); });
+    $('#gChips').classList.add('pre-hide'); // 賽前沒有事件可篩選，也不分球隊看數據
+    const html = preGameHTML(G.data, G.pre && G.pre.stats);
+    const el = tab === 'text' ? $('#plays') : $('#box');
+    if (el && html !== G.sig) { el.innerHTML = html; G.sig = html; }
   } else if (tab === 'text') {
+    $('#gChips').classList.remove('pre-hide');
     $$('#gChips [data-f]').forEach((b) => b.classList.toggle('on', b.dataset.f === G.filter));
     renderText(G.data);
   } else {
+    $('#gChips').classList.remove('pre-hide');
     $$('#gChips [data-side]').forEach((b) => b.classList.toggle('on', b.dataset.side === G.side));
     const html = boxHTML(G.data, G.side);
     const box = $('#box');

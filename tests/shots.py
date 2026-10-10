@@ -165,8 +165,26 @@ _t0 = min(q['about']['startTime'] for q in plays)
 _t0 = datetime.strptime(_t0, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
 stamps = [(_t0 + timedelta(minutes=m)).strftime('%Y%m%d_%H%M%S') for m in range(-1, 200)]
 
+def pre_feed():
+    f = feed('Preview', 'Scheduled')
+    f['gameData']['probablePitchers'] = {'away': {'id': 301, 'fullName': 'Sean Burke'}, 'home': {'id': 302, 'fullName': 'Gavin Williams'}}
+    f['gameData']['players'].update({'ID301': {'id': 301, 'fullName': 'Sean Burke', 'primaryNumber': '59', 'pitchHand': {'code': 'R'}}, 'ID302': {'id': 302, 'fullName': 'Gavin Williams', 'primaryNumber': '32', 'pitchHand': {'code': 'L'}}})
+    f['gameData']['weather'] = {'condition': 'Sunny', 'temp': '72', 'wind': '8 mph, Out To CF'}
+    f['liveData']['plays']['allPlays'] = []
+    f['liveData']['linescore'] = {'currentInning': 0, 'scheduledInnings': 9, 'innings': [], 'teams': {'home': {}, 'away': {}}}
+    f['liveData']['boxscore'] = {'teams': {'away': {'batters': [], 'pitchers': [], 'battingOrder': [1, 2, 3],
+        'players': {'ID1': {'person': {'id': 1, 'fullName': 'Steven Kwan'}, 'position': {'abbreviation': 'LF'}}, 'ID2': {'person': {'id': 2, 'fullName': 'Jose Ramirez'}, 'position': {'abbreviation': '3B'}}, 'ID3': {'person': {'id': 3, 'fullName': 'Kyle Manzardo'}, 'position': {'abbreviation': '1B'}}}},
+        'home': {'batters': [], 'pitchers': [], 'battingOrder': [], 'players': {}}}}
+    return f
+
+pre_people = {'people': [{'id': i, 'stats': [{'type': {'displayName': 'season'}, 'group': {'displayName': 'pitching'}, 'splits': [{'stat': {'wins': w, 'losses': l, 'era': e, 'inningsPitched': ip, 'strikeOuts': k}}]}]} for i, w, l, e, ip, k in ((301, 11, 7, '3.34', '172.1', 185), (302, 14, 8, '3.76', '184.1', 248))]}
+
 def handler(route):
     url = route.request.url
+    if '/game/4/feed/live' in url:  # 還沒開打的比賽：賽前資訊
+        return route.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin': '*'}, body=json.dumps(pre_feed()))
+    if 'personIds=301' in url:
+        return route.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin': '*'}, body=json.dumps(pre_people))
     if '/feed/live/timestamps' in url:
         return route.fulfill(status=200, content_type='application/json', headers={'access-control-allow-origin': '*'}, body=json.dumps(stamps))
     if '/game/3/feed/live' in url:  # 半局之間（6 局上剛結束，換場中）：LIVE 分頁顯示半局回顧
@@ -204,7 +222,7 @@ httpd = socketserver.TCPServer(('127.0.0.1', PORT), functools.partial(Q, directo
 PORT = httpd.server_address[1]
 threading.Thread(target=httpd.serve_forever, daemon=True).start()
 
-shots = [('scores', '#/scores', 'light'), ('gametop', '#/game/1', 'light'), ('game', '#/game/1', 'light'), ('box', '#/game/1', 'light', 'box'), ('settings', '#/settings', 'light'), ('yday', '#/scores', 'light'), ('err', '#/scores', 'light'), ('stand', '#/standings', 'light'), ('tset', '#/settings', 'light'), ('post', '#/standings', 'light'), ('br', '#/standings', 'light'), ('fav', '#/scores', 'light'), ('favst', '#/standings', 'light'), ('favset', '#/settings', 'light'), ('favsheet', '#/settings', 'light'), ('pcard', '#/game/1', 'light'), ('wp', '#/game/1', 'light', 'box'), ('rp', '#/game/2', 'light'), ('lv', '#/game/1', 'light', 'live'), ('lvgap', '#/game/3', 'light', 'live'), ('sdfresh', '#/standings', 'light'), ('sdstale', '#/standings', 'light')]
+shots = [('scores', '#/scores', 'light'), ('gametop', '#/game/1', 'light'), ('pre', '#/game/4', 'light'), ('prebox', '#/game/4', 'light', 'box'), ('game', '#/game/1', 'light'), ('box', '#/game/1', 'light', 'box'), ('settings', '#/settings', 'light'), ('yday', '#/scores', 'light'), ('err', '#/scores', 'light'), ('stand', '#/standings', 'light'), ('tset', '#/settings', 'light'), ('post', '#/standings', 'light'), ('br', '#/standings', 'light'), ('fav', '#/scores', 'light'), ('favst', '#/standings', 'light'), ('favset', '#/settings', 'light'), ('favsheet', '#/settings', 'light'), ('pcard', '#/game/1', 'light'), ('wp', '#/game/1', 'light', 'box'), ('rp', '#/game/2', 'light'), ('lv', '#/game/1', 'light', 'live'), ('lvgap', '#/game/3', 'light', 'live'), ('sdfresh', '#/standings', 'light'), ('sdstale', '#/standings', 'light')]
 
 failures = []
 with sync_playwright() as p:
@@ -267,6 +285,14 @@ with sync_playwright() as p:
                 got = pg.evaluate("[document.querySelectorAll('.pcw.open .pmz').length, document.querySelectorAll('.pmc').length, [...document.querySelectorAll('.pm *')].filter(e => e.getBoundingClientRect().right > innerWidth).length]")
                 print('pitch map:', got)
                 if got[0] != 1 or got[1] < 1 or got[2]: failures.append((name, ['投手球路展開不正常：%s' % got]))
+        if name in ('pre', 'prebox'):
+            # 賽前資訊：先發投手（含本季成績）、球場天氣、預定打線；文字轉播與數據分頁都顯示，沒有篩選列
+            info = pg.evaluate("""() => ({ p: document.querySelectorAll('.pre-p').length, l: document.querySelectorAll('.pre-l li').length, t: document.querySelector('#gBody').innerText,
+              hidden: getComputedStyle(document.querySelector('#gChips')).display, over: [...document.querySelectorAll('#gBody *')].filter((e) => e.getBoundingClientRect().right > innerWidth + 1).length })""")
+            print(name, 'pregame:', info['p'], info['l'], info['hidden'], info['over'])
+            need = ['Sean Burke', 'Gavin Williams', '11-7', '3.76', '172.1', '右投', '左投', '72°F（22°C）', '晴朗', '往中外野吹', 'Rate Field', 'Steven Kwan', '打線尚未公布']
+            miss = [x for x in need if x not in info['t']]
+            if info['p'] != 2 or info['l'] != 3 or info['hidden'] != 'none' or info['over'] or miss: failures.append((name, ['賽前資訊不正常：%s %s' % (info, miss)]))
         if name == 'gametop':
             # 打席動畫：點卡片上的「動畫」鈕 → 開啟 → 在捕手視角、轉場中、球場畫面各畫一格 → 關閉；過程不能有主控台錯誤（錯誤會被下面的 errs 檢查抓到）
             n_btn = pg.evaluate("document.querySelectorAll('.anb').length")

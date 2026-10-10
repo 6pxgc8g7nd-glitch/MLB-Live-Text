@@ -895,3 +895,14 @@ body.replaying .rp-go { display: none; }
 .an-hud { position: absolute; top: 10px; right: 10px; min-width: 112px; padding: 8px 12px; border-radius: 12px; background: rgba(8, 16, 26, .72); font-variant-numeric: tabular-nums; pointer-events: none; }
 .an-hud[hidden] { display: none; } .an-hud div { display: flex; align-items: baseline; gap: 5px; line-height: 1.5; } .an-hud small { flex: 1; font-size: 11px; color: rgba(255, 255, 255, .65); } .an-hud b { font-size: 17px; font-weight: 800; } .an-hud i { font-style: normal; font-size: 10px; color: rgba(255, 255, 255, .65); min-width: 20px; }
 .an-hud em { display: block; margin-top: 4px; font-style: normal; font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #b0b8c2; }
+
+/* 賽前資訊 */
+.pre-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pre-p, .pre-l { min-width: 0; background: var(--card); border-radius: 14px; padding: 12px; box-shadow: var(--shadow); }
+.pre-t { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; } .pre-t .gl { width: 26px; height: 26px; object-fit: contain; margin: 0; } .pre-t small { font-size: 12px; color: var(--sub); font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pre-n { font-size: 16px; font-weight: 800; overflow-wrap: anywhere; } .pre-m { font-size: 12px; color: var(--sub); margin-top: 4px; line-height: 1.5; }
+.pre-g { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; } .pre-g div { background: var(--bg); border-radius: 10px; padding: 6px 2px 4px; text-align: center; } .pre-g b { display: block; font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; } .pre-g small { font-size: 10px; color: var(--sub); }
+.pre-info { background: var(--card); border-radius: 14px; padding: 4px 14px; box-shadow: var(--shadow); } .pre-info div { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px dashed var(--line); } .pre-info div:last-child { border-bottom: 0; } .pre-info small { flex: none; width: 36px; font-size: 12px; color: var(--sub); } .pre-info b { font-size: 14px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.pre-l ol { list-style: none; margin: 0; padding: 0; } .pre-l li { display: flex; align-items: baseline; gap: 6px; padding: 5px 0; font-size: 13px; border-bottom: 1px dashed var(--line); min-width: 0; } .pre-l li:last-child { border-bottom: 0; }
+.pre-l li i { font-style: normal; width: 14px; color: var(--sub); font-size: 11px; flex: none; } .pre-l li .pl-n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .pre-l li span:last-child { flex: none; font-size: 11px; color: var(--sub); }
+.pre-hide { display: none; }
