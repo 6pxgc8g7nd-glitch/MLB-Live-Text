@@ -8,21 +8,16 @@ import { showStandings } from './standings.js';
 import { showSettings } from './settings.js';
 import { closePlayer } from './player.js';
 
-/* 標題欄日期：三張小票（前一天 / 目前日期 / 後一天） */
-export function segLabel(d, offset) {
+/* 標題欄日期：一張小票，左右滑動換日，點一下回到今天，長按選日期 */
+export function segLabel(d) {
   const md = monthDay(d), wk = weekdayEn(d);
-  if (offset < 0) return { small: '', name: '‹' };
-  if (offset > 0) return { small: '', name: '›' };
   return d === twDate() ? { small: '', name: 'Today' } : { small: '', name: `${md} ${wk}`.trim() };
 }
 export function renderSegs() {
-  [['#segL', -1], ['#segC', 0], ['#segR', 1]].forEach(([sel, off]) => {
-    const d = shiftDate(S.date, off), l = segLabel(d, off), el = $(sel);
-    el.querySelector('small').textContent = l.small;
-    el.querySelector('b').textContent = l.name;
-    el.classList.toggle('today', off === 0 && d === twDate());
-  });
-  $('#segL').setAttribute('aria-label', '前一天'); $('#segR').setAttribute('aria-label', '後一天');
+  const el = $('#segC'), d = S.date, l = segLabel(d);
+  el.querySelector('small').textContent = l.small;
+  el.querySelector('b').textContent = l.name;
+  el.classList.toggle('today', d === twDate());
 }
 /* 長按今天：跳出日曆，點日期直接切換 */
 export const calDays = new Map();
@@ -99,10 +94,10 @@ export function openCal(sel, onPick) {
   draw();
   loadMonth();
 }
-/* 左右兩張：前後一天；中間：單擊回到今天、長按（約 0.5 秒）開啟日期選擇器 */
+/* 日期小票：左右滑動換日（往左滑＝後一天、往右滑＝前一天，日期文字跟著手指移動）、單擊回到今天、長按（約 0.5 秒）開啟日期選擇器 */
 export function bindSegs() {
-  const c = $('#segC');
-  let timer = null, longDone = false;
+  const c = $('#segC'), txt = c.querySelector('b');
+  let timer = null, longDone = false, st = null, mute = 0;
   const clear = () => { clearTimeout(timer); timer = null; };
   const go = (date) => {
     if (route$ !== 'scores') return;
@@ -110,18 +105,53 @@ export function bindSegs() {
     S.follow = date === twDate();
     route();
   };
-  $('#segL').addEventListener('click', () => go(shiftDate(S.date, -1)));
-  $('#segR').addEventListener('click', () => go(shiftDate(S.date, 1)));
+  const step = (n) => {
+    go(shiftDate(S.date, n));
+    txt.classList.remove('sl', 'sr'); void txt.offsetWidth; txt.classList.add(n > 0 ? 'sl' : 'sr'); // 新日期從滑動的反方向滑進來
+  };
   const openPicker = () => {
     longDone = true;
     if (route$ !== 'scores') return;
     openCal(S.date, go);
   };
-  c.addEventListener('pointerdown', () => { longDone = false; clear(); timer = setTimeout(openPicker, 500); });
-  ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => c.addEventListener(ev, clear));
+  const rest = () => { txt.style.transition = ''; txt.style.transform = ''; txt.style.opacity = ''; };
+  c.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    longDone = false; clear();
+    st = { id: e.pointerId, x: e.clientX, y: e.clientY, dx: 0, t: e.timeStamp, moved: false };
+    timer = setTimeout(() => { if (st && !st.moved) openPicker(); }, 500);
+    try { c.setPointerCapture(e.pointerId); } catch (_) { /* 沒有也沒關係 */ }
+  });
+  c.addEventListener('pointermove', (e) => {
+    if (!st || e.pointerId !== st.id) return;
+    const dx = e.clientX - st.x, dy = e.clientY - st.y;
+    if (!st.moved) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      if (Math.abs(dy) > Math.abs(dx)) { st = null; clear(); return; }
+      st.moved = true; clear(); txt.style.transition = 'none'; // 開始滑動就取消長按
+    }
+    st.dx = dx;
+    txt.style.transform = `translateX(${dx * 0.6}px)`;
+    txt.style.opacity = String(1 - Math.min(0.6, Math.abs(dx) / Math.max(1, c.clientWidth)));
+  });
+  const end = (e) => {
+    if (!st || e.pointerId !== st.id) return;
+    const s = st; st = null; clear();
+    if (!s.moved) return;
+    mute = Date.now() + 350; // 滑完放開不要當成點擊（回到今天）
+    const v = Math.abs(s.dx) / Math.max(1, e.timeStamp - s.t);
+    const commit = e.type === 'pointerup' && (Math.abs(s.dx) > c.clientWidth * 0.25 || (Math.abs(s.dx) > 30 && v > 0.4));
+    rest();
+    if (commit) step(s.dx < 0 ? 1 : -1);
+  };
+  c.addEventListener('pointerup', end);
+  c.addEventListener('pointercancel', end);
   c.addEventListener('contextmenu', (e) => e.preventDefault());
+  c.addEventListener('keydown', (e) => { // 鍵盤：← → 換日
+    if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); } else if (e.key === 'ArrowRight') { e.preventDefault(); step(1); }
+  });
   c.addEventListener('click', () => {
-    if (longDone) { longDone = false; return; }
+    if (longDone || Date.now() < mute) { longDone = false; return; }
     go(twDate());
   });
 }

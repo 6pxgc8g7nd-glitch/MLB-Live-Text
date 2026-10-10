@@ -3,7 +3,7 @@
  * 模組：util 工具 → dict 字典 → api 資料層/輪詢 → state 共用狀態 → scores 比分 / game 轉播 / standings 排名 / settings 設定
  *       → shell 外框與路由 → gestures 滑動換頁與下拉更新 → main 啟動與事件綁定 */
 
-import { $, $$, store, twDate, shiftDate } from './util.js';
+import { $, $$, store } from './util.js';
 import { api, cache } from './api.js';
 import { S, view, poller, route$, G, setView } from './state.js';
 import { skelTicket, skelRows } from './scores.js';
@@ -111,11 +111,7 @@ function boot() {
     }
     const b = e.target.closest('button');
     if (!b) return;
-    if (b.id === 'prevDay' || b.id === 'nextDay') {
-      S.date = shiftDate(S.date, b.id === 'prevDay' ? -1 : 1);
-      S.follow = S.date === twDate();
-      route();
-    } else if (b.dataset.t) {
+    if (b.dataset.t) {
       S.gtab = b.dataset.t;
       store.set('gtab', S.gtab);
       renderBody();

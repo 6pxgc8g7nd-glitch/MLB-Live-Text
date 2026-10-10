@@ -333,7 +333,27 @@ with sync_playwright() as p:
             pg.click('#langBtn'); pg.wait_for_timeout(300)
         if name == 'gametop' and pg.evaluate("document.querySelectorAll('#liveBar [data-player]').length"):
             failures.append((name, ['目前打席條不應該點了開球員小卡']))
-        if name == 'yday': pg.click('#segL'); pg.wait_for_timeout(800)
+        if name == 'yday':
+            # 日期小票：往右滑＝前一天；往左滑回來＝今天；小幅滑動（不到門檻）不換日；單擊回到今天
+            def swipe(dx):
+                bx = pg.locator('#segC').bounding_box(); y = bx['y'] + bx['height'] / 2; x0 = bx['x'] + bx['width'] / 2
+                pg.mouse.move(x0, y); pg.mouse.down()
+                for i in range(1, 7): pg.mouse.move(x0 + dx * i / 6, y); pg.wait_for_timeout(15)
+                pg.mouse.up(); pg.wait_for_timeout(900)
+            label = lambda: pg.evaluate("document.querySelector('#segC b').textContent")
+            if pg.evaluate("!!document.querySelector('#segL, #segR')"): failures.append((name, ['日期左右切換鈕應該移除']))
+            swipe(150); a = label()
+            if a == 'Today': failures.append((name, ['往右滑應該換到前一天：%s' % a]))
+            swipe(-150); b2 = label()
+            if b2 != 'Today': failures.append((name, ['往左滑應該回到後一天（今天）：%s' % b2]))
+            swipe(20); c2 = label()
+            if c2 != 'Today' or pg.evaluate("!!document.getElementById('cal')"): failures.append((name, ['小幅滑動不該換日也不該開日曆：%s' % c2]))
+            swipe(-150); d2 = label()
+            pg.click('#segC'); pg.wait_for_timeout(700)
+            e2 = label()
+            print('date swipe:', a, b2, c2, d2, e2)
+            if e2 != 'Today': failures.append((name, ['單擊日期小票應回到今天：%s' % e2]))
+            swipe(150)  # 截圖停在「前一天」
         if name == 'game': pg.evaluate('window.scrollTo(0, 560)'); pg.wait_for_timeout(200)
         if name == 'stand':
             pg.evaluate('window.scrollTo(0, 700)'); pg.wait_for_timeout(500); print('nonav after scroll:', pg.evaluate("document.body.classList.contains('nonav')"))

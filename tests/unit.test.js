@@ -354,9 +354,8 @@ T.S.favs = [];
 // 日期票的星期：英文縮寫
 assert.deepStrictEqual(['2020-01-05', '2020-01-06', '2020-01-07', '2020-01-08', '2020-01-09', '2020-01-10', '2020-01-11'].map(weekdayEn), ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
 assert.strictEqual(weekdayEn('2026-10-10'), 'Sat', '以台灣日期算星期');
-assert.strictEqual(segLabel('2020-01-11', 0).name, '1/11 Sat', '不是今天：月/日 加英文星期');
-assert.strictEqual(segLabel(twDate(), 0).name, 'Today');
-assert.deepStrictEqual([segLabel('2020-01-11', -1).name, segLabel('2020-01-11', 1).name], ['‹', '›']);
+assert.strictEqual(segLabel('2020-01-11').name, '1/11 Sat', '不是今天：月/日 加英文星期');
+assert.strictEqual(segLabel(twDate()).name, 'Today');
 
 // 日曆標題的年、月選單
 assert.deepStrictEqual([calYears(2026, 2026)[0], calYears(2026, 2026).at(-1), calYears(2026, 2026).length], [2008, 2027, 20], '2008 到明年');
