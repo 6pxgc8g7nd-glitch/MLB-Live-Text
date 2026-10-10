@@ -286,9 +286,9 @@ with sync_playwright() as p:
                 print('pitch map:', got)
                 if got[0] != 1 or got[1] < 1 or got[2]: failures.append((name, ['投手球路展開不正常：%s' % got]))
         if name in ('pre', 'prebox'):
-            # 賽前資訊：先發投手（含本季成績）、球場天氣、預定打線；文字轉播與數據分頁都顯示，沒有篩選列
+            # 賽前資訊：先發投手（含本季成績）、球場天氣、預定打線；文字轉播與數據分頁都顯示，整個分頁／篩選工具列隱藏
             info = pg.evaluate("""() => ({ p: document.querySelectorAll('.pre-p').length, l: document.querySelectorAll('.pre-l li').length, t: document.querySelector('#gBody').innerText,
-              hidden: getComputedStyle(document.querySelector('#gChips')).display, over: [...document.querySelectorAll('#gBody *')].filter((e) => e.getBoundingClientRect().right > innerWidth + 1).length })""")
+              hidden: getComputedStyle(document.querySelector('#gCtl')).display, over: [...document.querySelectorAll('#gBody *')].filter((e) => e.getBoundingClientRect().right > innerWidth + 1).length })""")
             print(name, 'pregame:', info['p'], info['l'], info['hidden'], info['over'])
             need = ['Sean Burke', 'Gavin Williams', '11-7', '3.76', '172.1', '右投', '左投', '72°F（22°C）', '晴朗', '往中外野吹', 'Rate Field', 'Steven Kwan', '打線尚未公布']
             miss = [x for x in need if x not in info['t']]

@@ -53,12 +53,7 @@ export function headHTML(d) {
     <div class="ls-r"><div class="rh"><span>R</span><span>H</span><span>E</span></div>${rhe('away')}${rhe('home')}</div>
   </div></div>`;
 
-  let extra = '';
-  if (st.k === 'upcoming') {
-    const pp = gd.probablePitchers || {};
-    const ap = pp.away && pp.away.fullName, hp = pp.home && pp.home.fullName;
-    if (ap || hp) extra = `<div class="dec">預定先發　${esc(ap || '未定')} vs ${esc(hp || '未定')}</div>`;
-  }
+  const extra = ''; // 賽前的先發投手改放在下面的賽前資訊面板（preview.js）
   // 已結束的比賽可以當作直播重播（按鈕由 main.js 處理，重播程式需要時才載入）
   const replay = st.k === 'final' ? '<button class="rp-go" id="rpStart"><span aria-hidden="true">▶</span> 重播這場比賽</button>' : '';
   return `
@@ -110,6 +105,8 @@ export function renderBody() {
   const lvBtn = $('#gTabs [data-t="live"]');
   if (lvBtn) lvBtn.hidden = !isLive;
   const tab = S.gtab === 'live' && !isLive ? 'text' : S.gtab;
+  const gc = $('#gCtl');
+  if (gc) gc.classList.toggle('pre-hide', upcoming); // 還沒開打：文字轉播與數據是同一份賽前資訊，不需要分頁與篩選工具列
   const handle = $('#gFold .lm');
   if (handle) handle.textContent = TAB_NAME[tab] || '更多'; // 工具列收起時，把手上寫著目前在看哪個分頁
   if (G.bodyTab !== tab) {
@@ -145,16 +142,13 @@ export function renderBody() {
   } else if (upcoming) {
     // 還沒開打：文字轉播與數據都顯示賽前資訊（先發投手、球場天氣、預定打線）
     ensurePre(G.data, () => { G.sig = ''; renderBody(); });
-    $('#gChips').classList.add('pre-hide'); // 賽前沒有事件可篩選，也不分球隊看數據
     const html = preGameHTML(G.data, G.pre && G.pre.stats);
     const el = tab === 'text' ? $('#plays') : $('#box');
     if (el && html !== G.sig) { el.innerHTML = html; G.sig = html; }
   } else if (tab === 'text') {
-    $('#gChips').classList.remove('pre-hide');
     $$('#gChips [data-f]').forEach((b) => b.classList.toggle('on', b.dataset.f === G.filter));
     renderText(G.data);
   } else {
-    $('#gChips').classList.remove('pre-hide');
     $$('#gChips [data-side]').forEach((b) => b.classList.toggle('on', b.dataset.side === G.side));
     const html = boxHTML(G.data, G.side);
     const box = $('#box');
