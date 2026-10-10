@@ -308,6 +308,21 @@ with sync_playwright() as p:
                     o = info['out']
                     if o[0][0] != '1' or o[2][1] != '1' or o[3][1] != '1' or o[0][2] < 2000 or not info['hud'] or not info['banner']:
                         failures.append((name, ['動畫畫面不正常：%s' % info]))
+                    # 播放控制：暫停、下一球／上一球、時間軸，動作後都要停住並且時間正確
+                    pg.evaluate("document.getElementById('an')._ctl.seek(0)"); pg.wait_for_timeout(100)
+                    ctl = lambda js: pg.evaluate("(() => { const c = document.getElementById('an')._ctl; return " + js + "; })()")
+                    st0 = ctl('[c.playing(), c.time()]')
+                    pg.click('.an-nx'); pg.wait_for_timeout(100)
+                    st1 = ctl('[c.playing(), c.time(), c.sc.caps[0].t0]')
+                    pg.click('.an-pv'); pg.wait_for_timeout(100)
+                    st2 = ctl('[c.playing(), c.time()]')
+                    pg.evaluate("(() => { const r = document.querySelector('.an-rg'); r.value = '500'; r.dispatchEvent(new Event('input', { bubbles: true })); })()"); pg.wait_for_timeout(100)
+                    st3 = ctl('[c.playing(), c.time(), c.total]')
+                    pg.click('.an-pp'); pg.wait_for_timeout(300)
+                    st4 = ctl('[c.playing(), c.time()]')
+                    print('anim controls:', st0, st1, st2, st3, st4)
+                    if st0[0] or st1[0] or abs(st1[1] - st1[2]) > 0.01 or st2[1] != 0 or st3[0] or abs(st3[1] - st3[2] / 2) > 0.2 or not st4[0] or st4[1] <= st3[1]:
+                        failures.append((name, ['動畫播放控制不正常：%s %s %s %s %s' % (st0, st1, st2, st3, st4)]))
                     pg.click('.an-x'); pg.wait_for_timeout(200)
                     if pg.evaluate("!!document.getElementById('an')"): failures.append((name, ['動畫關不掉']))
         if name == 'gametop':

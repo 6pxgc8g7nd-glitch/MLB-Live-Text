@@ -49,7 +49,8 @@ export function openAnim(play, gd, allPlays) {
       <div class="an-hud" hidden></div>
       <div class="an-cap"><div class="an-cl"></div><div class="an-ct"></div></div>
       <div class="an-bn" hidden><b></b><small></small></div></div>
-    <div class="an-bar"><button class="an-re">↻ ${L('重播', 'Replay')}</button><button class="an-sp" aria-pressed="false">${L('慢動作', 'Slow')} 1×</button></div>`;
+    <div class="an-bar"><div class="an-sc"><input class="an-rg" type="range" min="0" max="1000" step="1" value="0" aria-label="${L('動畫時間軸', 'Timeline')}"><span class="an-tm">0.0 / 0.0</span></div>
+      <div class="an-bt2"><button class="an-pv" aria-label="${L('上一球', 'Previous pitch')}">⏮</button><button class="an-pp" aria-label="${L('暫停', 'Pause')}" aria-pressed="false">⏸</button><button class="an-nx" aria-label="${L('下一球', 'Next pitch')}">⏭</button><button class="an-re">↻ ${L('重播', 'Replay')}</button><button class="an-sp" aria-pressed="false">${L('慢動作', 'Slow')} 1×</button></div></div>`;
   document.body.appendChild(el);
   const $e = (s) => el.querySelector(s);
   const svg = $e('#anSvg'), pv = $e('#anPv'), st = $e('.an-st');
@@ -154,9 +155,7 @@ export function openAnim(play, gd, allPlays) {
       return `<circle cx="${(f.fx.x + Math.cos(ang) * d).toFixed(1)}" cy="${(-f.fx.y - Math.sin(ang) * d).toFixed(1)}" r="${(3.2 * k * (1 - f.fx.k * 0.6)).toFixed(2)}" fill="${i % 3 ? '#f2c94c' : '#fff'}" opacity="${(1 - f.fx.k).toFixed(2)}"/>`;
     }).join('') : '';
   };
-  const apply = (f) => {
-    pv.style.opacity = f.scene === 'pitch' ? 1 : 0; svg.style.opacity = f.scene === 'field' ? 1 : 0;
-    applyPitch(f); applyField(f);
+  const applyText = (f) => {
     const c = f.cap;
     if (f.evcap) { $e('.an-cl').textContent = f.evcap; $e('.an-ct').innerHTML = ''; }
     else if (c) {
@@ -174,33 +173,72 @@ export function openAnim(play, gd, allPlays) {
     } else hudEl.hidden = true;
     $e('.an-bn').hidden = !f.banner;
   };
+  // 播放控制：播放／暫停、時間軸、上一球／下一球。拖時間軸、按上下一球都會先暫停
+  const rg = $e('.an-rg'), tm = $e('.an-tm'), pp = $e('.an-pp');
+  const reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  let playing = !reduce, lastScene = 'pitch';
+  const ui = () => {
+    rg.value = String(Math.round((t / sc.total) * 1000));
+    tm.textContent = `${t.toFixed(1)} / ${sc.total.toFixed(1)}`;
+    pp.textContent = playing ? '⏸' : '▶'; pp.setAttribute('aria-pressed', String(!playing)); pp.setAttribute('aria-label', playing ? L('暫停', 'Pause') : L('播放', 'Play'));
+  };
+  const draw = () => {
+    const f = frameAt(sc, t);
+    if (f.scene === 'pitch' || lastScene === 'pitch') applyPitch(f); // 轉場結束後 3D 場景已經看不到，不必每格重畫
+    lastScene = f.scene;
+    pv.style.opacity = f.scene === 'pitch' ? 1 : 0; svg.style.opacity = f.scene === 'field' ? 1 : 0;
+    applyField(f); applyText(f);
+    ui();
+  };
   const frame = (now) => {
+    raf = 0;
+    if (!playing) return;
     if (!last) last = now;
     t = Math.min(sc.total, t + ((now - last) / 1000) * speed); last = now;
-    apply(frameAt(sc, t));
-    raf = t < sc.total ? requestAnimationFrame(frame) : 0;
+    draw();
+    if (t < sc.total) raf = requestAnimationFrame(frame); else { playing = false; ui(); }
   };
-  const start = () => { cancelAnimationFrame(raf); t = 0; last = 0; raf = requestAnimationFrame(frame); };
+  const resume = () => { playing = true; last = 0; cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); ui(); };
+  const pause = () => { playing = false; cancelAnimationFrame(raf); raf = 0; last = 0; ui(); };
+  const seekTo = (s) => { t = clamp(s, 0, sc.total); lastScene = 'pitch'; draw(); };
+  const pitchStarts = sc.caps.map((c) => c.t0);
+  const nextPitch = () => { const n = pitchStarts.find((x) => x > t + 0.05); pause(); seekTo(n != null ? n : sc.total); };
+  const prevPitch = () => { const p = [...pitchStarts].reverse().find((x) => x < t - 0.4); pause(); seekTo(p != null ? p : 0); };
+  const restart = () => { t = 0; lastScene = 'pitch'; draw(); resume(); };
   const close = () => {
     cancelAnimationFrame(raf); cancelAnimationFrame(rm);
     document.removeEventListener('keydown', onKey);
     el.remove();
     if (opener && opener.focus) try { opener.focus(); } catch (_) {}
   };
-  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  const onKey = (e) => {
+    if (e.key === 'Escape') close();
+    else if (e.key === 'Tab') { // 焦點留在動畫視窗內
+      const f = [...el.querySelectorAll('button, input')];
+      const i = f.indexOf(document.activeElement);
+      if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+    } else if (e.key === ' ' && document.activeElement.tagName !== 'BUTTON') { e.preventDefault(); if (playing) pause(); else if (t >= sc.total) restart(); else resume(); }
+    else if (e.key === 'ArrowRight' && document.activeElement !== rg) nextPitch();
+    else if (e.key === 'ArrowLeft' && document.activeElement !== rg) prevPitch();
+  };
   document.addEventListener('keydown', onKey);
+  rg.addEventListener('input', () => { const to = (Number(rg.value) / 1000) * sc.total; pause(); seekTo(to); }); // 先讀值再暫停（暫停會把滑桿同步回目前時間）
   el.addEventListener('click', (e) => {
     e.stopPropagation();
     if (e.target.closest('.an-x')) close();
-    else if (e.target.closest('.an-re')) start();
+    else if (e.target.closest('.an-re')) restart();
+    else if (e.target.closest('.an-pp')) { if (playing) pause(); else if (t >= sc.total) restart(); else resume(); }
+    else if (e.target.closest('.an-nx')) nextPitch();
+    else if (e.target.closest('.an-pv')) prevPitch();
     else if (e.target.closest('.an-sp')) {
       speed = speed === 1 ? 0.4 : 1;
       const b = e.target.closest('.an-sp'); b.textContent = `${L('慢動作', 'Slow')} ${speed === 1 ? '1×' : '0.4×'}`; b.setAttribute('aria-pressed', String(speed !== 1));
     }
   });
   $e('.an-x').focus();
-  rm = requestAnimationFrame(() => { apply(frameAt(sc, 0)); start(); });
+  // 系統設定「減少動態效果」：不自動播放，直接停在結果畫面，可用時間軸自己看
+  rm = requestAnimationFrame(() => { if (reduce) seekTo(sc.total); else { draw(); resume(); } });
   // 給測試用：跳到指定時間並畫出那一格
-  el._ctl = { sc, seek: (s) => { cancelAnimationFrame(raf); raf = 0; t = s; apply(frameAt(sc, s)); }, total: sc.total };
+  el._ctl = { sc, seek: (s) => { pause(); seekTo(s); }, time: () => t, playing: () => playing, total: sc.total };
   return el._ctl;
 }

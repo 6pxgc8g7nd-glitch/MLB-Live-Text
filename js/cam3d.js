@@ -19,8 +19,9 @@ export function camAt(m, a, end) {
   const F0 = (2 * DP) / pv.wv, F1 = (2 * D1) / end.wv;
   const d = Math.exp(mix(Math.log(D0), Math.log(D1), k));
   const F = Math.exp(mix(Math.log(F0), Math.log(F1), k));
-  const al = ALPHA1 * k;
-  const T = [mix(0, end.cx, k), mix(-DCAM + D0, end.cy, k), mix(EYE, 0, k)];
+  const al = ALPHA1 * Math.sqrt(k); // 先快速俯下來，鏡頭看向本壘（升降機的感覺），而不是貼著投手丘飛過去
+  const kt = k * k; // 目標點晚一點才移向球場中央，前半段一直盯著本壘附近
+  const T = [mix(0, end.cx, kt), mix(-DCAM + D0, end.cy, kt), mix(EYE, 0, k)];
   const f = [0, Math.cos(al), -Math.sin(al)], up = [0, Math.sin(al), Math.cos(al)];
   return { P: [T[0], T[1] - d * f[1], T[2] - d * f[2]], f, up, F, v: mix(1, Math.SQRT2, k), shift: pv.shift * (1 - k), k };
 }

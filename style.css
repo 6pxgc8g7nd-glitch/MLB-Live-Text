@@ -884,9 +884,13 @@ body.replaying .rp-go { display: none; }
 .an-bn { position: absolute; left: 0; right: 0; top: 18%; text-align: center; text-shadow: 0 2px 8px rgba(0, 0, 0, .6); pointer-events: none; animation: anpop .35s ease-out; }
 .an-bn[hidden] { display: none; } .an-bn b { display: block; font-size: 34px; font-weight: 900; letter-spacing: 1px; } .an-bn small { font-size: 13px; color: rgba(255, 255, 255, .85); }
 @keyframes anpop { from { transform: scale(.7); opacity: 0; } to { transform: none; opacity: 1; } }
-.an-bar { display: flex; gap: 10px; padding: 10px 14px calc(12px + env(safe-area-inset-bottom)); }
-.an-bar button { flex: 1; height: 46px; border: 0; border-radius: 12px; background: rgba(255, 255, 255, .14); color: #fff; font-size: 15px; font-weight: 700; }
-.an-bar button[aria-pressed=true] { background: #f2c94c; color: #14202e; }
+.an-bar { padding: 8px 14px calc(10px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
+.an-sc { display: flex; align-items: center; gap: 10px; } .an-tm { flex: none; min-width: 78px; text-align: right; font-size: 12px; color: rgba(255, 255, 255, .7); font-variant-numeric: tabular-nums; }
+.an-rg { flex: 1; min-width: 0; height: 28px; margin: 0; accent-color: #f2c94c; background: transparent; }
+.an-bt2 { display: flex; gap: 8px; }
+.an-bt2 button { flex: 1; height: 44px; border: 0; border-radius: 12px; background: rgba(255, 255, 255, .14); color: #fff; font-size: 15px; font-weight: 700; } .an-bt2 .an-re, .an-bt2 .an-sp { flex: 1.6; font-size: 14px; }
+.an-bt2 button[aria-pressed=true] { background: #f2c94c; color: #14202e; } .an-bt2 .an-pp[aria-pressed=true] { background: rgba(255, 255, 255, .26); color: #fff; }
+.an-bt2 button:focus-visible, .an-x:focus-visible, .an-rg:focus-visible { outline: 2px solid #f2c94c; outline-offset: 2px; }
 .pm-s-hr { stroke: #f2c94c; stroke-width: 5; } .pv-ring.s { stroke: #f2c94c; } .pv-ring.b { stroke: #3fc18a; } .pv-ring.f { stroke: #b0b8c2; } .pv-ring.x { stroke: #4a9be8; }
 .an-bn.hr b { color: #f2c94c; font-size: 44px; letter-spacing: 3px; }
 .an-fd.act { fill: #f2c94c; } .an-tr2 { stroke: #fff; stroke-width: 2; stroke-dasharray: 4 4; opacity: .9; }
