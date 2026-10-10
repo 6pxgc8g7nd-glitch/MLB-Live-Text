@@ -3,6 +3,7 @@ import { twDate, shiftDate, weekdayEn, monthDay } from '../js/util.js';
 import { segLabel, calYears, calTitleHTML } from '../js/shell.js';
 import { evZh, seriesZh } from '../js/dict.js';
 import { gameState, cardHTML } from '../js/scores.js';
+import { camAt, project, projectPoly } from '../js/cam3d.js';
 import { pitchPath, hitPlan, hitPos, runnerMoves, buildScript, frameAt, persp, wallR, DP, batPose } from '../js/anim.js';
 import { pitcherPitches, pitchTypeStats, pitcherMapHTML } from '../js/pitchmap.js';
 import { headHTML, textHTML, boxHTML, liveHTML, recapTarget } from '../js/game.js';
@@ -499,7 +500,10 @@ console.log('all tests passed');
   assert.ok(Math.abs(wallR(0, 100) - 410) < 1e-6 && Math.abs(wallR(100, 100) - 329) < 1e-6);
   assert.strictEqual(frameAt(sc, 0).scene, 'pitch');
   const hitSeg = sc.segs.find((s) => s.kind === 'hit');
-  assert.strictEqual(frameAt(sc, hitSeg.t0 + 0.2).scene, 'field');
+  const trans = frameAt(sc, hitSeg.t0 + 0.45);
+  assert.strictEqual(trans.scene, 'pitch'); assert.ok(trans.m > 0.3 && trans.m < 0.7, '擊出後鏡頭轉場中（還是同一台攝影機）');
+  assert.strictEqual(frameAt(sc, hitSeg.t0 + 1.0).scene, 'field'); assert.strictEqual(frameAt(sc, hitSeg.t0 + 1.0).m, 1);
+  assert.ok(frameAt(sc, hitSeg.t0 + 0.4).hud, '轉場一開始就顯示雷達資料');
   assert.strictEqual(frameAt(sc, hitSeg.t0 - 0.2).scene, 'pitch', '球還在好球帶時是後方視角');
   assert.strictEqual(sc.hr, false);
   const hrPlay = { ...play, result: { event: 'Home Run' }, playEvents: [play.playEvents[1].hitData ? { ...play.playEvents[1], hitData: { launchSpeed: 105, launchAngle: 28, trajectory: 'fly_ball', coordinates: { coordX: 125, coordY: 20 } } } : play.playEvents[1]] };
@@ -561,4 +565,20 @@ console.log('all tests passed');
   const mid = frameAt(ssc, pl[0].t0 + 0.3 + 0.45).runners.find((r) => r.y > 70 && r.y < 120);
   assert.ok(mid && mid.x < 63, '跑者在往二壘途中');
   assert.strictEqual(buildScript({ playEvents: [] }).segs.length, 0, '沒有投球就沒有動畫');
+}
+
+// 3D 攝影機：起點是捕手視角，終點與 2D 球場畫面一致
+{
+  const a = 0.75, end = { cx: 20, cy: 90, wv: 400 };
+  const c0 = camAt(0, a, end), c1 = camAt(1, a, end);
+  const zl = project(c0, [-0.708, 17 / 12, 3]), zr = project(c0, [0.708, 17 / 12, 3]);
+  assert.ok(Math.abs(zr.x - zl.x - 1.416 * (2 / 7.4) / 1) < 0.01 && Math.abs(zl.y + c0.shift) < 0.05 + 0, '捕手視角：好球帶寬 1.416 呎 ≈ 畫面寬的 19%，眼高處在水平線上');
+  const g = project(c1, [20 + 100, 90 + 50, 0]);
+  assert.ok(Math.abs(g.x - (100 * 2) / 400) < 0.05 && Math.abs(g.y - (-50 * 2) / 400) < 0.05, '終點：地面位置與 2D 球場畫面一致（x 往右、y 往上）');
+  const hi = project(c1, [20, 90, 40]);
+  assert.ok(Math.abs(hi.y + (40 * 2) / 400) < 0.05, '終點：高度 40 呎讓球往畫面上方偏 40 呎');
+  assert.strictEqual(project(camAt(0, a, end), [0, -100, 0]), null, '在鏡頭後方的點不畫');
+  const poly = projectPoly(camAt(0, a, end), [[-4000, -4, 0], [4000, -4, 0], [4000, 6000, 0], [-4000, 6000, 0]]);
+  assert.ok(poly.length >= 4 && poly.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y)), '很大的地面多邊形也能正確裁切');
+  for (let m = 0; m <= 1; m += 0.1) { const c = camAt(m, a, end); assert.ok(Number.isFinite(c.F) && c.P.every(Number.isFinite)); }
 }

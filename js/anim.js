@@ -6,8 +6,9 @@ import { evZh } from './dict.js';
 import { S } from './state.js';
 import { PITCH_ZH, pitchCls } from './pitches.js';
 import { pitchGroup } from './pitchmap.js';
+import { DCAM, EYE, DP, PLATE_Y, camAt, project, projectPoly, GROUND } from './cam3d.js';
+export { DCAM, EYE, DP };
 
-const PLATE_Y = 17 / 12; // 本壘板前緣（呎）
 const MOUND_Y = 60.5;
 const G_FT = 32.2;
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -93,13 +94,12 @@ const runnerPos = (path, u) => {
 };
 
 // 捕手後方視角的透視：鏡頭在本壘板後方 DCAM 呎、眼高 EYE 呎；單位 = 本壘板前緣處的 1 呎
-export const DCAM = 6, EYE = 3;
-export const DP = DCAM + PLATE_Y;
 export const persp = (x, y, z) => { const s = DP / (y + DCAM); return { x: x * s, y: -(z - EYE) * s, s }; };
 
 // 全壘打牆離本壘的距離（依方向，左右外野線約 330 呎、中外野約 410 呎，與畫面上的牆一致）
 export const wallR = (x, y) => { const th = Math.abs((Math.atan2(x, y) * 180) / Math.PI); return 410 - 81 * Math.pow(Math.min(th, 45) / 45, 2); };
 
+const TR = 0.9; // 擊出後，鏡頭從捕手視角拉高、拉遠成俯視所需的秒數
 const FIELD_CAM = { cx: 0, y0: -50, y1: 170, minW: 230 };
 const hitCam = (hp) => {
   const top = Math.max(150, hp.y + hp.apex + 70);
@@ -248,11 +248,11 @@ export function buildScript(play, prev) {
     if (hp) {
       t += 0.35; // 打擊瞬間停一下，讓人看到球在好球帶的位置
       const hr = last && isHR, inPlay = pc === 'x';
-      const seg = { kind: 'hit', t0: t, t1: t + hp.dur, hp, foul: pc === 'f', hr, cam0: hitCam(hp), cam1: hitCam(hp), ct0: t, ct1: t + 1, until: last ? Infinity : t + hp.dur + 0.5, legs: null };
+      const seg = { kind: 'hit', t0: t, t1: t + hp.dur, hp, foul: pc === 'f', hr, cam0: hitCam(hp), cam1: hitCam(hp), ct0: t, ct1: t + 1, until: last ? Infinity : t + hp.dur + 0.5, legs: null, start: co && co.pX != null ? { x: co.pX, z: co.pZ } : null };
       if (hr) { // 全壘打：球飛出牆外時鏡頭追著球走，並在過牆瞬間放火花
         const u = clamp(wallR(hp.x, hp.y) / hp.D, 0.2, 1);
         seg.cam1 = { cx: hp.x, y0: Math.max(-60, hp.y - 170), y1: hp.y + 170, minW: 320 };
-        seg.ct0 = t + hp.dur * 0.15; seg.ct1 = t + hp.dur * 0.8;
+        seg.ct0 = t + Math.max(hp.dur * 0.15, TR + 0.1); seg.ct1 = t + hp.dur * 0.8;
         hrCross = t + hp.dur * u;
         seg.cross = { t: hrCross, x: hp.x * u, y: hp.y * u };
       }
@@ -296,11 +296,15 @@ const entPos = (ent, t) => {
   return cur && !gone ? cur : null;
 };
 
+const hitAt = (s, u) => { const p = hitPos(s.hp, u); if (s.start) { p.x += s.start.x * (1 - u); p.z += (s.start.z - 3) * (1 - u); } return p; }; // 從球實際過本壘的位置接續
+
 // 在時間 t 的畫面狀態；scene 是 'pitch'（捕手後方視角）或 'field'（球場俯視）
 export function frameAt(sc, t) {
   let hs = null;
   for (const s of sc.segs) if ((s.kind === 'hit' || s.kind === 'play') && t >= s.t0 && t <= s.until) hs = s;
-  const scene = hs ? 'field' : 'pitch';
+  const isHit = !!hs && hs.kind === 'hit';
+  const m = isHit ? clamp((t - hs.t0) / TR, 0, 1) : 0;
+  const scene = hs && !(isHit && t < hs.t0 + TR) ? 'field' : 'pitch';
   const cam = hs ? lerpCam(hs.cam0, hs.cam1, ease(clamp((t - hs.ct0) / (hs.ct1 - hs.ct0), 0, 1))) : null;
   let ball = null, trail = null, trailCls = '', trail2 = null, fm = null;
   for (let i = 0; i < sc.segs.length; i++) {
@@ -315,8 +319,8 @@ export function frameAt(sc, t) {
       if (stillHere || (next && next.kind === 'hit' && t < next.t0)) { ball = { x: a.x + (b.x - a.x) * w, y: a.y + (b.y - a.y) * w, z: a.z + (b.z - a.z) * w }; trail = pts.slice(0, k + 1).concat([ball]); trailCls = s.code; }
     } else if (s.kind === 'hit') {
       const n = 24, list = [];
-      for (let j = 0; j <= Math.round(u * n); j++) list.push(hitPos(s.hp, j / n));
-      ball = hitPos(s.hp, u); trail = list.concat([ball]); trailCls = s.hr ? 'hr' : s.foul ? 'foul' : 'hit';
+      for (let j = 0; j <= Math.round(u * n); j++) list.push(hitAt(s, j / n));
+      ball = hitAt(s, u); trail = list.concat([ball]); trailCls = s.hr ? 'hr' : s.foul ? 'foul' : 'hit';
       if (s.legs && t > s.t1) { // 野手接到球之後的傳球
         let p = { x: s.hp.x, y: s.hp.y, z: 0.5 };
         for (const lg of s.legs) {
@@ -363,7 +367,7 @@ export function frameAt(sc, t) {
   }
   const cr = hs && hs.cross;
   const fx = cr && t >= cr.t && t - cr.t < 1.5 ? { x: cr.x, y: cr.y, k: (t - cr.t) / 1.5 } : null;
-  return { scene, cam, ball, trail, trailCls, trail2, cap, evcap, zone, impact, bat, hud, runners, fielders, fx, banner: t >= sc.bannerT, hr: sc.hr };
+  return { scene, m, endCam: isHit ? hs.cam0 : null, cam, ball, trail, trailCls, trail2, cap, evcap, zone, impact, bat, hud, runners, fielders, fx, banner: t >= sc.bannerT, hr: sc.hr };
 }
 
 /* ───────── 畫面 ───────── */
@@ -388,25 +392,6 @@ const fieldSVG = () => `<g transform="scale(1,-1)">
 
 // 捕手後方視角的靜態場景（座標單位：本壘板前緣處的 1 呎）
 const f2 = (n) => n.toFixed(3);
-const pt = (x, y, z) => { const p = persp(x, y, z); return `${f2(p.x)},${f2(p.y)}`; };
-function pitchSceneSVG(top, bot) {
-  const g = (x, y) => pt(x, y, 0);
-  const sp = DP / (58 + DCAM), mp = DP / (MOUND_Y + DCAM);
-  return `<defs><linearGradient id="anSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a1624"/><stop offset="1" stop-color="#27415c"/></linearGradient></defs>
-  <rect x="-40" y="-40" width="80" height="40" fill="url(#anSky)"/>
-  <rect x="-40" y="0" width="80" height="40" fill="#2f6d3f"/>
-  <polygon points="${g(-16, -3)} ${g(16, -3)} ${g(9, 62)} ${g(-9, 62)}" fill="#b98b5e"/>
-  <ellipse cx="0" cy="${f2(-(0.8 - EYE) * mp)}" rx="${f2(9 * mp)}" ry="${f2(1.4 * mp)}" fill="#a47649"/>
-  <g fill="#1c3a66" stroke="#fff" stroke-width=".012"><circle cx="0" cy="${f2(-(5.9 - EYE) * sp)}" r="${f2(0.4 * sp)}"/><rect x="${f2(-0.7 * sp)}" y="${f2(-(5.4 - EYE) * sp)}" width="${f2(1.4 * sp)}" height="${f2(2.8 * sp)}" rx="${f2(0.3 * sp)}"/><rect x="${f2(-0.6 * sp)}" y="${f2(-(2.7 - EYE) * sp)}" width="${f2(1.2 * sp)}" height="${f2(1.9 * sp)}"/></g>
-  <polygon points="${pt(-0.708, 0, 0)} ${pt(0.708, 0, 0)} ${pt(0.708, 0.7, 0)} ${pt(0, 1.417, 0)} ${pt(-0.708, 0.7, 0)}" fill="#fff" opacity=".9"/>
-  <rect id="pvZb" x="-0.708" y="${f2(-(top - EYE))}" width="1.416" height="${f2(top - bot)}" fill="rgba(255,255,255,.07)" stroke="#fff" stroke-width="2.2" vector-effect="non-scaling-stroke"/>
-  <g stroke="rgba(255,255,255,.35)" stroke-width="1" vector-effect="non-scaling-stroke">${[1, 2].map((i) => `<line x1="${f2(-0.708 + (1.416 * i) / 3)}" x2="${f2(-0.708 + (1.416 * i) / 3)}" y1="${f2(-(top - EYE))}" y2="${f2(-(bot - EYE))}" vector-effect="non-scaling-stroke"/><line y1="${f2(-(top - EYE) + ((top - bot) * i) / 3)}" y2="${f2(-(top - EYE) + ((top - bot) * i) / 3)}" x1="-0.708" x2="0.708" vector-effect="non-scaling-stroke"/>`).join('')}</g>
-  <g id="pvDots"></g>
-  <g id="pvBatter"></g>
-  <g id="pvRing"></g><polyline id="pvTr" fill="none" vector-effect="non-scaling-stroke"/>
-  <circle id="pvBall" class="an-bc" r=".1"/>`;
-}
-
 export function openAnim(play, gd, allPlays) {
   if (!play || document.getElementById('an')) return null;
   const prevPlay = allPlays && play.about ? [...allPlays].reverse().find((p) => p.about && p.about.atBatIndex === play.about.atBatIndex - 1) : null;
@@ -418,7 +403,7 @@ export function openAnim(play, gd, allPlays) {
   const el = document.createElement('div');
   el.id = 'an'; el.className = 'an'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
   el.innerHTML = `<div class="an-h"><div class="an-who"><b>${esc(bat)}</b><span>vs ${esc(pit)}</span></div><button class="an-x" aria-label="${L('關閉', 'Close')}">✕</button></div>
-    <div class="an-st"><svg id="anPv" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${pitchSceneSVG(sc.zTop, sc.zBot)}</svg>
+    <div class="an-st"><svg id="anPv" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
       <svg id="anSvg" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${fieldSVG()}
       <g id="anFd">${Object.keys(POS).map((p) => `<circle class="an-fd" data-pos="${p}" cx="${POS[p][0]}" cy="${-POS[p][1]}" r="3"/>`).join('')}</g>
       <circle id="anBt" class="an-bt" cx="${rightie ? -4.2 : 4.2}" cy="0" r="3"/>
@@ -442,36 +427,69 @@ export function openAnim(play, gd, allPlays) {
   $e('.an-bn small').textContent = bits.join(' · ');
   $e('.an-bn').classList.toggle('hr', !!sc.hr);
 
-  // 打者：身體、手臂、球棒依 batPose 逐格重畫（打者站在靠 3B／1B 側的打擊區，朝本壘為正向）
-  const bs = DP / (0.7 + DCAM);
-  const drawBatter = (b) => {
-    const p = batPose(b.load, b.k, b.type, b.z);
-    const X = (x) => f2((dir * -2.1 + dir * x) * bs), Z = (z) => f2(-(z - EYE) * bs), W = (w) => f2(w * bs);
-    const line = (a, c, w, col) => `<line x1="${X(a.x)}" y1="${Z(a.z)}" x2="${X(c.x)}" y2="${Z(c.z)}" stroke="${col}" stroke-width="${W(w)}" stroke-linecap="round"/>`;
-    $e('#pvBatter').innerHTML = `${line(p.hip, p.footB, 0.5, '#0b1a28')}${line(p.hip, p.footF, 0.5, '#0b1a28')}
-      <polygon points="${X(p.sh.x - p.ws)},${Z(4.95)} ${X(p.sh.x + p.ws)},${Z(4.95)} ${X(p.hip.x + p.wh)},${Z(3.0)} ${X(p.hip.x - p.wh)},${Z(3.0)}" fill="#10202f" stroke="#5d7a99" stroke-width=".03"/>
-      ${line({ x: p.sh.x - p.ws * 0.6, z: 4.8 }, p.hands, 0.28, '#1b3350')}${line({ x: p.sh.x + p.ws * 0.6, z: 4.8 }, p.hands, 0.28, '#1b3350')}
-      <circle cx="${X(p.head.x)}" cy="${Z(p.head.z)}" r="${W(0.42)}" fill="#10202f" stroke="#5d7a99" stroke-width=".03"/>
-      ${line(p.hands, p.tip, 0.11, '#d9b27c')}`;
-  };
-  const applyPitch = (f) => {
+  // 捕手視角與轉場：同一台針孔攝影機，從本壘後方拉高、拉遠成球場俯視（cam3d.js）。每格重畫整個 3D 場景
+  const bs = 1; // 打者的世界座標比例（呎）
+  const drawPitch = (f) => {
     const a = st.clientWidth / Math.max(1, st.clientHeight);
-    const hv = Math.max(9.9, 7.4 / a), wv = hv * a;
-    pv.setAttribute('viewBox', `${f2(-wv / 2)} ${f2(1.7 - hv / 2)} ${f2(wv)} ${f2(hv)}`);
-    const upx = Math.max(1, st.clientWidth) / wv; // 1 單位 = 幾 px
-    const dots = f.zone.map((z, i) => `<circle class="pm-${pitchGroup(z.code)}" cx="${f2(z.x)}" cy="${f2(-(z.z - EYE))}" r="${i === f.zone.length - 1 ? 0.17 : 0.13}" stroke="#fff" stroke-width="1" vector-effect="non-scaling-stroke" fill-opacity="${i === f.zone.length - 1 ? 1 : 0.7}"/>`).join('');
-    $e('#pvDots').innerHTML = dots;
-    $e('#pvRing').innerHTML = f.impact ? `<circle class="pv-ring ${f.impact.cls}" cx="${f2(f.impact.x)}" cy="${f2(-(f.impact.z - EYE))}" r="${f2(0.2 + 0.45 * f.impact.k)}" opacity="${f2(1 - f.impact.k)}" fill="none" stroke-width="3" vector-effect="non-scaling-stroke"/>` : '';
-    const ball = $e('#pvBall'), tr = $e('#pvTr');
-    if (f.ball && f.scene === 'pitch') {
-      const p = persp(f.ball.x, f.ball.y, f.ball.z);
-      ball.style.display = '';
-      ball.setAttribute('cx', f2(p.x)); ball.setAttribute('cy', f2(p.y)); ball.setAttribute('r', f2(Math.max(0.19 * p.s, 2.4 / upx)));
-      tr.setAttribute('points', f.trail.map((q) => pt(q.x, q.y, q.z)).join(' '));
-      tr.setAttribute('class', 'an-tr pm-s-' + pitchGroup(f.trailCls));
-    } else { ball.style.display = 'none'; tr.setAttribute('points', ''); }
-    drawBatter(f.bat);
+    pv.setAttribute('viewBox', `-1 ${f2(-1 / a)} 2 ${f2(2 / a)}`);
+    const ec = f.endCam || { cx: 0, y0: -60, y1: 200, minW: 280 };
+    const hvE = ec.y1 - ec.y0, wvE = Math.max(hvE * a, ec.minW), hhE = wvE / a;
+    const c = camAt(f.m, a, { cx: ec.cx, cy: ec.y0 + hhE / 2, wv: wvE });
+    const k = c.k, pxN = 2 / Math.max(1, st.clientWidth); // 1 px 在畫面座標裡有多大
+    const P = (q) => `${f2(q.x)},${f2(q.y)}`;
+    let out = '';
+    for (const g of GROUND) {
+      const pts = projectPoly(c, g.pts, g.closed);
+      if (pts.length < 2) continue;
+      const stroke = g.stroke ? ` stroke="${g.stroke}" stroke-width="${g.sw}" vector-effect="non-scaling-stroke"` : '';
+      out += g.closed ? `<polygon points="${pts.map(P).join(' ')}" fill="${g.fill || 'none'}"${stroke}${g.op ? ` opacity="${g.op}"` : ''}/>` : `<polyline points="${pts.map(P).join(' ')}" fill="none"${stroke}/>`;
+    }
+    const fade = clamp(1 - k * 1.6, 0, 1);
+    const dot = (p, rFt, minPx, attrs) => { const s = project(c, p); return s ? `<circle cx="${f2(s.x)}" cy="${f2(s.y)}" r="${f2(Math.max((rFt * c.F) / s.d, minPx * pxN))}" ${attrs}/>` : ''; };
+    // 好球帶（在本壘板前緣處）：轉場時淡出
+    if (fade > 0) {
+      const zy = PLATE_Y, zt = sc.zTop, zb = sc.zBot;
+      const corners = [[-0.708, zy, zt], [0.708, zy, zt], [0.708, zy, zb], [-0.708, zy, zb]];
+      const zp = projectPoly(c, corners, true);
+      if (zp.length > 2) out += `<g opacity="${f2(fade)}"><polygon points="${zp.map(P).join(' ')}" fill="rgba(255,255,255,.07)" stroke="#fff" stroke-width="2.2" vector-effect="non-scaling-stroke"/>`
+        + [1, 2].map((i) => { const x = -0.708 + (1.416 * i) / 3, z = zt - ((zt - zb) * i) / 3, A = project(c, [x, zy, zt]), B = project(c, [x, zy, zb]), C = project(c, [-0.708, zy, z]), D = project(c, [0.708, zy, z]); return A && B && C && D ? `<path d="M${P(A)}L${P(B)}M${P(C)}L${P(D)}" stroke="rgba(255,255,255,.35)" stroke-width="1" vector-effect="non-scaling-stroke"/>` : ''; }).join('')
+        + f.zone.map((z, i) => dot([z.x, zy, z.z], i === f.zone.length - 1 ? 0.17 : 0.13, 3, `class="pm-${pitchGroup(z.code)}" stroke="#fff" stroke-width="1" vector-effect="non-scaling-stroke" fill-opacity="${i === f.zone.length - 1 ? 1 : 0.7}"`)).join('')
+        + (f.impact ? (() => { const s = project(c, [f.impact.x, zy, f.impact.z]); return s ? `<circle class="pv-ring ${f.impact.cls}" cx="${f2(s.x)}" cy="${f2(s.y)}" r="${f2(((0.2 + 0.45 * f.impact.k) * c.F) / s.d)}" opacity="${f2(1 - f.impact.k)}" fill="none" stroke-width="3" vector-effect="non-scaling-stroke"/>` : ''; })() : '') + '</g>';
+    }
+    // 野手：近處是站著的人，拉遠後縮成跟 2D 球場一樣的圓點
+    const sorted = f.fielders.map((q) => ({ q, s: project(c, [q.x, q.y, 0]) })).filter((o) => o.s).sort((u, v) => v.s.d - u.s.d);
+    for (const { q, s } of sorted) {
+      const top = project(c, [q.x, q.y, 5.6 * (1 - k) + 0.3]);
+      const r = (0.45 * c.F / s.d) * (1 - k) + (q.act ? 5 : 4) * pxN * k;
+      if (top && fade > 0.02) out += `<line x1="${f2(s.x)}" y1="${f2(s.y)}" x2="${f2(top.x)}" y2="${f2(top.y)}" stroke="#1c3a66" stroke-width="${f2((1.3 * c.F) / s.d)}" stroke-linecap="round" opacity="${f2(fade)}"/>`;
+      out += `<circle cx="${f2((top || s).x)}" cy="${f2((top || s).y)}" r="${f2(r)}" fill="${q.act ? '#f2c94c' : '#1c3a66'}" stroke="#fff" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+    }
+    // 打者（轉場早期才看得到）
+    if (k < 0.7) {
+      const p = batPose(f.bat.load, f.bat.k, f.bat.type, f.bat.z);
+      const W = (x, z) => [dir * (x - 2.1) * bs, 0.7, z];
+      const ln = (A, B, w, col) => { const a1 = project(c, W(A.x, A.z)), b1 = project(c, W(B.x, B.z)); return a1 && b1 ? `<line x1="${f2(a1.x)}" y1="${f2(a1.y)}" x2="${f2(b1.x)}" y2="${f2(b1.y)}" stroke="${col}" stroke-width="${f2((w * c.F) / a1.d)}" stroke-linecap="round"/>` : ''; };
+      const poly = projectPoly(c, [W(p.sh.x - p.ws, 4.95), W(p.sh.x + p.ws, 4.95), W(p.hip.x + p.wh, 3), W(p.hip.x - p.wh, 3)], true);
+      const hd = project(c, W(p.head.x, p.head.z));
+      out += `<g opacity="${f2(clamp(1 - k / 0.7, 0, 1))}">${ln(p.hip, p.footB, 0.5, '#0b1a28')}${ln(p.hip, p.footF, 0.5, '#0b1a28')}`
+        + (poly.length > 2 ? `<polygon points="${poly.map(P).join(' ')}" fill="#10202f" stroke="#5d7a99" stroke-width="1" vector-effect="non-scaling-stroke"/>` : '')
+        + `${ln({ x: p.sh.x - p.ws * 0.6, z: 4.8 }, p.hands, 0.28, '#1b3350')}${ln({ x: p.sh.x + p.ws * 0.6, z: 4.8 }, p.hands, 0.28, '#1b3350')}`
+        + (hd ? `<circle cx="${f2(hd.x)}" cy="${f2(hd.y)}" r="${f2((0.42 * c.F) / hd.d)}" fill="#10202f" stroke="#5d7a99" stroke-width="1" vector-effect="non-scaling-stroke"/>` : '')
+        + `${ln(p.hands, p.tip, 0.11, '#d9b27c')}</g>`;
+    }
+    // 跑者
+    for (const r of f.runners) out += dot([r.x, r.y, 0.8], 1.1, 5.5, `fill="${r.batter ? '#e8863a' : '#f2c94c'}" stroke="#fff" stroke-width="1.2" vector-effect="non-scaling-stroke"`);
+    // 球的軌跡與球
+    if (f.ball && f.m > -1 && (f.scene === 'pitch')) {
+      const tp = projectPoly(c, f.trail.map((q) => [q.x, q.y, q.z]), false);
+      if (tp.length > 1) out += `<polyline points="${tp.map(P).join(' ')}" fill="none" class="an-tr pm-s-${f.trailCls === 'hit' || f.trailCls === 'foul' || f.trailCls === 'hr' ? f.trailCls : pitchGroup(f.trailCls)}" vector-effect="non-scaling-stroke"/>`;
+      const sh = project(c, [f.ball.x, f.ball.y, 0]);
+      if (sh && f.ball.z > 0.6) out += `<ellipse cx="${f2(sh.x)}" cy="${f2(sh.y)}" rx="${f2((0.45 * c.F) / sh.d)}" ry="${f2((0.22 * c.F * c.v) / sh.d * Math.max(0.35, Math.sin(Math.atan2(c.f[2] * -1, c.f[1]))))}" fill="rgba(0,0,0,.35)"/>`;
+      out += dot([f.ball.x, f.ball.y, f.ball.z], 0.19, 2.4 + 2.6 * k, 'class="an-bc"');
+    }
+    pv.innerHTML = out;
   };
+  const applyPitch = drawPitch;
   const applyField = (f) => {
     const a = st.clientWidth / Math.max(1, st.clientHeight);
     const cam = f.cam || { cx: 0, y0: -60, y1: 200, minW: 280 };
@@ -512,7 +530,7 @@ export function openAnim(play, gd, allPlays) {
       $e('.an-ct').innerHTML = `${c.done && c.call ? `<em class="${c.cls}">${esc(L(c.call.zh, c.call.en))}</em>` : '<em class="w">&nbsp;</em>'}<span>${cnt ? cnt.balls + '-' + cnt.strikes : ''}</span>`;
     }
     const hudEl = $e('.an-hud');
-    if (f.hud && f.scene === 'field') {
+    if (f.hud && (f.scene === 'field' || f.m > 0)) {
       const hu = f.hud;
       const row = (lab, val, unit) => `<div><small>${lab}</small><b>${val}</b><i>${unit}</i></div>`;
       hudEl.innerHTML = `${hu.ev != null ? row(L('初速', 'Exit velo'), hu.ev, 'mph') : ''}${hu.la != null ? row(L('仰角', 'Launch angle'), hu.la, '°') : ''}${row(L('飛行距離', 'Distance'), hu.dist, 'ft')}${hu.air ? row(L('滯空', 'Hang time'), hu.hang.toFixed(1), 's') : ''}${hu.foul ? `<em>${L('界外', 'FOUL')}</em>` : ''}`;
