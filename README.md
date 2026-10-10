@@ -96,11 +96,16 @@ js/                   主程式，原生 ES modules，不需建置
   api.js              資料層：API 請求、狀態橫幅、輪詢
   state.js            共用狀態（其他模組透過 setG / setPoller 等函式改值）
   scores.js           比分頁
-  game.js             單場頁：局數表、文字轉播、LIVE 分頁、數據、目前打席條、全壘打動畫
+  game.js             單場頁骨架：局數表、標頭、分頁切換與輪詢、全壘打動畫
+  plays.js            文字轉播：打席卡、投球圓點與好球帶、換人說明
+  live.js             LIVE 分頁：目前打席、半局回顧
+  box.js              數據分頁：打擊／投球數據、投手列展開球路
   pitches.js          球種名稱與每球結果分類
   pitchmap.js         投手球路：整場投球分布圖與球種表
   cam3d.js            打擊動畫的針孔攝影機：捕手視角到球場俯視的運鏡與 3D 投影
-  anim.js             打席動畫：球路／擊球／跑者的計算、捕手視角與球場俯視圖
+  anim.js             打席動畫入口（匯出下面兩個模組）
+  anim-script.js      打席動畫的純計算：球路、擊球、野手傳球、跑者、揮棒、時間表
+  anim-view.js        打席動畫的畫面：3D 場景、球場俯視、雷達面板、控制列
   player.js           球員小卡
   winprob.js          勝率走勢圖
   standings.js        排名、季後賽、對戰樹
